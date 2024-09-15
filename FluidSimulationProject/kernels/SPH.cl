@@ -251,15 +251,15 @@ void kernel updateParticlesDynamics(global struct Particle* particles, global st
 	float3 minPos = (float3)(0, 0, 0);
 	float3 maxPos = boundingBoxSize;
 		
-	//if (particlePosition.x < minPos.x) {
-	//	particlePosition.x = minPos.x;
-	//	particleVelocity.x = -particleVelocity.x * elasticity;
-	//}
-	//
-	//if (particlePosition.x >= maxPos.x) {
-	//	particlePosition.x = maxPos.x - FLT_EPSILON;
-	//	particleVelocity.x = -particleVelocity.x * elasticity;
-	//}
+	if (particlePosition.x < minPos.x) {
+		particlePosition.x = minPos.x;
+		particleVelocity.x = -particleVelocity.x * elasticity;
+	}
+	
+	if (particlePosition.x >= maxPos.x) {
+		particlePosition.x = maxPos.x - FLT_EPSILON;
+		particleVelocity.x = -particleVelocity.x * elasticity;
+	}
 	
 	if (particlePosition.y < minPos.y) 
 	{
@@ -267,21 +267,21 @@ void kernel updateParticlesDynamics(global struct Particle* particles, global st
 		particleVelocity.y = -particleVelocity.y * elasticity;
 	}
 	
-	//if (particlePosition.y >= maxPos.y)
-	//{
-	//	particlePosition.y = maxPos.y - FLT_EPSILON;
-	//	particleVelocity.y = -particleVelocity.y * elasticity;
-	//}
-	//
-	//if (particlePosition.z < minPos.z) {
-	//	particlePosition.z = minPos.z;
-	//	particleVelocity.z = -particleVelocity.z * elasticity;
-	//}
-	//
-	//if (particlePosition.z >= maxPos.z) {
-	//	particlePosition.z = maxPos.z - FLT_EPSILON;
-	//	particleVelocity.z = -particleVelocity.z * elasticity;
-	//}	
+	if (particlePosition.y >= maxPos.y)
+	{
+		particlePosition.y = maxPos.y - FLT_EPSILON;
+		particleVelocity.y = -particleVelocity.y * elasticity;
+	}
+	
+	if (particlePosition.z < minPos.z) {
+		particlePosition.z = minPos.z;
+		particleVelocity.z = -particleVelocity.z * elasticity;
+	}
+	
+	if (particlePosition.z >= maxPos.z) {
+		particlePosition.z = maxPos.z - FLT_EPSILON;
+		particleVelocity.z = -particleVelocity.z * elasticity;
+	}	
 
 
 	cell = getCell(particlePosition);	

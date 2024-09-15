@@ -69,8 +69,8 @@ namespace SPH
 	SystemGPU::SystemGPU(OpenCLContext& clContext) :
 		clContext(clContext), bufferSetIndex(0)
 	{
-		if (Graphics::OpenGL::GraphicsContext_OpenGL::IsExtensionSupported("GL_ARB_cl_event"))
-			Debug::Logger::LogFatal("Client", "GL_ARB_cl_event extensions not supported!");
+		//if (Graphics::OpenGL::GraphicsContext_OpenGL::IsExtensionSupported("GL_ARB_cl_event"))
+		//	Debug::Logger::LogFatal("Client", "GL_ARB_cl_event extensions not supported!");
 
 		cl_int ret;
 
@@ -157,7 +157,8 @@ namespace SPH
 
 		for (auto& bufferSet : bufferSets)
 		{
-			bufferSet.particleBufferGL.Allocate(particles.Ptr(), sizeof(Particle) * particleCount, Graphics::OpenGLWrapper::MutableGraphicsBufferUseFrequency::Dynamic);
+			bufferSet.particleBufferGL.Allocate(particles.Ptr(), sizeof(Particle) * particleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentUncoherent);
+			bufferSet.particleBufferMap = bufferSet.particleBufferGL.MapBufferRange(0, sizeof(Particle) * particleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::Unsynchronized);
 
 			bufferSet.vertexArray.EnableVertexAttribute(0);
 			bufferSet.vertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(Particle, position));
@@ -170,15 +171,6 @@ namespace SPH
 
 			bufferSet.particleBufferCL = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(Particle) * particleCount, particles.Ptr(), &ret);
 			CL_CHECK();
-
-			bufferSet.particles.Resize(particleCount);
-			//bufferSet.particleBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, bufferSet.particleBufferGL.GetHandle(), &ret);
-			//CL_CHECK();
-
-			//bufferSet.readFinishedEvent = clCreateEventFromGLsyncKHR(clContext.context(), (cl_GLsync)bufferSet.readFinishedFence.GetHandle(), &ret);
-			//CL_CHECK();					
-			//			
-			//bufferSet.writeFinishedFence = Graphics::OpenGLWrapper::Fence(glCreateSyncFromCLeventARB(clContext.context(), bufferSet.writeFinishedEvent(), 0));
 		}
 		bufferSetIndex = 0;
 		nextBufferSetIndex = (bufferSetIndex + 1) % bufferSets.Count();		
@@ -225,8 +217,8 @@ namespace SPH
 		EnqueueUpdateParticlesDynamicsKernel(deltaTime);
 		CL_CALL(queue.finish());
 		
-		CL_CALL(queue.enqueueReadBuffer(bufferSets[nextBufferSetIndex].particleBufferCL, CL_TRUE, 0, sizeof(Particle) * particleCount, bufferSets[nextBufferSetIndex].particles.Ptr()))
-		bufferSets[nextBufferSetIndex].particleBufferGL.WriteData(bufferSets[nextBufferSetIndex].particles.Ptr(), sizeof(Particle) * particleCount, 0);
+		CL_CALL(queue.enqueueReadBuffer(bufferSets[nextBufferSetIndex].particleBufferCL, CL_TRUE, 0, sizeof(Particle) * particleCount, bufferSets[nextBufferSetIndex].particleBufferMap))
+		//bufferSets[nextBufferSetIndex].particleBufferGL.WriteData(bufferSets[nextBufferSetIndex].particles.Ptr(), sizeof(Particle) * particleCount, 0);
 		glFinish();
 
 		//clEnqueueReleaseGLObjects(queue(), 1, &bufferSets[nextBufferSetIndex].particleBufferCL(), 0, nullptr, nullptr);

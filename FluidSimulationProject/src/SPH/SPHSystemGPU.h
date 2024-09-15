@@ -42,14 +42,12 @@ namespace SPH
 		struct ParticleBufferSet
 		{
 			Graphics::OpenGLWrapper::VertexArray vertexArray;
-			Graphics::OpenGLWrapper::MutableDrawGraphicsBuffer particleBufferGL;
+			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer particleBufferGL;
 			cl::Buffer particleBufferCL;
-			Array<Particle> particles;
+			void* particleBufferMap;
 
-			//Graphics::OpenGLWrapper::Fence writeFinishedFence;
-			//Graphics::OpenGLWrapper::Fence readFinishedFence;
-			//cl::Event readFinishedEvent;
-			//cl::Event writeFinishedEvent;
+			Graphics::OpenGLWrapper::Fence readFinishedFence;
+			cl::Event writeFinishedEvent;
 		};		
 
 		uint bufferSetIndex;

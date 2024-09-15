@@ -181,6 +181,7 @@ bool OpenCLContext::SelectPlatform()
     for (auto& platform : platforms)
     {
         std::string name = platform.getInfo<CL_PLATFORM_NAME>(&ret);
+        std::transform(name.begin(), name.end(), name.begin(), ::toupper);
         CL_CHECK(false);
 
         if (name.find("NVIDIA") != std::string::npos ||

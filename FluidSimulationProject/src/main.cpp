@@ -13,7 +13,7 @@ using namespace Blaze;
 SPH::SystemInitParameters systemInitParams{
 	.dynamicParticleGenerationParameters = {
 		.spawnVolumeOffset = Vec3f(0.0f),
-		.spawnVolumeSize = Vec3f(3.0f),
+		.spawnVolumeSize = Vec3f(4.0f),
 		.particlesPerUnit = 40,
 		.randomOffsetIntensity = 0.0f },
 	.staticParticleGenerationParameters {
@@ -212,7 +212,7 @@ CLIENT_API void Setup()
 		}
 
 		if (system != nullptr && (runSimulation || window.GetLastKeyState(Key::Right).pressed && uiInputManager.GetSelectedNode() == nullptr))
-			system->Update(std::min(dt, 0.001f));		
+			system->Update(std::min(dt, 0.01f));		
 							
 
 		if (uiInputManager.GetSelectedNode() == nullptr)
