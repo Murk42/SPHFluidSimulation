@@ -1,0 +1,10 @@
+#Build files
+build/
+install/
+temp/
+
+.vs/
+extern/
+vcpkg_installed/
+
+*.dll
