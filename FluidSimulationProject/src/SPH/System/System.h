@@ -8,12 +8,16 @@ namespace SPH
 		Vec3f position;
 		float pressure;
 		Vec3f velocity;
-		uint32 hash;		
+		uint32 hash;	
+
+		Vec4f color;
 	};
 	struct StaticParticle
 	{
 		Vec3f position;
 		float pressure;
+
+		Vec4f color;
 	};
 
 	struct DynamicParticleGenerationParameters

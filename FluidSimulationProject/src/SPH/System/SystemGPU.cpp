@@ -167,7 +167,7 @@ namespace SPH
 	}
 	Graphics::OpenGLWrapper::VertexArray& SystemGPU::GetStaticParticlesVertexArray()
 	{
-		return bufferSets[bufferSetIndex].staticParticleVertexArray;
+		return staticParticleVertexArray;
 	}
 	void SystemGPU::EndRender()
 	{
@@ -203,7 +203,7 @@ namespace SPH
 		bufferSets.Clear();
 		if (bufferCount < 2)
 		{
-			Debug::Logger::LogWarning("Client", "SystemInitParameters bufferCount member was set to " + StringParsing::Convert(bufferCount) + ". Only values above 1 are valid. The value was set to 2");
+			Debug::Logger::LogWarning("Client", "SystemInitParameters bufferCount member was set to " + StringParsing::Convert(bufferCount) + ". Only values above 0 are valid. The value was set to 2");
 			bufferSets.Resize(2);
 		}
 		else
@@ -212,8 +212,7 @@ namespace SPH
 		for (auto& bufferSet : bufferSets)
 		{
 #ifdef USE_OPENCL_OPENGL_INTEROP
-			bufferSet.dynamicParticleBufferGL.Allocate(dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticles.Count());
-			bufferSet.staticParticleBufferGL.Allocate(staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count());
+			bufferSet.dynamicParticleBufferGL.Allocate(dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticles.Count());			
 			bufferSet.particleBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, bufferSet.dynamicParticleBufferGL.GetHandle(), &ret);
 #else
 			bufferSet.particleBufferGL.Allocate(particles.Ptr(), sizeof(Particle) * particleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentUncoherent);
@@ -237,11 +236,23 @@ namespace SPH
 			bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(2, &bufferSet.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
 			bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);
 
-			bufferSet.staticParticleVertexArray.EnableVertexAttribute(0);
-			bufferSet.staticParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
-			bufferSet.staticParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.staticParticleBufferGL, sizeof(StaticParticle), 0);
-			bufferSet.staticParticleVertexArray.SetVertexAttributeDivisor(0, 1);
+			bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(3);
+			bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(3, Graphics::OpenGLWrapper::VertexAttributeType::Float, 4, false, offsetof(DynamicParticle, color));
+			bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(3, &bufferSet.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+			bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(3, 1);
 		}
+
+		staticParticleBufferGL = decltype(staticParticleBufferGL)();
+		staticParticleBufferGL.Allocate(staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count());
+		staticParticleVertexArray.EnableVertexAttribute(0);
+		staticParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
+		staticParticleVertexArray.SetVertexAttributeBuffer(0, &staticParticleBufferGL, sizeof(StaticParticle), 0);
+		staticParticleVertexArray.SetVertexAttributeDivisor(0, 1);
+
+		staticParticleVertexArray.EnableVertexAttribute(3);
+		staticParticleVertexArray.SetVertexAttributeFormat(3, Graphics::OpenGLWrapper::VertexAttributeType::Float, 4, false, offsetof(StaticParticle, color));
+		staticParticleVertexArray.SetVertexAttributeBuffer(3, &staticParticleBufferGL, sizeof(StaticParticle), 0);
+		staticParticleVertexArray.SetVertexAttributeDivisor(3, 1);
 
 		bufferSetIndex = 0;
 		nextBufferSetIndex = (bufferSetIndex + 1) % bufferSets.Count();
@@ -256,7 +267,7 @@ namespace SPH
 		{
 			staticHashMapBuffer = cl::Buffer(clContext.context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(uint32) * staticHashMap.Count(), (void*)staticHashMap.Ptr(), &ret);
 			CL_CHECK();
-			staticParticleBuffer = cl::Buffer(clContext.context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(StaticParticle) * staticParticles.Count(), (void*)staticParticles.Ptr(), &ret);
+			staticParticleBuffer = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, staticParticleBufferGL.GetHandle(), &ret);
 			CL_CHECK();
 		}
 	}
