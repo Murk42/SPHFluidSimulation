@@ -172,7 +172,7 @@
   <ItemGroup>
     <ClInclude Include="src\OpenCLContext.h" />
     <ClInclude Include="src\pch.h" />
-    <ClInclude Include="src\SPH\CL_CPP_SPHFunctions.h" />
+    <ClInclude Include="kernels\CL_CPP_SPHFunctions.h" />
     <ClInclude Include="src\SPH\Graphics\SystemCPURenderer.h" />
     <ClInclude Include="src\SPH\ParticleGenerator\BoxShellParticleGenerator.h" />
     <ClInclude Include="src\SPH\ParticleGenerator\FileModelShellGenerator.h" />

@@ -42,7 +42,7 @@ public:
 	Font font = Font::LoadDefault();	
 	CameraMouseFocusNode cameraMouseFocusNode;
 	UI::Text infoText;
-	EditableText viscosityText;
+	//EditableText viscosityText;
 
 	UIScreen();
 

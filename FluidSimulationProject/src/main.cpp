@@ -160,7 +160,7 @@ static void SetupEvents(Window& window, RenderingSystem& renderingSystem, UIScre
 
 		systemInitParams.particleBehaviourParameters.viscosity = value;
 	});
-	uiScreen.viscosityText.editableText.textEnteredEventDispatcher.AddHandler(viscosityValueChangedEventHandler);
+	//uiScreen.viscosityText.editableText.textEnteredEventDispatcher.AddHandler(viscosityValueChangedEventHandler);
 }
 
 static void UpdateCamera(Window& window, float dt)
@@ -191,6 +191,8 @@ static void UpdateCamera(Window& window, float dt)
 
 CLIENT_API void Setup()
 {		
+	Debug::Logger::AddOutputFile("log.txt");
+
 	//Setup rendering and window
 	RenderingSystem renderingSystem;
 	Window& window = renderingSystem.GetWindow();	

@@ -305,7 +305,7 @@ namespace SPH
 		if (boundParameters.boundedByRoof) values.Insert("BOUND_TOP");
 		if (boundParameters.boundedByWalls) values.Insert("BOUND_WALLS");
 
-		SPHProgram = BuildOpenCLProgram(clContext, Array<Path>{ "src/SPH/CL_CPP_SPHFunctions.h", "kernels/SPH.cl" }, values);
+		SPHProgram = BuildOpenCLProgram(clContext, Array<Path>{ "kernels/CL_CPP_SPHFunctions.h", "kernels/SPH.cl" }, values);
 		
 		computeParticleHashesKernel = cl::Kernel(SPHProgram, "computeParticleHashes", &ret);
 		CL_CHECK();

@@ -1,0 +1,5 @@
+[01/01/70 01:51:05] [INFO] [Blaze Engine Graphics] Successfully initialized glew 2.2.0
+[01/01/70 01:51:05] [WARNING] [Blaze Engine Graphics] Asked for 16-bit depth buffer, got no depth buffer
+[01/01/70 01:51:05] [INFO] [Blaze Engine Graphics] Created OpenGL context 4.5 core profile
+[01/01/70 01:51:06] [INFO] [Client] Successfully initialized OpenCL C 2.0  device name gfx902
+[01/01/70 01:51:06] [INFO] [Client] GL_ARB_cl_event extensions not supported. Using the best implementation

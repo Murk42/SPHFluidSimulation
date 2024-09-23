@@ -1,3 +1,3 @@
 #include "pch.h"
 
-#include "CL_CPP_SPHFunctions.h"
+#include "../kernels/CL_CPP_SPHFunctions.h"

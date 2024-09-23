@@ -23,22 +23,22 @@ UIScreen::UIScreen()
 	infoText.CleanTransform();
 	infoText.CleanFinalTransform();
 
-	viscosityText.SetParent(this);
-	viscosityText.SetTransform({
-		.pos = Vec2f(10, -10),
-		.parentPivot = Vec2f(0, 1),
-		.pivot = Vec2f(0, 1),
-		.size = Vec2f(100, 24)
-		});	
-	viscosityText.editableText.textRenderUnit.SetFont(font);
-	viscosityText.editableText.textRenderUnit.SetFontHeight(20);
-	viscosityText.editableText.textRenderUnit.SetLayoutOptions({
-		.lineHorizontalAlign = UI::TextLineHorizontalAlign::Left,
-		.horizontallyUnderfittedOption = UI::TextHorizontallyUnderfittedOptions::ResizeToFit,
-		.verticallyUnderfittedOption = UI::TextVerticallyUnderfittedOptions::ResizeToFit,		
-		});
-	viscosityText.editableText.SetMultilineInput(false);
-	viscosityText.editableText.SetEmptyText("Enter viscosity value");		
+	//viscosityText.SetParent(this);
+	//viscosityText.SetTransform({
+	//	.pos = Vec2f(10, -10),
+	//	.parentPivot = Vec2f(0, 1),
+	//	.pivot = Vec2f(0, 1),
+	//	.size = Vec2f(100, 24)
+	//	});	
+	//viscosityText.editableText.textRenderUnit.SetFont(font);
+	//viscosityText.editableText.textRenderUnit.SetFontHeight(20);
+	//viscosityText.editableText.textRenderUnit.SetLayoutOptions({
+	//	.lineHorizontalAlign = UI::TextLineHorizontalAlign::Left,
+	//	.horizontallyUnderfittedOption = UI::TextHorizontallyUnderfittedOptions::ResizeToFit,
+	//	.verticallyUnderfittedOption = UI::TextVerticallyUnderfittedOptions::ResizeToFit,		
+	//	});
+	//viscosityText.editableText.SetMultilineInput(false);
+	//viscosityText.editableText.SetEmptyText("Enter viscosity value");		
 
 	cameraMouseFocusNode.SetParent(this);
 }
@@ -69,9 +69,9 @@ void UIScreen::ReconstructInfoText()
 	text += "Number of particles: " + StringParsing::Convert(particleCount) + "\n\n";
 
 	if (implementationName.Empty())
-		text += "T to rotate implementations. No implementation is selected currently.\n\n";
+		text += "T to rotate implementations (Don't do this it doesn't work currently). No implementation is selected currently.\n\n";
 	else
-		text += "T to rotate implementations. Current implementation is \"" + implementationName + "\"\n\n";
+		text += "T to rotate implementations (Don't do this it doesn't work currently). Current implementation is \"" + implementationName + "\"\n\n";
 
 	text +=		
 		"Input controls:\n"
@@ -81,7 +81,7 @@ void UIScreen::ReconstructInfoText()
 		"\tR to reset the simulation\n"
 		"\tClick the screen to enter camera move mode\n"
 		"\tESC to exit camera move mode\n"
-		"\tIn camera move mode use W, A, S, D and the mouse to move the camera\n"		
+		"\tIn camera move mode use W, A, S, D and the mouse to move the camera. Use the scroll-wheel to increase/decrease the speed\n"		
 		"FPS: " + StringParsing::Convert(FPS);
 
 	infoText.SetText(text);

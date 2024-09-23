@@ -95,7 +95,7 @@
     <ClInclude Include="src\SPH\SPHFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\CL_CPP_SPHFunctions.h">
+    <ClInclude Include="kernels\CL_CPP_SPHFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\SPH\System\SystemCPU.h">
