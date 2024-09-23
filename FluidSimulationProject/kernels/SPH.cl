@@ -6,14 +6,10 @@ struct __attribute__ ((packed)) Particle
 {
 	float4 positionAndPressure;
 	float4 velocityAndHash;		
-
-	float4 color;
 };	
 struct __attribute__ ((packed)) StaticParticle
 {
 	float4 positionAndPressure;		
-
-	float4 color;
 };
 
 void kernel computeParticleHashes(global struct Particle* particles, global uint* hashMap, global uint* particleMap)
@@ -60,10 +56,7 @@ void kernel updateParticlesPressure(
 	float particlePressure = particlePtr->positionAndPressure.w;
 	float3 particleVelocity = particlePtr->velocityAndHash.xyz;
 	float particleHash_FLOAT = particlePtr->velocityAndHash.w;
-	uint particleHash = *(uint*)&particleHash_FLOAT;
-
-	if (get_global_id(0) == 0)
-		particlePtr->color.w = 1.0f;
+	uint particleHash = *(uint*)&particleHash_FLOAT;		
 
 	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
 
@@ -125,8 +118,6 @@ void kernel updateParticlesPressure(
 
 					float dist = sqrt(distSqr);					
 
-					if (particleMap[i] == 0)
-						particlePtr->color.w = 0.5f;
 
 					influenceSum += SmoothingKernelD0(dist, MAX_INTERACTION_DISTANCE);
 				}
@@ -148,7 +139,7 @@ void kernel updateParticlesPressure(
 					}
 #endif
 
-					global struct StaticParticle* otherParticlePtr = staticParticles + i;
+					global const struct StaticParticle* otherParticlePtr = staticParticles + i;
 
 #ifdef DEBUG_BUFFERS
 //					if (particlePtr < staticParticles || particlePtr >= staticParticles + STATIC_PARTICLE_COUNT)
@@ -165,10 +156,7 @@ void kernel updateParticlesPressure(
 						continue;
 
 
-					float dist = sqrt(distSqr);	
-					
-					if (get_global_id(0) == 0)
-						otherParticlePtr->color.w = 0.5f;
+					float dist = sqrt(distSqr);					
 										
 					influenceSum += SmoothingKernelD0(dist, MAX_INTERACTION_DISTANCE);																
 				}

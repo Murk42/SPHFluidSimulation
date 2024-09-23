@@ -27,9 +27,11 @@ namespace SPH
 	private:							
 		struct ParticleBufferSet
 		{
-			Graphics::OpenGLWrapper::VertexArray dynamicParticleVertexArray;			
+			Graphics::OpenGLWrapper::VertexArray dynamicParticleVertexArray;
+			Graphics::OpenGLWrapper::VertexArray staticParticleVertexArray;
 #ifdef USE_OPENCL_OPENGL_INTEROP
-			Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleBufferGL;			
+			Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleBufferGL;
+			Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticleBufferGL;
 			cl::BufferGL particleBufferCL;
 #else
 			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleBufferGL;
@@ -55,9 +57,6 @@ namespace SPH
 		cl::Kernel computeParticleMapKernel;
 		cl::Kernel updateParticlesPressureKernel;		
 		cl::Kernel updateParticlesDynamicsKernel;
-
-		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer staticParticleBufferGL;
-		Graphics::OpenGLWrapper::VertexArray staticParticleVertexArray;
 
 		uint bufferSetIndex;
 		uint nextBufferSetIndex;		
