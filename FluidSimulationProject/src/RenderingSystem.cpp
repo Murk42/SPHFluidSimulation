@@ -29,10 +29,7 @@ RenderingSystem::RenderingSystem() :
 		graphicsContext.SetRenderArea(Vec2i(), event.size);
 		});
 	renderWindow.GetWindowSDL().resizedEventDispatcher.AddHandler(windowResizedEvent);
-	graphicsContext.SetRenderArea(Vec2i(), renderWindow.GetSize());
-
-	graphicsContext.EnableBlending(true);
-	graphicsContext.EnableDepthTest(true);
+	graphicsContext.SetRenderArea(Vec2i(), renderWindow.GetSize());		
 }
 
 void RenderingSystem::SetProjection(const Mat4f& matrix)
@@ -45,12 +42,12 @@ void RenderingSystem::SetViewMatrix(const Mat4f& matrix)
 	this->viewMatrix = matrix;	
 }
 
-void RenderingSystem::SetSPHSystemRenderingCache(SPHSystemRenderCache* renderCache)
+void RenderingSystem::SetSPHSystemRenderingCache(SPH::SystemRenderCache* renderCache)
 {
 	sphSystemRenderCache = renderCache;
 }
 
-void RenderingSystem::SetSPHSystemRenderer(SPHSystemRenderer* renderer)
+void RenderingSystem::SetSPHSystemRenderer(SPH::SystemRenderer* renderer)
 {
 	sphSystemRenderer = renderer;
 }
@@ -65,8 +62,12 @@ void RenderingSystem::Render()
 
 	graphicsContext.ClearTarget();
 
+	graphicsContext.EnableDepthTest(true);
+
 	if (sphSystemRenderCache != nullptr)	
 		sphSystemRenderer->Render(*sphSystemRenderCache, viewMatrix, projectionMatrix);		
+
+	graphicsContext.EnableDepthTest(false);
 
 	UIRenderPipeline.Render(renderWindow.GetSize());
 

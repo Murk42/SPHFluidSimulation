@@ -90,7 +90,7 @@ OpenCLContext::OpenCLContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsC
     std::vector<cl::Platform> platforms;
     CL_CALL(cl::Platform::get(&platforms));
 
-    Console::WriteLine("Available OpenCL platforms include:");
+    Console::WriteLine("\nAvailable OpenCL platforms include:");
     String platformsString;
     for (auto& platform : platforms)
     { 
@@ -122,6 +122,7 @@ OpenCLContext::OpenCLContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsC
         }
     }
     
+    Console::Write("\n");
 
     //for (auto& platform : platforms)
     //{

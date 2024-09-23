@@ -30,22 +30,25 @@
     <ClCompile Include="src\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\SPHSystemGPU.cpp">
+    <ClCompile Include="src\SPH\System\SystemGPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\OpenCLContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\SPHSystem.cpp">
+    <ClCompile Include="src\SPH\System\System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\VSConsoleWriteStream.cpp">
+    <ClCompile Include="src\SPH\Graphics\SystemGPURenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\SPHSystemGPURenderer.cpp">
+    <ClCompile Include="src\SPH\SPHFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\SPHSystemCPURenderer.cpp">
+    <ClCompile Include="src\SPH\System\SystemCPU.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SPH\Graphics\SystemCPURenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,7 +59,7 @@
     <ClInclude Include="src\RenderingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\SPHSystemRenderer.h">
+    <ClInclude Include="src\SPH\Graphics\SystemRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\UI.h">
@@ -65,22 +68,40 @@
     <ClInclude Include="src\ThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\SPHSystemGPU.h">
+    <ClInclude Include="src\SPH\System\SystemGPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\OpenCLContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\SPHSystem.h">
+    <ClInclude Include="src\SPH\System\System.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\VSConsoleWriteStream.h">
+    <ClInclude Include="src\SPH\Graphics\SystemGPURenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\SPHSystemGPURenderer.h">
+    <ClInclude Include="src\SPH\ParticleGenerator\BoxShellParticleGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\SPHSystemCPURenderer.h">
+    <ClInclude Include="src\SPH\ParticleGenerator\FileModelShellGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SPH\ParticleGenerator\FilledBoxParticleGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SPH\ParticleGenerator\ParticleGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SPH\SPHFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SPH\CL_CPP_SPHFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SPH\System\SystemCPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SPH\Graphics\SystemCPURenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

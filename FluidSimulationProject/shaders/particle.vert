@@ -1,10 +1,13 @@
 #version 430
 
 layout(location = 0) in vec3 i_pos;
-layout(location = 1) in vec4 i_color;
+layout(location = 1) in vec3 i_velocity;
+layout(location = 2) in float i_pressure;
 
 layout(location = 0) uniform mat4 u_modelView;
 layout(location = 1) uniform mat4 u_proj;
+layout(location = 2) uniform float u_size;
+layout(location = 3) uniform vec4 u_color;
 
 out vec4 f_color;
 out vec3 f_center;
@@ -26,8 +29,8 @@ void main()
 	vec3 up = vec3(0, 1, 0);	
 	vec3 right = cross(toCamera, up);
 
-	up *= 0.05f;
-	right *= 0.05f;
+	up *= u_size;
+	right *= u_size;
 
 	vec3 pos = center;
 
@@ -38,9 +41,11 @@ void main()
 	if (gl_VertexID == 2)	
 		pos += -up -right;
 	if (gl_VertexID == 3)	
-		pos += -up +right;			
+		pos += -up +right;	
+			
+	float colorCoef = clamp(1 - exp(-i_pressure / 2000), 0, 1);
 	
-	f_color = i_color;
+	f_color = mix(u_color, vec4(1.0f, 0.0f, 0.0f, 1.0f), colorCoef);	
 	f_center = center;
 	f_radiusSqr = sqrDistance(center, center + right);
 	f_pos = pos;

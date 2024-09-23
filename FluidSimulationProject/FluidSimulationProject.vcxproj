@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -94,6 +94,7 @@
       <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
+    <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -112,6 +113,7 @@
       <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
+    <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -126,6 +128,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,13 +148,16 @@
       <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
+    <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\OpenCLContext.cpp" />
-    <ClCompile Include="src\SPH\SPHSystem.cpp" />
-    <ClCompile Include="src\SPH\SPHSystemCPURenderer.cpp" />
-    <ClCompile Include="src\SPH\SPHSystemGPU.cpp" />
+    <ClCompile Include="src\SPH\Graphics\SystemCPURenderer.cpp" />
+    <ClCompile Include="src\SPH\SPHFunctions.cpp" />
+    <ClCompile Include="src\SPH\System\System.cpp" />
+    <ClCompile Include="src\SPH\System\SystemCPU.cpp" />
+    <ClCompile Include="src\SPH\System\SystemGPU.cpp" />
     <ClCompile Include="src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -159,23 +165,28 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\RenderingSystem.cpp" />
-    <ClCompile Include="src\SPH\SPHSystemGPURenderer.cpp" />
+    <ClCompile Include="src\SPH\Graphics\SystemGPURenderer.cpp" />
     <ClCompile Include="src\ThreadPool.cpp" />
     <ClCompile Include="src\UI.cpp" />
-    <ClCompile Include="src\VSConsoleWriteStream.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\OpenCLContext.h" />
     <ClInclude Include="src\pch.h" />
-    <ClInclude Include="src\SPH\SPHSystem.h" />
-    <ClInclude Include="src\SPH\SPHSystemCPURenderer.h" />
-    <ClInclude Include="src\SPH\SPHSystemGPU.h" />
-    <ClInclude Include="src\SPH\SPHSystemRenderer.h" />
+    <ClInclude Include="src\SPH\CL_CPP_SPHFunctions.h" />
+    <ClInclude Include="src\SPH\Graphics\SystemCPURenderer.h" />
+    <ClInclude Include="src\SPH\ParticleGenerator\BoxShellParticleGenerator.h" />
+    <ClInclude Include="src\SPH\ParticleGenerator\FileModelShellGenerator.h" />
+    <ClInclude Include="src\SPH\ParticleGenerator\FilledBoxParticleGenerator.h" />
+    <ClInclude Include="src\SPH\ParticleGenerator\ParticleGenerator.h" />
+    <ClInclude Include="src\SPH\SPHFunctions.h" />
+    <ClInclude Include="src\SPH\System\System.h" />
+    <ClInclude Include="src\SPH\System\SystemCPU.h" />
+    <ClInclude Include="src\SPH\System\SystemGPU.h" />
+    <ClInclude Include="src\SPH\Graphics\SystemRenderer.h" />
     <ClInclude Include="src\RenderingSystem.h" />
-    <ClInclude Include="src\SPH\SPHSystemGPURenderer.h" />
+    <ClInclude Include="src\SPH\Graphics\SystemGPURenderer.h" />
     <ClInclude Include="src\ThreadPool.h" />
     <ClInclude Include="src\UI.h" />
-    <ClInclude Include="src\VSConsoleWriteStream.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props" />

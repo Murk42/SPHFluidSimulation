@@ -1,5 +1,5 @@
 #pragma once
-#include "SPH/SPHSystemRenderer.h"
+#include "SPH/Graphics/SystemRenderer.h"
 
 class RenderingSystem
 {
@@ -8,8 +8,8 @@ public:
 	
 	void SetProjection(const Mat4f&);
 	void SetViewMatrix(const Mat4f&);	
-	void SetSPHSystemRenderingCache(SPHSystemRenderCache* renderCache);
-	void SetSPHSystemRenderer(SPHSystemRenderer* renderer);
+	void SetSPHSystemRenderingCache(SPH::SystemRenderCache * renderCache);
+	void SetSPHSystemRenderer(SPH::SystemRenderer* renderer);
 	
 	void SetScreen(UI::Screen* screen);
 
@@ -25,7 +25,7 @@ private:
 	Graphics::OpenGL::TexturedRectRenderer_OpenGL texturedRectRenderer;
 	Graphics::OpenGL::Line2DRenderer_OpenGL line2DRenderer;
 
-	SPHSystemRenderer* sphSystemRenderer;
+	SPH::SystemRenderer* sphSystemRenderer;
 	Graphics::OpenGL::PanelRenderer_OpenGL panelRenderer;
 	Graphics::OpenGL::UIRenderPipeline_OpenGL UIRenderPipeline;
 
@@ -34,5 +34,5 @@ private:
 	Mat4f projectionMatrix;
 	Mat4f viewMatrix;	
 	
-	SPHSystemRenderCache* sphSystemRenderCache;
+	SPH::SystemRenderCache* sphSystemRenderCache;
 };

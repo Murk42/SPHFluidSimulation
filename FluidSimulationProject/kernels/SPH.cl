@@ -1,91 +1,56 @@
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 
+#define DEBUG_BUFFERS
+
 struct __attribute__ ((packed)) Particle
 {
 	float4 positionAndPressure;
-	float4 velocityAndHash;	
-	float4 color;
+	float4 velocityAndHash;		
 };	
-
-int3 getCell(float3 position)
+struct __attribute__ ((packed)) StaticParticle
 {
-	return convert_int3(position / maxInteractionDistance);
-}
-
-//uint getHash(int3 cell)
-//{
-//	cell.x = (cell.x % 3 + 3) % 3;
-//	cell.y = (cell.y % 3 + 3) % 3;
-//	cell.z = (cell.z % 3 + 3) % 3;
-//
-//	return (cell.x + (cell.y + cell.z * 3) * 3) % hashMapSize;
-//}
-uint getHash(int3 cell)
-{
-	return (
-		(uint)(cell.x * 73856093)
-		^ (uint)(cell.y * 19349663)
-		^ (uint)(cell.z * 83492791)) % hashMapSize;
-}
-
-float SmoothingKernelD0(float r)
-{
-	if (r >= maxInteractionDistance)
-		return 0;
-	
-	float dist = maxInteractionDistance - r;
-	return dist * dist * smoothingKernelConstant;
-}
-float SmoothingKernelD1(float r)
-{
-	if (r >= maxInteractionDistance)
-		return 0;
-
-	return 2 * (r - maxInteractionDistance) * smoothingKernelConstant;
-}
-float SmoothingKernelD2(float r)
-{
-	if (r >= maxInteractionDistance)
-		return 0;
-	return 2 * smoothingKernelConstant;
-}
-
-float noise(float x) {
-	float ptr = 0.0f;
-	return fract(sin(x*112.9898f) * 43758.5453f, &ptr);
-}
+	float4 positionAndPressure;		
+};
 
 void kernel computeParticleHashes(global struct Particle* particles, global uint* hashMap, global uint* particleMap)
 {
 	float3 particlePosition = particles[get_global_id(0)].positionAndPressure.xyz;	
 
-	int3 cell = getCell(particlePosition);	
-	uint particleHash = getHash(cell);	
+	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
+	uint particleHash = GetHash(cell) % HASH_MAP_SIZE;
 
 	particles[get_global_id(0)].velocityAndHash.w = *(float*)&particleHash;
 	atomic_inc(hashMap + particleHash);		
 }
 
-void kernel computeParticleMap(global struct Particle* particles, global uint* hashMap, global uint* particleMap)
+void kernel computeParticleMap(global const struct Particle* particles, global uint* hashMap, global uint* particleMap)
 {	
 	float particleHash_FLOAT = particles[get_global_id(0)].velocityAndHash.w;
 	uint particleHash = *(uint*)&particleHash_FLOAT;
+
+	uint index = atomic_dec(hashMap + particleHash) - 1;
 		
-	particleMap[atomic_dec(hashMap + particleHash) - 1] = get_global_id(0);
+	particleMap[index] = get_global_id(0);	
 }
 
-void kernel updateParticlesPressure(global struct Particle* particles, global uint* hashMap, global uint* particleMap)
-{
-	global struct Particle* firstPtr = particles;
-	global struct Particle* behindPtr = particles + particleCount;
-
+void kernel updateParticlesPressure(
+	global struct Particle* particles,
+	global uint* hashMap,
+	global uint* particleMap,
+	global const uint* staticParticleHashMap,
+	global const struct StaticParticle* staticParticles
+) {
 	global struct Particle* particlePtr = particles + get_global_id(0);
 
+#ifdef DEBUG_BUFFERS
+	global struct Particle* firstPtr = particles;
+	global struct Particle* behindPtr = particles + PARTICLE_COUNT;
 	if (particlePtr < firstPtr || particlePtr >= behindPtr)
 	{
 		printf("Reading outside valid memory of particles at beginning");
 		return;
 	}
+#endif
 
 	float3 particlePosition = particlePtr->positionAndPressure.xyz;
 	float particlePressure = particlePtr->positionAndPressure.w;
@@ -93,7 +58,7 @@ void kernel updateParticlesPressure(global struct Particle* particles, global ui
 	float particleHash_FLOAT = particlePtr->velocityAndHash.w;
 	uint particleHash = *(uint*)&particleHash_FLOAT;		
 
-	int3 cell = getCell(particlePosition);	
+	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
 
 	int3 beginCell = cell - (int3)(1, 1, 1);
 	int3 endCell = cell + (int3)(2, 2, 2);
@@ -105,64 +70,130 @@ void kernel updateParticlesPressure(global struct Particle* particles, global ui
 		for (otherCell.y = beginCell.y; otherCell.y < endCell.y; ++otherCell.y)
 			for (otherCell.z = beginCell.z; otherCell.z < endCell.z; ++otherCell.z)
 			{
-				uint otherHash = getHash(otherCell);
+				uint otherHash = GetHash(otherCell);
 
-				if (otherHash >= hashMapSize)
+				//Calculating dynamic particle pressure
+				uint otherHashMod = otherHash % HASH_MAP_SIZE;				
+				uint beginIndex = hashMap[otherHashMod];
+				uint endIndex = hashMap[otherHashMod + 1];	
+
+#ifdef DEBUG_BUFFERS				
+				if (beginIndex > endIndex)
 				{
-					printf("Reading outside valid memory of hashMap in neighbour loop");
-					continue;
+					printf("Begin index is bigger than end index. Begin: %u End: %u", beginIndex, endIndex);
+					break;
 				}
-
-				uint beginIndex = hashMap[otherHash];
-				uint endIndex = hashMap[otherHash + 1];				
+				if (beginIndex > PARTICLE_COUNT)
+				{
+					printf("Invalid begin index: %u", beginIndex);
+					break;
+				}
+				if (endIndex > PARTICLE_COUNT)
+				{
+					printf("Invalid end index: %u", endIndex);
+					break;
+				}
+#endif
 
 				for (uint i = beginIndex; i < endIndex; ++i)
-				{			
-					if (i >= particleCount)
-					{
-						printf("Reading outside valid memory of particleMap in neighbour loop");
-						continue;
-					}
-
-					global struct Particle* otherParticlePtr = particles + particleMap[i];
+				{	
+					global const struct Particle* otherParticlePtr = particles + particleMap[i];
 
 					if (particlePtr == otherParticlePtr)
-						continue;					
+						continue;
 
+#ifdef DEBUG_BUFFERS
 					if (particlePtr < firstPtr || particlePtr >= behindPtr)
 					{
 						printf("Reading outside valid memory of particles in neighbour loop");
 						continue;
 					}					
+#endif					
 
 					float3 dir = otherParticlePtr->positionAndPressure.xyz - particlePosition;
 					float distSqr = dot(dir, dir);
 
-					if (distSqr > maxInteractionDistance * maxInteractionDistance)
+					if (distSqr > MAX_INTERACTION_DISTANCE * MAX_INTERACTION_DISTANCE)
 						continue;
 
 					float dist = sqrt(distSqr);					
-					
-					influenceSum += SmoothingKernelD0(dist);																
+
+
+					influenceSum += SmoothingKernelD0(dist, MAX_INTERACTION_DISTANCE);
 				}
-			}
+
+				
+#if STATIC_PARTICLE_COUNT != 0		
+				//Calculating static particle pressure
+				otherHashMod = otherHash % STATIC_HASH_MAP_SIZE;
+				beginIndex = staticParticleHashMap[otherHashMod];
+				endIndex = staticParticleHashMap[otherHashMod + 1];				
+
+				for (uint i = beginIndex; i < endIndex; ++i)
+				{	
+#ifdef DEBUG_BUFFERS
+					if (i >= STATIC_PARTICLE_COUNT)
+					{
+						printf("Reading outside valid memory of staticParticleMap in neighbour loop. begin: %4d end: %4d hash: %4d", beginIndex, endIndex, otherHash);
+						break;
+					}
+#endif
+
+					global const struct StaticParticle* otherParticlePtr = staticParticles + i;
+
+#ifdef DEBUG_BUFFERS
+//					if (particlePtr < staticParticles || particlePtr >= staticParticles + STATIC_PARTICLE_COUNT)
+//					{
+//						printf("Reading outside valid memory of static particles in neighbour loop");
+//						continue;
+//					}					
+#endif
+
+					float3 dir = otherParticlePtr->positionAndPressure.xyz - particlePosition;
+					float distSqr = dot(dir, dir);
+
+					if (distSqr > MAX_INTERACTION_DISTANCE * MAX_INTERACTION_DISTANCE)
+						continue;
+
+
+					float dist = sqrt(distSqr);					
+										
+					influenceSum += SmoothingKernelD0(dist, MAX_INTERACTION_DISTANCE);																
+				}
+#endif					
+			}			
 			
-	
-	float particleDensity = selfDensity + influenceSum * particleMass;	
-	particlePressure = gasConstant * (particleDensity - restDensity);	
+	influenceSum *= SMOOTHING_KERNEL_CONSTANT;
+	float particleDensity = SELF_DENSITY + influenceSum * PARTICLE_MASS;	
+	particlePressure = GAS_CONSTANT * (particleDensity - REST_DENSITY);	
 		
-	particlePtr->positionAndPressure.w = particlePressure;	
+	particlePtr->positionAndPressure.w = particlePressure;		
 }
-void kernel updateParticlesDynamics(global struct Particle* particles, global struct Particle* outParticlesPtr, global uint* hashMap, global uint* newHashMap, global uint* particleMap, float deltaTime)
-{		
-	global struct Particle* particlePtr = particles + get_global_id(0);
+void kernel updateParticlesDynamics(
+	global struct Particle* particles, 
+	global struct Particle* outParticlesPtr, 
+	global uint* hashMap, 
+	global uint* newHashMap, 
+	global uint* particleMap, 
+	global const struct StaticParticle* staticParticles,
+	global const uint* staticParticleHashMap,
+	float deltaTime,
+	int moveParticles
+) {			
+	global struct Particle* particlePtr = particles;
+
+	if (moveParticles)
+		particlePtr += particleMap[get_global_id(0)];
+	else
+		particlePtr += get_global_id(0);
+
 	float3 particlePosition = particlePtr->positionAndPressure.xyz;
 	float particlePressure = particlePtr->positionAndPressure.w;
 	float3 particleVelocity = particlePtr->velocityAndHash.xyz;
 	float particleHash_FLOAT = particlePtr->velocityAndHash.w;
 	uint particleHash = *(uint*)&particleHash_FLOAT;	
 
-	int3 cell = getCell(particlePosition);	
+	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
 
 	int3 beginCell = cell - (int3)(1, 1, 1);
 	int3 endCell = cell + (int3)(2, 2, 2);
@@ -170,128 +201,136 @@ void kernel updateParticlesDynamics(global struct Particle* particles, global st
 	float3 pressureForce = (float3)(0, 0, 0);
 	float3 viscosityForce = (float3)(0, 0, 0);
 
-	float particleDensity = particlePressure / gasConstant + restDensity;
-	
-	uint nc = 0;
+	float particleDensity = particlePressure / GAS_CONSTANT + REST_DENSITY;	
+		
 	int3 otherCell;	
 	for (otherCell.x = beginCell.x; otherCell.x < endCell.x; ++otherCell.x)
 		for (otherCell.y = beginCell.y; otherCell.y < endCell.y; ++otherCell.y)
 			for (otherCell.z = beginCell.z; otherCell.z < endCell.z; ++otherCell.z)
 			{
-				uint otherHash = getHash(otherCell);
+				uint otherHash = GetHash(otherCell);
 
-				uint beginIndex = hashMap[otherHash];
-				uint endIndex = hashMap[otherHash + 1];
+				uint otherHashMod = otherHash % HASH_MAP_SIZE;				
+				uint beginIndex = hashMap[otherHashMod];
+				uint endIndex = hashMap[otherHashMod + 1];
 
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{
-					uint index = particleMap[i];
-					if (get_global_id(0) == index)
-						continue;
+					global const struct Particle* otherParticlePtr = particles + particleMap[i];
 
-					struct Particle otherParticle = particles[index];
+					if (particlePtr == otherParticlePtr)
+						continue;					
+
+					struct Particle otherParticle = *otherParticlePtr;
 
 					float3 dir = otherParticle.positionAndPressure.xyz - particlePosition;
 					float distSqr = dot(dir, dir);
 
-					if (distSqr > maxInteractionDistance * maxInteractionDistance)
+					if (distSqr > MAX_INTERACTION_DISTANCE * MAX_INTERACTION_DISTANCE)
 						continue;
 
 					float dist = sqrt(distSqr);
+					
+					if (distSqr == 0 || dist == 0)					
+						dir = RandomDirection(get_global_id(0));		
+					else											
+						dir /= dist;															
 
-					if (distSqr == 0 || dist == 0)
-					{							
-						//https://math.stackexchange.com/questions/44689/how-to-find-a-random-axis-or-unit-vector-in-3d
-						float theta = noise(get_global_id(0)) * 2 * 3.1415;
-						float z = noise(get_global_id(0)) * 2 - 1;
+					//apply pressure force					
+					pressureForce += dir * (particlePressure + otherParticle.positionAndPressure.w) * SmoothingKernelD1(dist, MAX_INTERACTION_DISTANCE);
 
-						float s = sin(theta);
-						float c = cos(theta);
-						float z2 = sqrt(1 - z * z);
-						dir = (float3)(z2 * c, z2 * s, z);											
-						dist = 0;
-					}
+					//apply viscosity force					
+					viscosityForce += (otherParticle.velocityAndHash.xyz - particleVelocity) * SmoothingKernelD2(dist, MAX_INTERACTION_DISTANCE);
+				}
+
+#if STATIC_PARTICLE_COUNT != 0				
+				otherHashMod = otherHash % STATIC_HASH_MAP_SIZE;								
+				beginIndex = staticParticleHashMap[otherHashMod];
+				endIndex = staticParticleHashMap[otherHashMod + 1];
+
+				for (uint i = beginIndex; i < endIndex; ++i)
+				{	
+					global const struct StaticParticle* otherParticlePtr = staticParticles + i;
+					struct StaticParticle otherParticle = *otherParticlePtr;
+
+					float3 dir = otherParticle.positionAndPressure.xyz - particlePosition;
+					float distSqr = dot(dir, dir);					
+
+					if (distSqr > MAX_INTERACTION_DISTANCE * MAX_INTERACTION_DISTANCE)
+						continue;
+
+					float dist = sqrt(distSqr);					
+
+					if (distSqr == 0 || dist == 0)							
+						dir = RandomDirection(get_global_id(0));													
 					else											
 						dir /= dist;										
 
-					//printf("[%d] hash: %d index: %d neighbourPosition: % 10.2v4f", get_global_id(0), i, index, otherParticle.positionAndPressure.xyz);
+					//apply pressure force					
+					pressureForce += dir * (fabs(particlePressure) * 4) * SmoothingKernelD1(dist, MAX_INTERACTION_DISTANCE);					
 
-					//apply pressure force
-					float3 dPressureForce;
-					dPressureForce = dir * (particlePressure + otherParticle.positionAndPressure.w);
-					dPressureForce *= SmoothingKernelD1(dist);
-					pressureForce += dPressureForce;					
-
-					//apply viscosity force
-					float3 dViscosityForce;
-					dViscosityForce = (otherParticle.velocityAndHash.xyz - particleVelocity);
-					dViscosityForce *= SmoothingKernelD2(dist);
-					viscosityForce += dViscosityForce;		
-					
-					++nc;
+					//apply viscosity force					
+					viscosityForce += -particleVelocity * SmoothingKernelD2(dist, MAX_INTERACTION_DISTANCE);
 				}
+#endif
 			}
-
-	pressureForce *= particleMass / (2 * particleDensity);
-	viscosityForce *= viscosity * particleMass;	
+		
+	pressureForce *= PARTICLE_MASS / (2 * particleDensity) * SMOOTHING_KERNEL_CONSTANT;
+	viscosityForce *= VISCOSITY * PARTICLE_MASS * SMOOTHING_KERNEL_CONSTANT;	
 
 	float3 particleForce = pressureForce + viscosityForce;
-	float3 acceleration = particleForce / particleDensity + (float3)(0, -9.81, 0);
+	float3 acceleration = particleForce / particleDensity + GRAVITY;	
 				
-	particleVelocity += acceleration * deltaTime;
-
-
-	//float speed = length(particleVelocity);
-	//particleVelocity /= speed;
-	//speed = min(speed, maxInteractionDistance * 0.5f / deltaTime);
-	//particleVelocity *= speed;
-	
+	//Integrate
+	particleVelocity += acceleration * deltaTime;	
 	particlePosition += particleVelocity * deltaTime;	
 
-	float3 minPos = (float3)(0, 0, 0);
-	float3 maxPos = boundingBoxSize;
-		
-	if (particlePosition.x < minPos.x) {
-		particlePosition.x = minPos.x;
-		particleVelocity.x = -particleVelocity.x * elasticity;
+#ifdef BOUND_PARTICLES
+#ifdef BOUND_WALLS
+	if (particlePosition.x < BOUNDING_BOX_POINT_1.x) {
+		particlePosition.x = BOUNDING_BOX_POINT_1.x;
+		particleVelocity.x = -particleVelocity.x * ELASTICITY;
 	}
 	
-	if (particlePosition.x >= maxPos.x) {
-		particlePosition.x = maxPos.x - FLT_EPSILON;
-		particleVelocity.x = -particleVelocity.x * elasticity;
+	if (particlePosition.x >= BOUNDING_BOX_POINT_2.x) {
+		particlePosition.x = BOUNDING_BOX_POINT_2.x - FLT_EPSILON;
+		particleVelocity.x = -particleVelocity.x * ELASTICITY;
 	}
+#endif
 	
-	if (particlePosition.y < minPos.y) 
+	if (particlePosition.y < BOUNDING_BOX_POINT_1.y) 
 	{
-		particlePosition.y = minPos.y;
-		particleVelocity.y = -particleVelocity.y * elasticity;
+		particlePosition.y = BOUNDING_BOX_POINT_1.y;
+		particleVelocity.y = -particleVelocity.y * ELASTICITY;
 	}
 	
-	if (particlePosition.y >= maxPos.y)
+#ifdef BOUND_TOP
+	if (particlePosition.y >= BOUNDING_BOX_POINT_2.y)
 	{
-		particlePosition.y = maxPos.y - FLT_EPSILON;
-		particleVelocity.y = -particleVelocity.y * elasticity;
+		particlePosition.y = BOUNDING_BOX_POINT_2.y - FLT_EPSILON;
+		particleVelocity.y = -particleVelocity.y * ELASTICITY;
+	}
+#endif
+	
+#ifdef BOUND_WALLS
+	if (particlePosition.z < BOUNDING_BOX_POINT_1.z) {
+		particlePosition.z = BOUNDING_BOX_POINT_1.z;
+		particleVelocity.z = -particleVelocity.z * ELASTICITY;
 	}
 	
-	if (particlePosition.z < minPos.z) {
-		particlePosition.z = minPos.z;
-		particleVelocity.z = -particleVelocity.z * elasticity;
-	}
-	
-	if (particlePosition.z >= maxPos.z) {
-		particlePosition.z = maxPos.z - FLT_EPSILON;
-		particleVelocity.z = -particleVelocity.z * elasticity;
+	if (particlePosition.z >= BOUNDING_BOX_POINT_2.z) {
+		particlePosition.z = BOUNDING_BOX_POINT_2.z - FLT_EPSILON;
+		particleVelocity.z = -particleVelocity.z * ELASTICITY;
 	}	
-
-
-	cell = getCell(particlePosition);	
-	particleHash = getHash(cell);		
-	
-	//printf("[%d] pos: % 10.2v3f dens: % 8.2f hash: % 5d nc: % 5d", get_global_id(0), particlePosition, particleDensity, particleHash, nc);
+#endif
+#endif
+	cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
+	particleHash = GetHash(cell) % HASH_MAP_SIZE;
 
 	atomic_inc(newHashMap + particleHash);	 
 
-	global struct Particle* outParticlePtr = outParticlesPtr + get_global_id(0);
+
+	global struct Particle* outParticlePtr = outParticlesPtr + get_global_id(0);	
 	outParticlePtr->positionAndPressure.xyz = particlePosition;
 	outParticlePtr->positionAndPressure.w = particlePressure;
 	outParticlePtr->velocityAndHash.xyz = particleVelocity;
