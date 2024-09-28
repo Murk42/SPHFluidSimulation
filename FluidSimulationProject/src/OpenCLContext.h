@@ -13,12 +13,18 @@ public:
 	cl::Platform platform;
 	cl::Device device;
 	cl::Context context;	
+	bool supportedCLGLInterop;
 	
 	OpenCLContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext);
 	~OpenCLContext();	
 private:	
+	void PrintPlatformAndDeviceInfo();
+
+	bool CheckForExtensions(const cl::Device& device, const Set<String>& requiredExtensions);
+
+	bool SearchPlatformAndDevice();
+	bool SearchPlatformAndDeviceWithCLGLInterop(const Set<String>& requiredExtensions);
+	bool SearchAnyPlatformAndDevice(const Set<String>& requiredExtensions);
 	
-	bool SelectPlatform();	
-	bool SelectDevice(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext);
 	bool CreateContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext);
 };

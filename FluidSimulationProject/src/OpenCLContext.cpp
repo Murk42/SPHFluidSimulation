@@ -78,85 +78,22 @@ void PrintOpenCLError(cl_uint code)
     Debug::Logger::LogFatal("OpenCL", "OpenCL function returned \"" + opencl_errstr(code) + "\"");
 }
 
+void PrintOpenCLWarning(cl_uint code)
+{
+    Debug::Logger::LogWarning("OpenCL", "OpenCL function returned \"" + opencl_errstr(code) + "\"");
+}
+
 #define CL_CALL(x) if ((ret = x) != CL_SUCCESS) { PrintOpenCLError(ret); return; }
 #define CL_CALL(x, r) if ((ret = x) != CL_SUCCESS) { PrintOpenCLError(ret); return r; }
 #define CL_CHECK() if (ret != CL_SUCCESS) { PrintOpenCLError(ret); return; }
 #define CL_CHECK(r) if (ret != CL_SUCCESS) { PrintOpenCLError(ret); return r; }
 
-OpenCLContext::OpenCLContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext)
+OpenCLContext::OpenCLContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext) :
+    supportedCLGLInterop(true)
 {    
-    cl_int ret;
+    PrintPlatformAndDeviceInfo();
 
-    std::vector<cl::Platform> platforms;
-    CL_CALL(cl::Platform::get(&platforms));
-
-    Console::WriteLine("\nAvailable OpenCL platforms include:");
-    String platformsString;
-    for (auto& platform : platforms)
-    { 
-        std::string name = platform.getInfo<CL_PLATFORM_NAME>();
-        std::string vendor = platform.getInfo<CL_PLATFORM_VENDOR>();
-        Console::WriteLine(StringView(name.data(), name.size()) + "(" + StringView(vendor.data(), vendor.size()) + ")");
-
-        std::vector<cl::Device> devices;
-        CL_CALL(platform.getDevices(CL_DEVICE_TYPE_ALL, &devices));
-
-        for (auto& device : devices)
-        {
-            cl_device_type type = device.getInfo<CL_DEVICE_TYPE>();
-            String typeString;
-
-            switch (type)
-            {
-            case CL_DEVICE_TYPE_CPU: typeString = "CL_DEVICE_TYPE_CPU"; break;
-            case CL_DEVICE_TYPE_GPU: typeString = "CL_DEVICE_TYPE_GPU"; break;                
-            case CL_DEVICE_TYPE_ACCELERATOR: typeString = "CL_DEVICE_TYPE_GPU"; break;
-            default: typeString = "invalid"; break;
-            }
-
-            std::string name = device.getInfo<CL_DEVICE_NAME>();
-            std::string vendor = device.getInfo<CL_DEVICE_VENDOR>();
-            cl_version version = device.getInfo<CL_DEVICE_NUMERIC_VERSION>();
-            
-            Console::WriteLine("\t" + StringView(name.c_str(), name.size()) + "(" + StringView(vendor.data(), vendor.size()) + ") version " + StringParsing::Convert(CL_VERSION_MAJOR(version)) + "." + StringParsing::Convert(CL_VERSION_MINOR(version)) + "." + StringParsing::Convert(CL_VERSION_PATCH(version)));
-        }
-    }
-    
-    Console::Write("\n");
-
-    //for (auto& platform : platforms)
-    //{
-    //    clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)
-    //        clGetExtensionFunctionAddressForPlatform(platform(), "clGetGLContextInfoKHR");
-    //
-    //    if (!pclGetGLContextInfoKHR)
-    //        continue;
-    //
-    //    cl_context_properties properties[] =
-    //    {
-    //    CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
-    //    CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
-    //    CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
-    //    0
-    //    };
-    //
-    //    cl_device_id device_id;
-    //    size_t value_size_ret;
-    //
-    //    if (CL_SUCCESS != pclGetGLContextInfoKHR(properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR
-    //        , sizeof(cl_device_id), &device_id, &value_size_ret))
-    //        continue;
-    //
-    //    if (0 == value_size_ret)
-    //        continue;
-    //
-    //    this->device = cl::Device(device_id);
-    //    this->platform = std::move(platform);
-    //}
-    
-    if (!SelectPlatform()) return;
-    
-    if (!SelectDevice(graphicsContext)) return;
+    if (!SearchPlatformAndDevice()) return;    
 
     if (!CreateContext(graphicsContext)) return;
 
@@ -172,7 +109,151 @@ OpenCLContext::~OpenCLContext()
 {
 }
 
-bool OpenCLContext::SelectPlatform()
+void OpenCLContext::PrintPlatformAndDeviceInfo()
+{
+    cl_int ret;
+
+    std::vector<cl::Platform> platforms;
+    CL_CALL(cl::Platform::get(&platforms));
+
+    Console::WriteLine("\nAvailable OpenCL platforms include:");
+    String platformsString;
+    for (auto& platform : platforms)
+    {
+        std::string name = platform.getInfo<CL_PLATFORM_NAME>();
+        std::string vendor = platform.getInfo<CL_PLATFORM_VENDOR>();
+        Console::WriteLine(StringView(name.data(), name.size()) + "(" + StringView(vendor.data(), vendor.size()) + ")");
+
+        std::vector<cl::Device> devices;
+        CL_CALL(platform.getDevices(CL_DEVICE_TYPE_ALL, &devices));
+
+        for (auto& device : devices)
+        {
+            cl_device_type type = device.getInfo<CL_DEVICE_TYPE>();
+            String typeString;
+
+            switch (type)
+            {
+            case CL_DEVICE_TYPE_CPU: typeString = "CL_DEVICE_TYPE_CPU"; break;
+            case CL_DEVICE_TYPE_GPU: typeString = "CL_DEVICE_TYPE_GPU"; break;
+            case CL_DEVICE_TYPE_ACCELERATOR: typeString = "CL_DEVICE_TYPE_GPU"; break;
+            default: typeString = "invalid"; break;
+            }
+
+            std::string name = device.getInfo<CL_DEVICE_NAME>();
+            std::string vendor = device.getInfo<CL_DEVICE_VENDOR>();
+
+            Console::WriteLine("\t" + StringView(name.c_str(), name.size()));
+        }
+    }
+
+
+    Console::Write("\n");
+}
+
+bool OpenCLContext::CheckForExtensions(const cl::Device& device, const Set<String>& requiredExtensions)
+{
+    std::string extensionsSTDString = device.getInfo<CL_DEVICE_EXTENSIONS>();
+    StringView extensionsString{ extensionsSTDString.data(), extensionsSTDString.size() };
+    Set<String> platformExtensions = Set<String>(StringParsing::Split(extensionsString, ' '));
+
+    bool hasAllRequiredExtensions = true;
+
+    for (auto& requiredExtension : requiredExtensions)
+        if (platformExtensions.Find(requiredExtension).IsNull())
+            return false;
+
+    return true;
+}
+
+bool OpenCLContext::SearchPlatformAndDevice()
+{
+    Set<String> extensions{
+        "cl_khr_gl_sharing",
+        "cl_khr_global_int32_base_atomics",        
+    };
+
+    if (SearchPlatformAndDeviceWithCLGLInterop(extensions))
+        return true;
+
+    supportedCLGLInterop = false;
+
+    Debug::Logger::LogInfo("Client", "The computer might not support OpenCL-OpenGL interop. Looking for suitable processor without OpenCL-OpenGL interop but which support the required extensions. Note OpenCL-OpenGL interop is not required but it should speed up the application.");
+    
+    if (SearchAnyPlatformAndDevice(extensions))
+        return true;
+
+    return false;
+}
+
+bool OpenCLContext::SearchPlatformAndDeviceWithCLGLInterop(const Set<String>& requiredExtensions)
+{
+    cl_int ret;        
+
+    cl_context_properties properties[] =
+    {
+        CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+        CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+        CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
+        0
+    };
+
+    std::vector<cl::Platform> platforms;
+    if ((ret = cl::Platform::get(&platforms)) != CL_SUCCESS)
+        Debug::Logger::LogFatal("OpenCL", "clGetPlatformIDs failed and returned " + opencl_errstr(ret));
+        
+    cl_device_id device_id;
+    size_t value_size_ret;
+
+    for (auto& platform : platforms)
+    {                        
+        std::string platformNameSTD = platform.getInfo<CL_PLATFORM_NAME>();
+        StringView platformName{ platformNameSTD.data(), platformNameSTD.size() };
+
+        clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(platform(), "clGetGLContextInfoKHR");
+
+        if (!pclGetGLContextInfoKHR)
+        {
+            Debug::Logger::LogWarning("Client", "clGetGLContextInfoKHR function not found for platform \"" + platformName + "\". Skipping platform");
+            return false;
+        }
+
+        if ((ret = pclGetGLContextInfoKHR(properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(cl_device_id), &device_id, &value_size_ret)) != CL_SUCCESS)
+        {
+            Debug::Logger::LogWarning("OpenCL", "clGetGLContextInfoKHR returned \"" + opencl_errstr(ret) + "\" on platform \"" + platformName + "\". Skipping platform");
+            continue;
+        }
+
+        if (value_size_ret == 0)
+        {
+            Debug::Logger::LogWarning("OpenCL", "pclGetGLContextInfoKHR returned a value with size 0 on platform \"" + platformName + "\". Skipping platform");
+            continue;
+        }
+
+        cl::Device foundDevice = cl::Device(device_id);
+
+        std::string deviceNameSTD = foundDevice.getInfo<CL_DEVICE_NAME>();
+        StringView deviceName{ deviceNameSTD.data(), deviceNameSTD.size() };
+
+        if (!CheckForExtensions(foundDevice, requiredExtensions))
+        {
+            Debug::Logger::LogInfo("OpenCL", "Skipping processor named \"" + deviceName + "\" on platform \"" + platformName + "\" because it doesn't have all required extensions");
+            continue;
+        }
+
+        this->device = std::move(foundDevice);
+        this->platform = std::move(platform);
+
+        return true;
+    }
+
+    Debug::Logger::LogWarning("Client", "No processor with OpenCL-OpenGL interop found that supports the required extensions");
+
+
+    return false;
+}
+
+bool OpenCLContext::SearchAnyPlatformAndDevice(const Set<String>& requiredExtensions)
 {
     cl_int ret;
 
@@ -181,120 +262,39 @@ bool OpenCLContext::SelectPlatform()
 
     for (auto& platform : platforms)
     {
-        std::string name = platform.getInfo<CL_PLATFORM_NAME>(&ret);
-        std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-        CL_CHECK(false);
+        std::string platformNameSTD = platform.getInfo<CL_PLATFORM_NAME>();
+        StringView platformName{ platformNameSTD.data(), platformNameSTD.size() };
 
-        if (name.find("NVIDIA") != std::string::npos ||
-            name.find("AMD") != std::string::npos ||
-            name.find("MESA") != std::string::npos ||
-            name.find("INTEL") != std::string::npos ||
-            name.find("APPLE") != std::string::npos)
+        std::vector<cl::Device> devices;
+        CL_CALL(platform.getDevices(CL_DEVICE_TYPE_GPU, &devices), false);
+
+        for (auto& device : devices)
         {
+            std::string deviceNameSTD = device.getInfo<CL_DEVICE_NAME>();
+            StringView deviceName{ deviceNameSTD.data(), deviceNameSTD.size() };
+
+            if (!CheckForExtensions(device, requiredExtensions))
+            {
+                Debug::Logger::LogInfo("OpenCL", "Skipping processor named \"" + deviceName + "\" on platform \"" + platformName + "\" because it doesn't have all required extensions");                
+                continue;
+            }
+
+            this->device = std::move(device);
             this->platform = std::move(platform);
+
             return true;
         }
     }
 
-    Debug::Logger::LogFatal("Client", "No OpenCL platform found");       
+    Debug::Logger::LogWarning("Client", "No processor found that supports the required extensions");
 
     return false;
-}
-
-bool OpenCLContext::SelectDevice(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext)
-{
-    cl_int ret;
-
-    Array<String> extensions{
-        "cl_khr_gl_sharing",
-        "cl_khr_global_int32_base_atomics",
-        "cl_khr_gl_event"
-    };    
-
-    std::vector<cl::Device> devices;
-    CL_CALL(platform.getDevices(CL_DEVICE_TYPE_GPU, &devices), false);          
-
-    bool found = false;
-    for (auto& device : devices)
-    {
-        std::string extensionsString = device.getInfo<CL_DEVICE_EXTENSIONS>(&ret);
-        CL_CHECK(false);
-
-        clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)
-            clGetExtensionFunctionAddressForPlatform(platform(), "clGetGLContextInfoKHR");
-
-        if (!pclGetGLContextInfoKHR)
-            continue;
-
-        cl_context_properties properties[] =
-        {
-        CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
-        CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
-        CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
-        0
-        };
-
-        cl_device_id device_id;
-        size_t value_size_ret;
-
-        if (CL_SUCCESS != pclGetGLContextInfoKHR(properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR
-            , sizeof(cl_device_id), &device_id, &value_size_ret))
-            continue;
-
-        if (0 == value_size_ret)
-            continue;
-
-        if (device() != device_id)
-            continue;
-        
-        Set<String> extensionsSet = (ArrayView<String>)StringParsing::Split(StringView(extensionsString.data(), extensionsString.size()), ' ');
-
-        bool supported = true;
-        for (auto& extension : extensions)
-            if (extensionsSet.Find(extension).IsNull())
-            {                
-                supported = false;
-                break;                
-            }
-        
-        if (supported)
-        {
-            this->device = std::move(device);
-            found = true;
-            break;
-        }
-    }
-
-    if (!found)
-    {
-        Debug::Logger::LogFatal("Client", "No device found that supports all the extensions");
-        return false;
-    }
-                    
-    return true;
 }
 
 bool OpenCLContext::CreateContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext)
 {
     cl_int ret;
-
-    //SDL_SysWMinfo info;
-    //SDL_VERSION(&info.version);
-    //
-    //auto window = (SDL_Window*)graphicsContext.GetActiveWindowSDLHandle();
-    //
-    //if (window == nullptr)
-    //{
-    //    Debug::Logger::LogFatal("Client", "There is no active window on the graphics context");
-    //}
-    //
-    //if (SDL_GetWindowWMInfo(window, &info) != SDL_TRUE)
-    //{
-    //    Debug::Logger::LogError("SDL", "Failed to get WM info");
-    //    return false;
-    //}    
-    clGetGLContextInfoKHR_fn pclGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddressForPlatform(platform(), "clGetGLContextInfoKHR");
-
+        
     cl_context_properties properties[] =
     {
       CL_GL_CONTEXT_KHR,   (cl_context_properties)wglGetCurrentContext(),

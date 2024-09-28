@@ -49,9 +49,9 @@ namespace SPH
 		clContext(clContext), bufferSetIndex(0)
 	{
 		if (Graphics::OpenGL::GraphicsContext_OpenGL::IsExtensionSupported("GL_ARB_cl_event"))
-			Debug::Logger::LogInfo("Client", "GL_ARB_cl_event extension supported. Not using the best implementation");
+			Debug::Logger::LogInfo("Client", "GL_ARB_cl_event extension supported. The application implementation could be made better to use this extension. This is just informative");
 		else
-			Debug::Logger::LogInfo("Client", "GL_ARB_cl_event extensions not supported. Using the best implementation");
+			Debug::Logger::LogInfo("Client", "GL_ARB_cl_event extension not supported. Even if it was supported it isn't implemented in the application. This is just informative");
 
 		cl_int ret;
 
@@ -89,7 +89,7 @@ namespace SPH
 	
 		EnqueueComputeParticleHashesKernel(&bufferSets[bufferSetIndex].writeFinishedEvent());				
 		EnqueuePartialSumKernels();		
-		EnqueueComputeParticleMapKernel(bufferSets[bufferSetIndex].particleBufferCL);
+		EnqueueComputeParticleMapKernel(ParticleBufferCL(bufferSetIndex));
 	}
 	void SystemGPU::LoadKernels(const ParticleBehaviourParameters& behaviourParameters, const ParticleBoundParameters& boundingParameters)
 	{
@@ -113,28 +113,37 @@ namespace SPH
 		BuildSPHProgram(behaviourParameters, boundingParameters);
 	}
 	void SystemGPU::Update(float deltaTime)
-	{		
-		cl_int ret;										
+	{
+		cl_int ret;
 
 		bufferSets[bufferSetIndex].readFinishedFence.BlockClient(0);
 
-#ifdef USE_OPENCL_OPENGL_INTEROP
-		cl_mem acquireObjects[]{
-			bufferSets[bufferSetIndex].particleBufferCL(),
-			bufferSets[nextBufferSetIndex].particleBufferCL()
-		};
-		
-		clEnqueueAcquireGLObjects(queue(), 2, acquireObjects, 0, nullptr, nullptr);
-#endif		
-		EnqueueUpdateParticlesPressureKernel();				
+		if (clContext.supportedCLGLInterop)
+		{
+			cl_mem acquireObjects[]{
+				ParticleBufferCL(bufferSetIndex)(),
+				ParticleBufferCL(nextBufferSetIndex)()
+			};
 
-		EnqueueUpdateParticlesDynamicsKernel(deltaTime);				
+			clEnqueueAcquireGLObjects(queue(), 2, acquireObjects, 0, nullptr, nullptr);
+		}
 
-#ifdef USE_OPENCL_OPENGL_INTEROP
-		clEnqueueReleaseGLObjects(queue(), 2, acquireObjects, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent());
-#else
-		CL_CALL(clEnqueueReadBuffer(queue(), bufferSets[nextBufferSetIndex].particleBufferCL(), CL_TRUE, 0, sizeof(Particle) * particleCount, bufferSets[nextBufferSetIndex].particleBufferMap, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent()))
-#endif
+		EnqueueUpdateParticlesPressureKernel();
+
+		EnqueueUpdateParticlesDynamicsKernel(deltaTime);
+
+		if (clContext.supportedCLGLInterop)
+		{
+			cl_mem acquireObjects[]{
+				ParticleBufferCL(bufferSetIndex)(),
+				ParticleBufferCL(nextBufferSetIndex)()
+			};
+
+			clEnqueueReleaseGLObjects(queue(), 2, acquireObjects, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent());
+		}
+		else
+			CL_CALL(clEnqueueReadBuffer(queue(), bufferSets[nextBufferSetIndex].noInterop.particleBufferCL(), CL_TRUE, 0, sizeof(DynamicParticle) * dynamicParticleCount, bufferSets[nextBufferSetIndex].noInterop.particleBufferMap, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent()))
+
 		std::swap(newHashMapBuffer, hashMapBuffer);		
 
 		const uint32 pattern = 0;
@@ -142,7 +151,7 @@ namespace SPH
 
 		EnqueuePartialSumKernels();
 
-		EnqueueComputeParticleMapKernel(bufferSets[nextBufferSetIndex].particleBufferCL);
+		EnqueueComputeParticleMapKernel(ParticleBufferCL(nextBufferSetIndex));
 
 		//if (particleMoveElapsedTime == 0)
 		//{
@@ -200,48 +209,69 @@ namespace SPH
 	{
 		cl_int ret;
 
-		bufferSets.Clear();
 		if (bufferCount < 2)
 		{
 			Debug::Logger::LogWarning("Client", "SystemInitParameters bufferCount member was set to " + StringParsing::Convert(bufferCount) + ". Only values above 1 are valid. The value was set to 2");
-			bufferSets.Resize(2);
+			bufferSets = Array<ParticleBufferSet>(2, clContext.supportedCLGLInterop);
 		}
 		else
-			bufferSets.Resize(bufferCount);
+			bufferSets = Array<ParticleBufferSet>(bufferCount, clContext.supportedCLGLInterop);
 
-		for (auto& bufferSet : bufferSets)
-		{
-#ifdef USE_OPENCL_OPENGL_INTEROP
-			bufferSet.dynamicParticleBufferGL.Allocate(dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticles.Count());
-			bufferSet.staticParticleBufferGL.Allocate(staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count());
-			bufferSet.particleBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, bufferSet.dynamicParticleBufferGL.GetHandle(), &ret);
-#else
-			bufferSet.particleBufferGL.Allocate(particles.Ptr(), sizeof(Particle) * particleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentUncoherent);
-			bufferSet.staticParticleBufferGL.Allocate(staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count());
-			bufferSet.particleBufferMap = bufferSet.particleBufferGL.MapBufferRange(0, sizeof(Particle) * particleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::Unsynchronized);
-			bufferSet.particleBufferCL = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(Particle) * particleCount, particles.Ptr(), &ret);
-#endif
+		if (clContext.supportedCLGLInterop)
+			for (auto& bufferSet : bufferSets)
+			{
+				bufferSet.interop.dynamicParticleBufferGL.Allocate(dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticles.Count());
+				bufferSet.interop.staticParticleBufferGL.Allocate(staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count());
+				bufferSet.interop.particleBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, bufferSet.interop.dynamicParticleBufferGL.GetHandle(), &ret);
 
-			bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(0);
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, position));
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(0, 1);
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, position));
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.interop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(0, 1);
 
-			bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(1);
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(1, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, velocity));
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(1, &bufferSet.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(1, 1);
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(1);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(1, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, velocity));
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(1, &bufferSet.interop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(1, 1);
 
-			bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(2);
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(2, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, offsetof(DynamicParticle, pressure));
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(2, &bufferSet.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
-			bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(2);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(2, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, offsetof(DynamicParticle, pressure));
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(2, &bufferSet.interop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);
 
-			bufferSet.staticParticleVertexArray.EnableVertexAttribute(0);
-			bufferSet.staticParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
-			bufferSet.staticParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.staticParticleBufferGL, sizeof(StaticParticle), 0);
-			bufferSet.staticParticleVertexArray.SetVertexAttributeDivisor(0, 1);
-		}
+				bufferSet.staticParticleVertexArray.EnableVertexAttribute(0);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
+				bufferSet.staticParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.interop.staticParticleBufferGL, sizeof(StaticParticle), 0);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeDivisor(0, 1);
+			}
+		else 
+			for (auto& bufferSet : bufferSets)
+			{
+				bufferSet.noInterop.dynamicParticleBufferGL.Allocate(dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentUncoherent);
+				bufferSet.noInterop.staticParticleBufferGL.Allocate(staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count());
+				bufferSet.noInterop.particleBufferMap = bufferSet.noInterop.dynamicParticleBufferGL.MapBufferRange(0, sizeof(DynamicParticle) * dynamicParticleCount, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::Unsynchronized);
+				bufferSet.noInterop.particleBufferCL = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(DynamicParticle) * dynamicParticleCount, (void*)dynamicParticles.Ptr(), &ret);
+
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, position));
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.noInterop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(0, 1);
+
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(1);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(1, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, velocity));
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(1, &bufferSet.noInterop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(1, 1);
+
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(2);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(2, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, offsetof(DynamicParticle, pressure));
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(2, &bufferSet.noInterop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);
+
+				bufferSet.staticParticleVertexArray.EnableVertexAttribute(0);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
+				bufferSet.staticParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.noInterop.staticParticleBufferGL, sizeof(StaticParticle), 0);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeDivisor(0, 1);
+			}
 
 		bufferSetIndex = 0;
 		nextBufferSetIndex = (bufferSetIndex + 1) % bufferSets.Count();
@@ -320,7 +350,7 @@ namespace SPH
 	{
 		cl_int ret;
 
-		CL_CALL(computeParticleHashesKernel.setArg(0, bufferSets[bufferSetIndex].particleBufferCL));
+		CL_CALL(computeParticleHashesKernel.setArg(0, ParticleBufferCL(bufferSetIndex)));
 		CL_CALL(computeParticleHashesKernel.setArg(1, hashMapBuffer));
 		CL_CALL(computeParticleHashesKernel.setArg(2, particleMapBuffer));
 		size_t globalWorkOffset = 0;
@@ -346,7 +376,7 @@ namespace SPH
 	{
 		cl_int ret;
 
-		CL_CALL(updateParticlesPressureKernel.setArg(0, bufferSets[bufferSetIndex].particleBufferCL));		
+		CL_CALL(updateParticlesPressureKernel.setArg(0, ParticleBufferCL(bufferSetIndex)));
 		CL_CALL(updateParticlesPressureKernel.setArg(1, hashMapBuffer));		
 		CL_CALL(updateParticlesPressureKernel.setArg(2, particleMapBuffer));						
 		CL_CALL(updateParticlesPressureKernel.setArg(3, staticHashMapBuffer));
@@ -370,8 +400,8 @@ namespace SPH
 
 		cl_int ret;
 
-		CL_CALL(updateParticlesDynamicsKernel.setArg(0, bufferSets[bufferSetIndex].particleBufferCL));		
-		CL_CALL(updateParticlesDynamicsKernel.setArg(1, bufferSets[nextBufferSetIndex].particleBufferCL));		
+		CL_CALL(updateParticlesDynamicsKernel.setArg(0, ParticleBufferCL(bufferSetIndex)));		
+		CL_CALL(updateParticlesDynamicsKernel.setArg(1, ParticleBufferCL(nextBufferSetIndex)));
 		CL_CALL(updateParticlesDynamicsKernel.setArg(2, hashMapBuffer));		
 		CL_CALL(updateParticlesDynamicsKernel.setArg(3, newHashMapBuffer));		
 		CL_CALL(updateParticlesDynamicsKernel.setArg(4, particleMapBuffer));		
@@ -412,5 +442,27 @@ namespace SPH
 			CL_CALL(clEnqueueNDRangeKernel(queue(), addToComputeGroupArraysKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 0, nullptr, nullptr));
 		}
 			
+	}
+	cl::Buffer& SystemGPU::ParticleBufferCL(uintMem index)
+	{
+		if (clContext.supportedCLGLInterop)
+			return bufferSets[index].interop.particleBufferCL;
+		else
+			return bufferSets[index].noInterop.particleBufferCL;
+	}		
+	SystemGPU::ParticleBufferSet::ParticleBufferSet(bool hasInterop) 		
+		: hasInterop(hasInterop)
+	{
+		if (hasInterop)
+			std::construct_at(&interop);
+		else
+			std::construct_at(&noInterop);
+	}
+	SystemGPU::ParticleBufferSet::~ParticleBufferSet()
+	{
+		if (hasInterop)
+			std::destroy_at(&interop);
+		else
+			std::destroy_at(&noInterop);
 	}
 }

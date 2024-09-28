@@ -2,8 +2,6 @@
 #include "OpenCLContext.h"
 #include "SPH/System/System.h"
 
-#define USE_OPENCL_OPENGL_INTEROP
-
 namespace SPH
 {	
 	class SystemGPU : public System
@@ -29,19 +27,28 @@ namespace SPH
 		{
 			Graphics::OpenGLWrapper::VertexArray dynamicParticleVertexArray;
 			Graphics::OpenGLWrapper::VertexArray staticParticleVertexArray;
-#ifdef USE_OPENCL_OPENGL_INTEROP
-			Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleBufferGL;
-			Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticleBufferGL;
-			cl::BufferGL particleBufferCL;
-#else
-			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleBufferGL;
-			Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticleBufferGL;
-			cl::Buffer particleBufferCL;
-			void* particleBufferMap;
-#endif
+
+			union {
+				struct {
+					Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleBufferGL;
+					Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticleBufferGL;
+					cl::BufferGL particleBufferCL;
+				} interop;
+
+				struct {
+					Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleBufferGL;
+					Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticleBufferGL;
+					cl::Buffer particleBufferCL;
+					void* particleBufferMap;
+				} noInterop;				
+			};
 
 			Graphics::OpenGLWrapper::Fence readFinishedFence;
 			cl::Event writeFinishedEvent;
+			bool hasInterop;
+
+			ParticleBufferSet(bool hasInterop);			
+			~ParticleBufferSet();
 		};
 
 		OpenCLContext& clContext;
@@ -89,5 +96,7 @@ namespace SPH
 		void EnqueueUpdateParticlesPressureKernel();
 		void EnqueueUpdateParticlesDynamicsKernel(float deltaTime);
 		void EnqueuePartialSumKernels();
+
+		inline cl::Buffer& ParticleBufferCL(uintMem index);
 	};
 }
