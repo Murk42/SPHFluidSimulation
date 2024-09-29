@@ -2,7 +2,7 @@
 
 #define DEBUG_BUFFERS
 
-struct __attribute__ ((packed)) Particle
+struct __attribute__ ((packed)) DynamicParticle
 {
 	float4 positionAndPressure;
 	float4 velocityAndHash;		
@@ -12,7 +12,7 @@ struct __attribute__ ((packed)) StaticParticle
 	float4 positionAndPressure;		
 };
 
-void kernel computeParticleHashes(global struct Particle* particles, global uint* hashMap, global uint* particleMap)
+void kernel computeParticleHashes(global struct DynamicParticle* particles, global uint* hashMap, global uint* particleMap)
 {
 	float3 particlePosition = particles[get_global_id(0)].positionAndPressure.xyz;	
 
@@ -23,7 +23,7 @@ void kernel computeParticleHashes(global struct Particle* particles, global uint
 	atomic_inc(hashMap + particleHash);		
 }
 
-void kernel computeParticleMap(global const struct Particle* particles, global uint* hashMap, global uint* particleMap)
+void kernel computeParticleMap(global const struct DynamicParticle* particles, global uint* hashMap, global uint* particleMap)
 {	
 	float particleHash_FLOAT = particles[get_global_id(0)].velocityAndHash.w;
 	uint particleHash = *(uint*)&particleHash_FLOAT;
@@ -34,29 +34,33 @@ void kernel computeParticleMap(global const struct Particle* particles, global u
 }
 
 void kernel updateParticlesPressure(
-	global struct Particle* particles,
-	global uint* hashMap,
-	global uint* particleMap,
-	global const uint* staticParticleHashMap,
-	global const struct StaticParticle* staticParticles
+	global const struct DynamicParticle* inParticles, 
+	global struct DynamicParticle* outParticles, 
+	global const uint* hashMap,
+	global const uint* particleMap,
+	global const struct StaticParticle* staticParticles,
+	global const uint* staticParticleHashMap
+#ifdef VISUALIZE_NEIGHBOURS
+	, global float* dynamicParticleColors,
+	global float* staticParticleColors
+#endif
 ) {
-	global struct Particle* particlePtr = particles + get_global_id(0);
+	global const struct DynamicParticle* inParticlePtr = inParticles + get_global_id(0);
+	global struct DynamicParticle* outParticlePtr = outParticles + get_global_id(0);	
 
 #ifdef DEBUG_BUFFERS
-	global struct Particle* firstPtr = particles;
-	global struct Particle* behindPtr = particles + PARTICLE_COUNT;
-	if (particlePtr < firstPtr || particlePtr >= behindPtr)
+	if (get_global_id(0) >= PARTICLE_COUNT)		
 	{
-		printf("Reading outside valid memory of particles at beginning");
+		printf("Allocating more work items than particles");
 		return;
 	}
 #endif
+#ifdef VISUALIZE_NEIGHBOURS
+	if (get_global_id(0) == 0)
+		dynamicParticleColors[0] = 1.0f;
+#endif
 
-	float3 particlePosition = particlePtr->positionAndPressure.xyz;
-	float particlePressure = particlePtr->positionAndPressure.w;
-	float3 particleVelocity = particlePtr->velocityAndHash.xyz;
-	float particleHash_FLOAT = particlePtr->velocityAndHash.w;
-	uint particleHash = *(uint*)&particleHash_FLOAT;		
+	float3 particlePosition = inParticlePtr->positionAndPressure.xyz;		
 
 	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
 
@@ -97,18 +101,23 @@ void kernel updateParticlesPressure(
 
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{	
-					global const struct Particle* otherParticlePtr = particles + particleMap[i];
+					uint index = particleMap[i];
 
-					if (particlePtr == otherParticlePtr)
-						continue;
-
-#ifdef DEBUG_BUFFERS
-					if (particlePtr < firstPtr || particlePtr >= behindPtr)
+					if (index >= PARTICLE_COUNT)
 					{
-						printf("Reading outside valid memory of particles in neighbour loop");
+						printf("DynamicParticle map value outside valid range");
 						continue;
-					}					
-#endif					
+					}			
+					
+#ifdef VISUALIZE_NEIGHBOURS
+					if (index == 0)
+						dynamicParticleColors[get_global_id(0)] = 0.5f;
+#endif
+
+					global const struct DynamicParticle* otherParticlePtr = inParticles + index;
+
+					if (inParticlePtr == otherParticlePtr)
+						continue;	
 
 					float3 dir = otherParticlePtr->positionAndPressure.xyz - particlePosition;
 					float distSqr = dot(dir, dir);
@@ -117,7 +126,6 @@ void kernel updateParticlesPressure(
 						continue;
 
 					float dist = sqrt(distSqr);					
-
 
 					influenceSum += SmoothingKernelD0(dist, MAX_INTERACTION_DISTANCE);
 				}
@@ -129,25 +137,32 @@ void kernel updateParticlesPressure(
 				beginIndex = staticParticleHashMap[otherHashMod];
 				endIndex = staticParticleHashMap[otherHashMod + 1];				
 
+#ifdef DEBUG_BUFFERS				
+				if (beginIndex > endIndex)
+				{
+					printf("Begin index is bigger than end index for static particles. Begin: %u End: %u", beginIndex, endIndex);
+					break;
+				}
+				if (beginIndex > STATIC_PARTICLE_COUNT)
+				{
+					printf("Invalid begin index: %u", beginIndex);
+					break;
+				}
+				if (endIndex > STATIC_PARTICLE_COUNT)
+				{
+					printf("Invalid end index: %u", endIndex);
+					break;
+				}
+#endif
+
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{	
-#ifdef DEBUG_BUFFERS
-					if (i >= STATIC_PARTICLE_COUNT)
-					{
-						printf("Reading outside valid memory of staticParticleMap in neighbour loop. begin: %4d end: %4d hash: %4d", beginIndex, endIndex, otherHash);
-						break;
-					}
+#ifdef VISUALIZE_NEIGHBOURS
+					if (get_global_id(0) == 0)
+						staticParticleColors[i] = 0.5f;
 #endif
 
 					global const struct StaticParticle* otherParticlePtr = staticParticles + i;
-
-#ifdef DEBUG_BUFFERS
-//					if (particlePtr < staticParticles || particlePtr >= staticParticles + STATIC_PARTICLE_COUNT)
-//					{
-//						printf("Reading outside valid memory of static particles in neighbour loop");
-//						continue;
-//					}					
-#endif
 
 					float3 dir = otherParticlePtr->positionAndPressure.xyz - particlePosition;
 					float distSqr = dot(dir, dir);
@@ -165,33 +180,28 @@ void kernel updateParticlesPressure(
 			
 	influenceSum *= SMOOTHING_KERNEL_CONSTANT;
 	float particleDensity = SELF_DENSITY + influenceSum * PARTICLE_MASS;	
-	particlePressure = GAS_CONSTANT * (particleDensity - REST_DENSITY);	
+	float particlePressure = GAS_CONSTANT * (particleDensity - REST_DENSITY);	
 		
-	particlePtr->positionAndPressure.w = particlePressure;		
+	outParticlePtr->positionAndPressure.w = particlePressure;			
 }
 void kernel updateParticlesDynamics(
-	global struct Particle* particles, 
-	global struct Particle* outParticlesPtr, 
-	global uint* hashMap, 
+	global const struct DynamicParticle* inParticles, 
+	global struct DynamicParticle* outParticles, 
+	global const uint* hashMap, 
 	global uint* newHashMap, 
-	global uint* particleMap, 
+	global const uint* particleMap, 
 	global const struct StaticParticle* staticParticles,
 	global const uint* staticParticleHashMap,
-	float deltaTime,
-	int moveParticles
+	const float deltaTime	
 ) {			
-	global struct Particle* particlePtr = particles;
+	global const struct DynamicParticle* inParticlePtr = inParticles + get_global_id(0);
+	global struct DynamicParticle* outParticlePtr = outParticles + get_global_id(0);	
 
-	if (moveParticles)
-		particlePtr += particleMap[get_global_id(0)];
-	else
-		particlePtr += get_global_id(0);
-
-	float3 particlePosition = particlePtr->positionAndPressure.xyz;
-	float particlePressure = particlePtr->positionAndPressure.w;
-	float3 particleVelocity = particlePtr->velocityAndHash.xyz;
-	float particleHash_FLOAT = particlePtr->velocityAndHash.w;
-	uint particleHash = *(uint*)&particleHash_FLOAT;	
+	float3 particlePosition = inParticlePtr->positionAndPressure.xyz;
+	float particlePressure = outParticlePtr->positionAndPressure.w;
+	float3 particleVelocity = inParticlePtr->velocityAndHash.xyz;
+	float particleHash_FLOAT = inParticlePtr->velocityAndHash.w;
+	uint particleHash = *(uint*)&particleHash_FLOAT;
 
 	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
 
@@ -216,14 +226,17 @@ void kernel updateParticlesDynamics(
 
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{
-					global const struct Particle* otherParticlePtr = particles + particleMap[i];
+					uint index = particleMap[i];
 
-					if (particlePtr == otherParticlePtr)
+					float otherParticlePressure = outParticlePtr[index].positionAndPressure.w;
+					float3 otherParticlePosition = inParticlePtr[index].positionAndPressure.xyz;
+					float3 otherParticleVelocity = inParticlePtr[index].velocityAndHash.xyz;					
+
+					if (index == get_global_id(0))
 						continue;					
+					
 
-					struct Particle otherParticle = *otherParticlePtr;
-
-					float3 dir = otherParticle.positionAndPressure.xyz - particlePosition;
+					float3 dir = otherParticlePosition - particlePosition;
 					float distSqr = dot(dir, dir);
 
 					if (distSqr > MAX_INTERACTION_DISTANCE * MAX_INTERACTION_DISTANCE)
@@ -237,10 +250,10 @@ void kernel updateParticlesDynamics(
 						dir /= dist;															
 
 					//apply pressure force					
-					pressureForce += dir * (particlePressure + otherParticle.positionAndPressure.w) * SmoothingKernelD1(dist, MAX_INTERACTION_DISTANCE);
+					pressureForce += dir * (particlePressure + otherParticlePressure) * SmoothingKernelD1(dist, MAX_INTERACTION_DISTANCE);
 
 					//apply viscosity force					
-					viscosityForce += (otherParticle.velocityAndHash.xyz - particleVelocity) * SmoothingKernelD2(dist, MAX_INTERACTION_DISTANCE);
+					viscosityForce += (otherParticleVelocity - particleVelocity) * SmoothingKernelD2(dist, MAX_INTERACTION_DISTANCE);
 				}
 
 #if STATIC_PARTICLE_COUNT != 0				
@@ -328,11 +341,8 @@ void kernel updateParticlesDynamics(
 	particleHash = GetHash(cell) % HASH_MAP_SIZE;
 
 	atomic_inc(newHashMap + particleHash);	 
-
-
-	global struct Particle* outParticlePtr = outParticlesPtr + get_global_id(0);	
-	outParticlePtr->positionAndPressure.xyz = particlePosition;
-	outParticlePtr->positionAndPressure.w = particlePressure;
+	
+	outParticlePtr->positionAndPressure.xyz = particlePosition;	
 	outParticlePtr->velocityAndHash.xyz = particleVelocity;
 	outParticlePtr->velocityAndHash.w = *(float*)&particleHash;		
 
