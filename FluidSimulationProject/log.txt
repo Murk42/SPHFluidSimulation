@@ -1,9 +1,6 @@
-[01/01/70 03:57:34] [INFO] [Blaze Engine Graphics] Successfully initialized glew 2.2.0
-[01/01/70 03:57:34] [WARNING] [Blaze Engine Graphics] Asked for 16-bit depth buffer, got no depth buffer
-[01/01/70 03:57:34] [INFO] [Blaze Engine Graphics] Created OpenGL context 4.5 core profile
-[01/01/70 03:57:34] [WARNING] [OpenCL] clGetGLContextInfoKHR returned "CL_INVALID_PLATFORM" on platform "AMD Accelerated Parallel Processing". Skipping platform
-[01/01/70 03:57:34] [WARNING] [OpenCL] clGetGLContextInfoKHR returned "CL_INVALID_PLATFORM" on platform "OpenCLOn12". Skipping platform
-[01/01/70 03:57:34] [WARNING] [Client] No processor with OpenCL-OpenGL interop found that supports the required extensions
-[01/01/70 03:57:34] [INFO] [Client] The computer might not support OpenCL-OpenGL interop. Looking for suitable processor without OpenCL-OpenGL interop but which support the required extensions. Note OpenCL-OpenGL interop is not required but it should speed up the application.
-[01/01/70 03:57:34] [INFO] [Client] Successfully initialized OpenCL C 2.0  device name gfx902
-[01/01/70 03:57:34] [INFO] [Client] GL_ARB_cl_event extension not supported. Even if it was supported it isn't implemented in the application. This is just informative
+[01/01/70 08:21:10] [INFO] [Blaze Engine Graphics] Successfully initialized glew 2.2.0
+[01/01/70 08:21:10] [WARNING] [Blaze Engine Graphics] Asked for 16-bit depth buffer, got no depth buffer
+[01/01/70 08:21:10] [INFO] [Blaze Engine Graphics] Created OpenGL context 4.5 core profile
+[01/01/70 08:21:10] [INFO] [Client] Successfully initialized OpenCL C 2.0  device name gfx902
+[01/01/70 08:21:10] [INFO] [Client] GL_ARB_cl_event extensions not supported. Using the best implementation
+[01/01/70 08:21:10] [WARNING] [Blaze Engine] Input event stack overflow. The receiving thread didn't process any events for more than 1 second. Ignoring event named "struct Blaze::Input::Events::MouseMotion"

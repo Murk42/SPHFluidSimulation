@@ -2,6 +2,8 @@
 #include "OpenCLContext.h"
 #include "SPH/System/System.h"
 
+#define VISUALIZE_NEIGHBOURS
+
 namespace SPH
 {	
 	class SystemGPU : public System
@@ -45,11 +47,23 @@ namespace SPH
 
 			Graphics::OpenGLWrapper::Fence readFinishedFence;
 			cl::Event writeFinishedEvent;
+
+#ifdef VISUALIZE_NEIGHBOURS
+#ifdef USE_OPENCL_OPENGL_INTEROP
+			Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleColorBufferGL;
+			Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer staticParticleColorBufferGL;
+			cl::BufferGL dynamicParticleColorBufferCL;
+			cl::BufferGL staticParticleColorBufferCL;
+#endif
+#endif
 			bool hasInterop;
 
 			ParticleBufferSet(bool hasInterop);			
 			~ParticleBufferSet();
 		};
+
+		//Wether the opencl implementation will handle sync or the user should
+		bool userOpenCLOpenGLSync;
 
 		OpenCLContext& clContext;
 
@@ -65,14 +79,14 @@ namespace SPH
 		cl::Kernel updateParticlesPressureKernel;		
 		cl::Kernel updateParticlesDynamicsKernel;
 
-		uint bufferSetIndex;
-		uint nextBufferSetIndex;		
+		uintMem readBufferSetIndex;
+		uintMem writeBufferSetIndex;		
 		Array<ParticleBufferSet> bufferSets;
 		cl::Buffer hashMapBuffer;		
 		cl::Buffer newHashMapBuffer;
 		cl::Buffer particleMapBuffer;
 		cl::Buffer staticParticleBuffer;
-		cl::Buffer staticHashMapBuffer;
+		cl::Buffer staticHashMapBuffer;		
 
 		uintMem dynamicParticleCount;
 		uintMem staticParticleCount;				
@@ -91,10 +105,15 @@ namespace SPH
 		void BuildPartialSumProgram();
 		void BuildSPHProgram(const ParticleBehaviourParameters& behaviourParameters, const ParticleBoundParameters& boundParameters);
 		
-		void EnqueueComputeParticleHashesKernel(cl_event* event);
-		void EnqueueComputeParticleMapKernel(cl::Buffer& particleBuffer);
-		void EnqueueUpdateParticlesPressureKernel();
-		void EnqueueUpdateParticlesDynamicsKernel(float deltaTime);
+		void EnqueueComputeParticleHashesKernel(cl::Buffer& particleBuffer, cl_event* finishedEvent);
+		void EnqueueComputeParticleMapKernel(cl::Buffer& particleBuffer, cl_event* finishedEvent);
+		void EnqueueUpdateParticlesPressureKernel(
+			cl::Buffer& inParticleBuffer, cl::Buffer& outParticleBuffer
+#ifdef VISUALIZE_NEIGHBOURS
+			, cl::Buffer& outDynamicParticleColorBuffer, cl::Buffer& outStaticParticleColorBuffer
+#endif
+		);		
+		void EnqueueUpdateParticlesDynamicsKernel(cl::Buffer& inParticleBuffer, cl::Buffer& outParticleBuffer, float deltaTime);
 		void EnqueuePartialSumKernels();
 
 		inline cl::Buffer& ParticleBufferCL(uintMem index);

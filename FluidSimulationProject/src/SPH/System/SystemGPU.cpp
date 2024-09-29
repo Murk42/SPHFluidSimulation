@@ -46,7 +46,7 @@ namespace SPH
 	}
 	
 	SystemGPU::SystemGPU(OpenCLContext& clContext) :
-		clContext(clContext), bufferSetIndex(0)
+		clContext(clContext)
 	{
 		if (Graphics::OpenGL::GraphicsContext_OpenGL::IsExtensionSupported("GL_ARB_cl_event"))
 			Debug::Logger::LogInfo("Client", "GL_ARB_cl_event extension supported. The application implementation could be made better to use this extension. This is just informative");
@@ -58,9 +58,8 @@ namespace SPH
 		queue = cl::CommandQueue(clContext.context, clContext.device, cl::QueueProperties::None, &ret);
 		CL_CHECK();		
 
-
-		cl_bool value;
-		CL_CALL(clGetDeviceInfo(clContext.device(), CL_DEVICE_PREFERRED_INTEROP_USER_SYNC, sizeof(cl_bool), &value, nullptr))				
+		
+		CL_CALL(clGetDeviceInfo(clContext.device(), CL_DEVICE_PREFERRED_INTEROP_USER_SYNC, sizeof(cl_bool), &userOpenCLOpenGLSync, nullptr))
 	}
 	void SystemGPU::Initialize(const SystemInitParameters& initParams)
 	{						
@@ -90,6 +89,9 @@ namespace SPH
 		EnqueueComputeParticleHashesKernel(&bufferSets[bufferSetIndex].writeFinishedEvent());				
 		EnqueuePartialSumKernels();		
 		EnqueueComputeParticleMapKernel(ParticleBufferCL(bufferSetIndex));
+		EnqueueComputeParticleMapKernel(ParticleBufferCL(bufferSetIndex), nullptr);
+
+		writeBufferSetIndex = (writeBufferSetIndex + 1) % bufferSets.Count();
 	}
 	void SystemGPU::LoadKernels(const ParticleBehaviourParameters& behaviourParameters, const ParticleBoundParameters& boundingParameters)
 	{
@@ -113,41 +115,54 @@ namespace SPH
 		BuildSPHProgram(behaviourParameters, boundingParameters);
 	}
 	void SystemGPU::Update(float deltaTime)
-	{
-		cl_int ret;
+	{		
+		cl_int ret;										
+		const byte pattern = (byte)0;
 
-		bufferSets[bufferSetIndex].readFinishedFence.BlockClient(0);
+		auto& inBufferSet = bufferSets[writeBufferSetIndex];
+		auto& outBufferSet = bufferSets[(writeBufferSetIndex + 1) % bufferSets.Count()];
 
 		if (clContext.supportedCLGLInterop)
 		{
 			cl_mem acquireObjects[]{
 				ParticleBufferCL(bufferSetIndex)(),
-				ParticleBufferCL(nextBufferSetIndex)()
+				ParticleBufferCL(nextBufferSetIndex)(),
+#ifdef VISUALIZE_NEIGHBOURS		
+				inBufferSet.dynamicParticleColorBufferCL(),
+				inBufferSet.staticParticleColorBufferCL(),
+#endif
 			};
 
-			clEnqueueAcquireGLObjects(queue(), 2, acquireObjects, 0, nullptr, nullptr);
+			clEnqueueAcquireGLObjects(queue(), _countof(acquireObjects), acquireObjects, 0, nullptr, nullptr);
 		}
+#ifdef VISUALIZE_NEIGHBOURS		
+		clEnqueueFillBuffer(queue(), inBufferSet.dynamicParticleColorBufferCL(), &pattern, 1, 0, sizeof(float) * dynamicParticleCount, 0, nullptr, nullptr);
+		clEnqueueFillBuffer(queue(), inBufferSet.staticParticleColorBufferCL(), &pattern, 1, 0, sizeof(float) * staticParticleCount, 0, nullptr, nullptr);
+#endif
 
-		EnqueueUpdateParticlesPressureKernel();
+		EnqueueUpdateParticlesPressureKernel(ParticleBufferCL(readBufferSetIndex), ParticleBufferCL(writeBufferSetIndex));
 
-		EnqueueUpdateParticlesDynamicsKernel(deltaTime);
+		EnqueueUpdateParticlesDynamicsKernel(ParticleBufferCL(readBufferSetIndex), ParticleBufferCL(writeBufferSetIndex, deltaTime);
 
 		if (clContext.supportedCLGLInterop)
 		{
 			cl_mem acquireObjects[]{
 				ParticleBufferCL(bufferSetIndex)(),
-				ParticleBufferCL(nextBufferSetIndex)()
+				ParticleBufferCL(nextBufferSetIndex)(),
+#ifdef VISUALIZE_NEIGHBOURS		
+				inBufferSet.dynamicParticleColorBufferCL(),
+				inBufferSet.staticParticleColorBufferCL(),
+#endif
 			};
 
-			clEnqueueReleaseGLObjects(queue(), 2, acquireObjects, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent());
+			clEnqueueReleaseGLObjects(queue(), _countof(acquireObjects), acquireObjects, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent());
 		}
 		else
 			CL_CALL(clEnqueueReadBuffer(queue(), bufferSets[nextBufferSetIndex].noInterop.particleBufferCL(), CL_TRUE, 0, sizeof(DynamicParticle) * dynamicParticleCount, bufferSets[nextBufferSetIndex].noInterop.particleBufferMap, 0, nullptr, &bufferSets[bufferSetIndex].writeFinishedEvent()))
 
 		std::swap(newHashMapBuffer, hashMapBuffer);		
 
-		const uint32 pattern = 0;
-		clEnqueueFillBuffer(queue(), newHashMapBuffer(), &pattern, sizeof(uint32), 0, sizeof(uint32) * hashMapSize, 0, nullptr, nullptr);
+		clEnqueueFillBuffer(queue(), newHashMapBuffer(), &pattern, sizeof(byte), 0, sizeof(uint32) * hashMapSize, 0, nullptr, nullptr);
 
 		EnqueuePartialSumKernels();
 
@@ -163,24 +178,24 @@ namespace SPH
 		//	__debugbreak();
 		//}
 
-		bufferSetIndex = nextBufferSetIndex;
-		nextBufferSetIndex = (bufferSetIndex + 1) % bufferSets.Count();		
+		writeBufferSetIndex = (writeBufferSetIndex + 1) % bufferSets.Count();		
 	}	
 	void SystemGPU::StartRender(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext)
 	{
-		bufferSets[bufferSetIndex].writeFinishedEvent.wait();
+		bufferSets[readBufferSetIndex].writeFinishedEvent.wait();
 	}
 	Graphics::OpenGLWrapper::VertexArray& SystemGPU::GetDynamicParticlesVertexArray()
 	{
-		return bufferSets[bufferSetIndex].dynamicParticleVertexArray;
+		return bufferSets[readBufferSetIndex].dynamicParticleVertexArray;
 	}
 	Graphics::OpenGLWrapper::VertexArray& SystemGPU::GetStaticParticlesVertexArray()
 	{
-		return bufferSets[bufferSetIndex].staticParticleVertexArray;
+		return bufferSets[readBufferSetIndex].staticParticleVertexArray;
 	}
 	void SystemGPU::EndRender()
 	{
-		bufferSets[bufferSetIndex].readFinishedFence.SetFence();
+		bufferSets[readBufferSetIndex].readFinishedFence.SetFence();
+		readBufferSetIndex = (readBufferSetIndex + 1) % bufferSets.Count();
 	}		
 	void SystemGPU::GenerateHashes(Array<StaticParticle>& staticParticles, Array<uint32>& dynamicHashMap, Array<uint32>& staticHashMap, float maxInteractionDistance)
 	{
@@ -267,14 +282,37 @@ namespace SPH
 				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(2, &bufferSet.noInterop.dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
 				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);
 
+#ifdef VISUALIZE_NEIGHBOURS
+				bufferSet.dynamicParticleVertexArray.EnableVertexAttribute(3);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeFormat(3, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeBuffer(3, &bufferSet.dynamicParticleColorBufferGL, sizeof(float), 0);
+				bufferSet.dynamicParticleVertexArray.SetVertexAttributeDivisor(3, 1);
+#endif
+
 				bufferSet.staticParticleVertexArray.EnableVertexAttribute(0);
 				bufferSet.staticParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
 				bufferSet.staticParticleVertexArray.SetVertexAttributeBuffer(0, &bufferSet.noInterop.staticParticleBufferGL, sizeof(StaticParticle), 0);
 				bufferSet.staticParticleVertexArray.SetVertexAttributeDivisor(0, 1);
-			}
 
-		bufferSetIndex = 0;
-		nextBufferSetIndex = (bufferSetIndex + 1) % bufferSets.Count();
+				bufferSet.staticParticleVertexArray.EnableVertexAttribute(3);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeFormat(3, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, 0);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeBuffer(3, &bufferSet.staticParticleColorBufferGL, sizeof(float), 0);
+				bufferSet.staticParticleVertexArray.SetVertexAttributeDivisor(3, 1);
+
+#ifdef VISUALIZE_NEIGHBOURS
+#ifdef USE_OPENCL_OPENGL_INTEROP
+				bufferSet.dynamicParticleColorBufferGL.Allocate(nullptr, sizeof(float) * dynamicParticles.Count());
+				bufferSet.staticParticleColorBufferGL.Allocate(nullptr, sizeof(float) * dynamicParticles.Count());
+
+				bufferSet.dynamicParticleColorBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, bufferSet.dynamicParticleColorBufferGL.GetHandle(), &ret);
+				bufferSet.staticParticleColorBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, bufferSet.staticParticleColorBufferGL.GetHandle(), &ret);
+#endif
+#endif
+			}
+		}
+
+		writeBufferSetIndex = 0;
+		readBufferSetIndex = 0;
 
 		hashMapBuffer = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(uint32) * dynamicHashMap.Count(), (void*)dynamicHashMap.Ptr(), &ret);
 		CL_CHECK();
@@ -334,6 +372,9 @@ namespace SPH
 		if (boundParameters.bounded) values.Insert("BOUND_PARTICLES");
 		if (boundParameters.boundedByRoof) values.Insert("BOUND_TOP");
 		if (boundParameters.boundedByWalls) values.Insert("BOUND_WALLS");
+#ifdef VISUALIZE_NEIGHBOURS
+		values.Insert("VISUALIZE_NEIGHBOURS");
+#endif
 
 		SPHProgram = BuildOpenCLProgram(clContext, Array<Path>{ "kernels/CL_CPP_SPHFunctions.h", "kernels/SPH.cl" }, values);
 		
@@ -346,7 +387,7 @@ namespace SPH
 		updateParticlesDynamicsKernel = cl::Kernel(SPHProgram, "updateParticlesDynamics", &ret);
 		CL_CHECK();
 	}	
-	void SystemGPU::EnqueueComputeParticleHashesKernel(cl_event* event)
+	void SystemGPU::EnqueueComputeParticleHashesKernel(cl::Buffer& particleBuffer, cl_event* finishedEvent)
 	{
 		cl_int ret;
 
@@ -356,10 +397,10 @@ namespace SPH
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = 1;
-		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleHashesKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 0, nullptr, event));
+		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleHashesKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 0, nullptr, finishedEvent));
 	}
 
-	void SystemGPU::EnqueueComputeParticleMapKernel(cl::Buffer& particleBuffer)
+	void SystemGPU::EnqueueComputeParticleMapKernel(cl::Buffer& particleBuffer, cl_event* finishedEvent)
 	{
 		cl_int ret;
 
@@ -370,10 +411,14 @@ namespace SPH
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = 1;
-		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleMapKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 0, nullptr, nullptr));	
+		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleMapKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 0, nullptr, finishedEvent));	
 	}
-	void SystemGPU::EnqueueUpdateParticlesPressureKernel()
-	{
+	void SystemGPU::EnqueueUpdateParticlesPressureKernel(
+		cl::Buffer& inParticleBuffer, cl::Buffer& outParticleBuffer
+#ifdef VISUALIZE_NEIGHBOURS
+		, cl::Buffer& outDynamicParticleColorBuffer, cl::Buffer& outStaticParticleColorBuffer
+#endif
+	) {
 		cl_int ret;
 
 		CL_CALL(updateParticlesPressureKernel.setArg(0, ParticleBufferCL(bufferSetIndex)));
@@ -381,22 +426,19 @@ namespace SPH
 		CL_CALL(updateParticlesPressureKernel.setArg(2, particleMapBuffer));						
 		CL_CALL(updateParticlesPressureKernel.setArg(3, staticHashMapBuffer));
 		CL_CALL(updateParticlesPressureKernel.setArg(4, staticParticleBuffer));
+		CL_CALL(updateParticlesPressureKernel.setArg(5, staticHashMapBuffer));
+		CL_CALL(updateParticlesPressureKernel.setArg(6, outDynamicParticleColorBuffer));
+		CL_CALL(updateParticlesPressureKernel.setArg(7, outStaticParticleColorBuffer));
+
 
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = 1;
 		CL_CALL(clEnqueueNDRangeKernel(queue(), updateParticlesPressureKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 0, nullptr, nullptr));		
 	}
-	void SystemGPU::EnqueueUpdateParticlesDynamicsKernel(float deltaTime)
+	void SystemGPU::EnqueueUpdateParticlesDynamicsKernel(cl::Buffer& inputParticleBuffer, cl::Buffer& outputParticleBuffer, float deltaTime)
 	{
-		bool moveParticles = false;
-		//if (particleMoveElapsedTime > 1.0f)
-		//{
-		//	moveParticles = true;
-		//	particleMoveElapsedTime = 0.0f;
-		//}
-		//else
-		//	particleMoveElapsedTime += deltaTime;
+		bool moveParticles = false;		
 
 		cl_int ret;
 
@@ -407,8 +449,7 @@ namespace SPH
 		CL_CALL(updateParticlesDynamicsKernel.setArg(4, particleMapBuffer));		
 		CL_CALL(updateParticlesDynamicsKernel.setArg(5, staticParticleBuffer));
 		CL_CALL(updateParticlesDynamicsKernel.setArg(6, staticHashMapBuffer));
-		CL_CALL(updateParticlesDynamicsKernel.setArg(7, deltaTime));
-		CL_CALL(updateParticlesDynamicsKernel.setArg(8, (int)moveParticles));
+		CL_CALL(updateParticlesDynamicsKernel.setArg(7, deltaTime));		
 
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
