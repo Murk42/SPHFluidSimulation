@@ -20,7 +20,7 @@ namespace SPH
 		smoothingKernelConstant = SmoothingKernelConstant(initParams.particleBehaviourParameters.maxInteractionDistance);
 		selfDensity = behaviourParameters.particleMass * SmoothingKernelD0(0, behaviourParameters.maxInteractionDistance) * smoothingKernelConstant;
 
-		hashesPerDynamicParticle = initParams.hashesPerParticle;
+		hashesPerDynamicParticle = initParams.hashesPerDynamicParticle;
 
 		Array<DynamicParticle> dynamicParticles;
 		initParams.dynamicParticleGenerationParameters.generator->Generate(dynamicParticles);
@@ -52,7 +52,7 @@ namespace SPH
 			);
 		}
 
-		dynamicHashMap.Resize(initParams.hashesPerParticle * dynamicParticleCount);
+		dynamicHashMap.Resize(initParams.hashesPerDynamicParticle * dynamicParticleCount);
 		staticHashMap.Resize(initParams.hashesPerStaticParticle * dynamicParticleCount);
 		particleMap.Resize(dynamicParticleCount);
 		GenerateHashMap(staticParticles, staticHashMap, [gridSize = behaviourParameters.maxInteractionDistance, mod = staticHashMap.Count()](const StaticParticle& particle) {

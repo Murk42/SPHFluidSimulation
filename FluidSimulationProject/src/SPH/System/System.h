@@ -60,7 +60,7 @@ namespace SPH
 
 		//Graphics
 		uintMem bufferCount;
-		uint hashesPerParticle;
+		uint hashesPerDynamicParticle;
 		uint hashesPerStaticParticle;
 	};
 
@@ -84,11 +84,11 @@ namespace SPH
 		static uint32 GetHash(Vec3i cell);
 
 		template<typename T, typename F> requires std::invocable<F, const T&>
-		static void GenerateHashMap(Array<T>& particles, Array<uint32>& hashMap, const F& hashGetter);
+		static void GenerateHashMap(const Array<T>& particles, Array<uint32>& hashMap, const F& hashGetter);
 	};	
 	
 	template<typename T, typename F> requires std::invocable<F, const T&>
-	inline void System::GenerateHashMap(Array<T>& particles, Array<uint32>& hashMap, const F& hashGetter)
+	inline void System::GenerateHashMap(const Array<T>& particles, Array<uint32>& hashMap, const F& hashGetter)
 	{
 		memset(hashMap.Ptr(), 0, sizeof(uint) * hashMap.Count());
 

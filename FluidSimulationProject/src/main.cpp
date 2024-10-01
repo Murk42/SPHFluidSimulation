@@ -17,16 +17,16 @@
 SPH::SystemInitParameters systemInitParams{
 	.dynamicParticleGenerationParameters = {
 		.generator = std::make_shared<SPH::FilledBoxParticleGenerator<SPH::DynamicParticle>>(SPH::FilledBoxParticleParameters {
-			.spawnVolumeSize = Vec3f(10.0f),
-			.spawnVolumeOffset = Vec3f(-5.0f),
+			.spawnVolumeSize = Vec3f(5.0f),
+			.spawnVolumeOffset = Vec3f(-2.5f),
 			.particlesPerUnit = 10,
 			.randomOffsetIntensity = 0.4f
 		})
 	},
 	.staticParticleGenerationParameters {	
 		.generator = std::make_shared<SPH::BoxShellParticleGenerator<SPH::StaticParticle>>(SPH::BoxShellParticleParameters {
-			.spawnVolumeSize = Vec3f(20.0f), 
-			.spawnVolumeOffset = Vec3f(-10.0f),
+			.spawnVolumeSize = Vec3f(10.0f), 
+			.spawnVolumeOffset = Vec3f(-5.0f),
 			.particleDistance = 0.2f,
 			.randomOffsetIntensity = 0.1f
 		})
@@ -45,7 +45,7 @@ SPH::SystemInitParameters systemInitParams{
 		.bounded = false,
 	},
 	.bufferCount = 2,
-	.hashesPerParticle = 1,
+	.hashesPerDynamicParticle = 1,
 	.hashesPerStaticParticle = 1,
 };
 

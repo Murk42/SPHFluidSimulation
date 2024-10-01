@@ -5,14 +5,27 @@
 struct __attribute__ ((packed)) DynamicParticle
 {
 	float4 positionAndPressure;
-	float4 velocityAndHash;		
+	float4 velocityAndHash;
 };	
 struct __attribute__ ((packed)) StaticParticle
 {
 	float4 positionAndPressure;		
 };
 
-void kernel computeParticleHashes(global struct DynamicParticle* particles, global uint* hashMap, global uint* particleMap)
+//void kernel computeParticleHashes(
+//	global char* positions, uint positionsStride, uint positionsOffset,
+//	global char* hashes, uint hashesStride, uint hashesOffset,
+//	global uint* particleMap)
+//{
+//	float3 position = *(float*)(positions + positionsStride * get_global_id(0) + positionsOffset);
+//
+//	int3 cell = GetCell(particlePosition, MAX_INTERACTION_DISTANCE);	
+//	uint particleHash = GetHash(cell) % HASH_MAP_SIZE;
+//
+//	*(uint*)(hashes + hashesStride * get_global_id(0) + hashesOffset) = *(float*)&particleHash;	
+//	atomic_inc(hashMap + particleHash);
+//}
+void kernel computeParticleHashes(global struct DynamicParticle* particles, global uint* hashMap)
 {
 	float3 particlePosition = particles[get_global_id(0)].positionAndPressure.xyz;	
 
@@ -41,8 +54,8 @@ void kernel updateParticlesPressure(
 	global const struct StaticParticle* staticParticles,
 	global const uint* staticParticleHashMap
 #ifdef VISUALIZE_NEIGHBOURS
-	, global float* dynamicParticleColors,
-	global float* staticParticleColors
+	, global uint* dynamicParticleColors,
+	global uint* staticParticleColors
 #endif
 ) {
 	global const struct DynamicParticle* inParticlePtr = inParticles + get_global_id(0);
@@ -56,8 +69,8 @@ void kernel updateParticlesPressure(
 	}
 #endif
 #ifdef VISUALIZE_NEIGHBOURS
-	if (get_global_id(0) == 0)
-		dynamicParticleColors[0] = 1.0f;
+//	if (get_global_id(0) == 0)
+//		dynamicParticleColors[0] = 1.0f;
 #endif
 
 	float3 particlePosition = inParticlePtr->positionAndPressure.xyz;		
@@ -110,8 +123,8 @@ void kernel updateParticlesPressure(
 					}			
 					
 #ifdef VISUALIZE_NEIGHBOURS
-					if (index == 0)
-						dynamicParticleColors[get_global_id(0)] = 0.5f;
+					//if (index == 0)
+					//	dynamicParticleColors[get_global_id(0)] = 0.5f;
 #endif
 
 					global const struct DynamicParticle* otherParticlePtr = inParticles + index;
@@ -158,8 +171,8 @@ void kernel updateParticlesPressure(
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{	
 #ifdef VISUALIZE_NEIGHBOURS
-					if (get_global_id(0) == 0)
-						staticParticleColors[i] = 0.5f;
+					//if (get_global_id(0) == 0)
+					//	staticParticleColors[i] = 0.5f;
 #endif
 
 					global const struct StaticParticle* otherParticlePtr = staticParticles + i;

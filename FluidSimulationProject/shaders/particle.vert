@@ -3,7 +3,7 @@
 layout(location = 0) in vec3 i_pos;
 layout(location = 1) in vec3 i_velocity;
 layout(location = 2) in float i_pressure;
-layout(location = 3) in float i_color;
+layout(location = 3) in uint i_color;
 
 layout(location = 0) uniform mat4 u_modelView;
 layout(location = 1) uniform mat4 u_proj;
@@ -44,15 +44,15 @@ void main()
 	if (gl_VertexID == 3)	
 		pos += -up +right;	
 			
-	if (i_color == 0.0f)
+	if (i_color == 0)
 	{
 		float colorCoef = clamp(1 - exp(-i_pressure / 2000), 0, 1);
 		
 		f_color = mix(u_color, vec4(1.0f, 0.0f, 0.0f, 1.0f), colorCoef);	
 	}
-	if (i_color == 0.5f)
+	if (i_color == 1)
 		f_color = vec4(0, 0, 1, 1);
-	else if (i_color == 1.0f)
+	else if (i_color == 2)
 		f_color = vec4(0, 1, 0, 1);
 	else
 		f_color = vec4(1, 0, 0, 1);
