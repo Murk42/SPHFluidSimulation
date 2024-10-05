@@ -2,9 +2,55 @@
 #include "SPH/System/System.h"
 #include "ThreadPool.h"
 #include <condition_variable>
+#include <queue>
+#include <functional>
 
 namespace SPH
 {		
+	class ThreadContext;
+
+	class TaskThreadContext
+	{
+	public:
+		void SyncThreads();
+	private:
+		TaskThreadContext(ThreadContext& context);
+		ThreadContext& context;
+
+		friend class ThreadContext;
+	};
+
+	class ThreadContext
+	{
+	public:
+		using TaskFunction = std::function<void(TaskThreadContext&, uintMem, uintMem)>;
+		ThreadContext(ThreadPool& threadPool);
+		~ThreadContext();
+
+		void FinishTasks();
+		void StartThreads(uintMem begin, uintMem end);		
+		void StopThreads();
+		void EnqueueTask(TaskFunction function);
+	private:
+		TaskThreadContext taskThreadContext;
+		ThreadPool& threadPool;
+		std::condition_variable idleCV;
+		std::condition_variable syncCV;
+		std::mutex mutex;
+		std::mutex syncMutex;
+		uintMem threadIdleCount;
+		uintMem threadSyncCount1;
+		uintMem threadSyncCount2;		
+
+		uintMem begin, end;
+		bool exit;		
+		std::queue<TaskFunction> tasks;
+		
+		void SimulationThreadFunc(TaskThreadContext&, uintMem begin, uintMem end);
+
+		friend class TaskThreadContext;
+	};
+
 	class SystemCPU : public System
 	{
 	public:				
@@ -12,6 +58,7 @@ namespace SPH
 		~SystemCPU();
 
 		void Initialize(const SystemInitParameters& initParams) override;
+		void Clear();
 		
 		void Update(float dt) override;	
 		
@@ -23,65 +70,66 @@ namespace SPH
 		Graphics::OpenGLWrapper::VertexArray& GetDynamicParticlesVertexArray();
 		Graphics::OpenGLWrapper::VertexArray& GetStaticParticlesVertexArray();
 		void EndRender();
-	private:						
-		enum class WorkType
+	private:								
+		struct ParticleBufferSet
 		{
-			CalculateHashAndParticleMap,
-			SimulateParticlesTimeStep,			
-			Exit
-		};
-		struct BufferSet
-		{
-			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesBuffer;
-			Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticlesBuffer;
+			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesBuffer;			
 			Graphics::OpenGLWrapper::VertexArray dynamicParticleVA;
-			Graphics::OpenGLWrapper::VertexArray staticParticleVA;
-			Graphics::OpenGLWrapper::Fence readFence;
-			Graphics::OpenGLWrapper::Fence writeFence;
-			DynamicParticle* dynamicParticleMap;			
+			std::atomic_flag readStarted;
+			Graphics::OpenGLWrapper::Fence readFinished;
+			std::atomic_flag writeFinished;
+			DynamicParticle* dynamicParticleMap;
 		};
 
-		ThreadPool& threadPool;
-
-		ParticleBehaviourParameters behaviourParameters;
-		ParticleBoundParameters boundParameters;
+		ThreadContext threadContext;				
 		
-		uintMem writeBufferSetIndex;
-		uintMem readBufferSetIndex;
 		uintMem dynamicParticleCount;
+		uintMem dynamicParticleHashMapSize;
 		uintMem staticParticleCount;		
-		Array<BufferSet> bufferSets;
-		Array<uint32> dynamicHashMap;	
-		Array<uint32> staticHashMap;
+		uintMem staticParticleHashMapSize;
+
+		Array<ParticleBufferSet> bufferSets;
+		Array<uint32> dynamicParticleReadHashMapBuffer;	
+		Array<uint32> dynamicParticleWriteHashMap;
 		Array<uint32> particleMap;
 		Array<StaticParticle> staticParticles;
+		Array<uint32> staticParticleHashMap;
 
-		uintMem hashesPerDynamicParticle;
+		Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticlesBuffer;
+		Graphics::OpenGLWrapper::VertexArray staticParticleVA;
 
-		float smoothingKernelConstant;
-		float selfDensity;
+		uintMem simulationWriteBufferSetIndex;
+		uintMem simulationReadBufferSetIndex;
+		uintMem renderBufferSetIndex;				
 		
-		WorkType threadWorkType;
-		std::condition_variable idleCV;
-		std::condition_variable syncCV;
-		std::mutex mutex;
-		std::mutex syncMutex;
-		uintMem threadIdleCount;
-		uintMem threadSyncCount;
+		ParticleSimulationParameters simulationParameters;
 
-		float deltaTime;		
+		struct CalculateHashAndParticleMapTask
+		{
+			DynamicParticle* particles;
+			ParticleSimulationParameters* simulationParameters;
+			uint32* hashMap;
+			uint32* particleMap;
+		};
+		struct SimulateParticlesTimeStepTask
+		{
+			DynamicParticle* readParticles;
+			DynamicParticle* writeParticles;
+			uint32* dynamicParticleReadHashMapBuffer;
+			uint32* dynamicParticleWriteHashMap;
+			uint32* particleMap;
+			StaticParticle* staticParticles;
+			uint32* staticParticleHashMap;
+			ParticleSimulationParameters* simulationParameters;
+			
+			std::atomic_flag* readStarted;
+			Graphics::OpenGLWrapper::Fence* readFinished;
+			std::atomic_flag* writeFinished;
+
+			float dt;
+		};
 				
-		void SimulateParticlesTimeStep(uintMem begin, uintMem end);
-		void CalculateHashAndParticleMap(uintMem begin, uintMem end);		
-		
-		//Functions for manipulation simulation threads
-		void RunThreadWork(std::unique_lock<std::mutex>& lock, WorkType workType);
-		void WaitForAllThreadsIdle(std::unique_lock<std::mutex>& lock);
-		void StopThreads();
-		void StartThreads();
-		void SimulationThreadFunc(uintMem begin, uintMem end);
-
-		//Functions for simulation threads
-		void SyncThreads();
+		static void CalculateHashAndParticleMap(TaskThreadContext& context, uintMem begin, uintMem end, CalculateHashAndParticleMapTask task);
+		static void SimulateParticlesTimeStep(TaskThreadContext& context, uintMem begin, uintMem end, SimulateParticlesTimeStepTask task);
 	};		
 }

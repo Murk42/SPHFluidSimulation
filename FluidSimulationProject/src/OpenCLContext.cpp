@@ -143,7 +143,7 @@ void OpenCLContext::PrintPlatformAndDeviceInfo()
             std::string name = device.getInfo<CL_DEVICE_NAME>();
             std::string vendor = device.getInfo<CL_DEVICE_VENDOR>();
 
-            Console::WriteLine("\t" + StringView(name.c_str(), name.size()));
+            Console::WriteLine("\t" + StringView(name.c_str(), name.size()) + " (type: " + typeString + ")");
         }
     }
 

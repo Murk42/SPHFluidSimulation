@@ -33,7 +33,7 @@ namespace SPH
 
 		graphicsContext.SelectVertexArray(&system->GetStaticParticlesVertexArray());
 		shaderProgram.SetUniform(2, 0.01f);
-		shaderProgram.SetUniform(3, Vec4f(0.5, 0, 0, 0.7));
+		shaderProgram.SetUniform(3, Vec4f(0.5f, 0.0f, 0.0f, 0.7f));
 		graphicsContext.RenderInstancedPrimitiveArray(Graphics::OpenGLWrapper::PrimitiveType::TriangleStrip, 0, 4, 0, system->GetStaticParticleCount());
 
 		system->EndRender();

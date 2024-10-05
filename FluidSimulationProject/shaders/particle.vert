@@ -50,12 +50,13 @@ void main()
 		
 		f_color = mix(u_color, vec4(1.0f, 0.0f, 0.0f, 1.0f), colorCoef);	
 	}
-	if (i_color == 1)
+	else if (i_color == 1)
 		f_color = vec4(0, 0, 1, 1);
 	else if (i_color == 2)
 		f_color = vec4(0, 1, 0, 1);
 	else
 		f_color = vec4(1, 0, 0, 1);
+
 	f_center = center;
 	f_radiusSqr = sqrDistance(center, center + right);
 	f_pos = pos;

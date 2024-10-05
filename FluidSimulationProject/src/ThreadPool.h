@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 class ThreadPool
 {
 public:
@@ -9,8 +7,8 @@ public:
 
 	void AllocateThreads(uintMem threads);
 
-	template<std::invocable<uintMem, uintMem> F> 
-	void RunTask(uintMem begin, uintMem end, const F& task)
+	template<typename ... Args, std::invocable<uintMem, uintMem, Args...> F> 
+	void RunTask(uintMem begin, uintMem end, const F& task, Args&& ... args)
 	{	
 		if (threads.Empty())
 		{
@@ -23,7 +21,7 @@ public:
 			for (uint i = 0; i < threads.Count(); ++i)
 			{
 				uintMem elementCount = count / (threads.Count() - i);
-				threads[i].Run(task, uintMem(offset), uintMem(offset + elementCount));
+				threads[i].Run(task, uintMem(offset), uintMem(offset + elementCount), std::forward<Args>(args)...);
 				count -= elementCount;
 				offset += elementCount;
 			}

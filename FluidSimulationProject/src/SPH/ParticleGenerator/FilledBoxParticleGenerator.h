@@ -37,6 +37,10 @@ namespace SPH
 		Vec3<uintMem> dynamicParticleGridSize{ parameters.spawnVolumeSize * linearParticleDensity };
 		Vec3f dynamicParticleDistance = parameters.spawnVolumeSize / Vec3f(dynamicParticleGridSize - Vec3<uintMem>(1));
 
+		if (dynamicParticleGridSize.x == 1) dynamicParticleDistance.x = 0.0f;
+		if (dynamicParticleGridSize.y == 1) dynamicParticleDistance.y = 0.0f;
+		if (dynamicParticleGridSize.z == 1) dynamicParticleDistance.z = 0.0f;
+
 		uintMem staticParticleCount = 0;
 
 		particles.Resize(dynamicParticleGridSize.x * dynamicParticleGridSize.y * dynamicParticleGridSize.z);

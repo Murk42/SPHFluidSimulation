@@ -16,19 +16,19 @@
 
 SPH::SystemInitParameters systemInitParams{
 	.dynamicParticleGenerationParameters = {
-		.generator = std::make_shared<SPH::FilledBoxParticleGenerator<SPH::DynamicParticle>>(SPH::FilledBoxParticleParameters {
-			.spawnVolumeSize = Vec3f(5.0f),
-			.spawnVolumeOffset = Vec3f(-2.5f),
-			.particlesPerUnit = 10,
-			.randomOffsetIntensity = 0.4f
+		.generator = std::make_shared<SPH::FilledBoxParticleGenerator<DynamicParticle>>(SPH::FilledBoxParticleParameters {
+			.spawnVolumeSize = Vec3f(10.0f),
+			.spawnVolumeOffset = Vec3f(-5.0f),
+			.particlesPerUnit = 8,
+			.randomOffsetIntensity = 0.0f
 		})
 	},
 	.staticParticleGenerationParameters {	
-		.generator = std::make_shared<SPH::BoxShellParticleGenerator<SPH::StaticParticle>>(SPH::BoxShellParticleParameters {
-			.spawnVolumeSize = Vec3f(10.0f), 
-			.spawnVolumeOffset = Vec3f(-5.0f),
+		.generator = std::make_shared<SPH::BoxShellParticleGenerator<StaticParticle>>(SPH::BoxShellParticleParameters {
+			.spawnVolumeSize = Vec3f(15.0f), 
+			.spawnVolumeOffset = Vec3f(-7.5f),
 			.particleDistance = 0.2f,
-			.randomOffsetIntensity = 0.1f
+			.randomOffsetIntensity = 0.06f
 		})
 	},
 	.particleBehaviourParameters {
@@ -36,20 +36,22 @@ SPH::SystemInitParameters systemInitParams{
 		.gasConstant = 200.0f,
 		.elasticity = 0.5f,
 		.viscosity = 0.5f,
-		.gravity = Vec3f(0, -9.81, 0),
+		.gravityX = 0.0f,
+		.gravityY = -9.81,
+		.gravityZ = 0.0f,
 		
-		.restDensity = 25.0f,
+		.restDensity = 2.0f,
 		.maxInteractionDistance = 1.0f,
 	},
 	.particleBoundParameters {
 		.bounded = false,
 	},
 	.bufferCount = 2,
-	.hashesPerDynamicParticle = 1,
-	.hashesPerStaticParticle = 1,
+	.hashesPerDynamicParticle = 2.0f,
+	.hashesPerStaticParticle = 1.0f,
 };
 
-const uintMem simulationThreadCount = 0;
+const uintMem simulationThreadCount = 8;
 
 bool exitApp = false;
 bool runSimulation = false;
@@ -105,7 +107,7 @@ static void NewSystem(SPH::System* newSystem, SPH::SystemRenderer* newRenderer, 
 static void NewGPUSystem(OpenCLContext& openCLContext, UIScreen* uiScreen, RenderingSystem* renderingSystem)
 {
 	NewSystem(
-		new SPH::SystemGPU(openCLContext),
+		new SPH::SystemGPU(openCLContext, renderingSystem->GetGraphicsContext()),
 		new SPH::SystemGPURenderer(renderingSystem->GetGraphicsContext()),
 		new SPH::SystemGPURenderCache(),
 		uiScreen,
@@ -215,8 +217,8 @@ CLIENT_API void Setup()
 	uiInputManager.SetScreen(&uiScreen);		
 		
 	
-	NewGPUSystem(openCLContext, &uiScreen, &renderingSystem);
-	//NewCPUSystem(threadPool, &uiScreen, &renderingSystem);
+	//NewGPUSystem(openCLContext, &uiScreen, &renderingSystem);
+	NewCPUSystem(threadPool, &uiScreen, &renderingSystem);
 	
 	SetupEvents(window, renderingSystem, uiScreen);
 	

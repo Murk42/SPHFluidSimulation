@@ -4,450 +4,29 @@
 
 namespace SPH
 {
-	SystemCPU::SystemCPU(ThreadPool& threadPool) :
-		threadPool(threadPool), threadIdleCount(threadPool.ThreadCount())
+	void TaskThreadContext::SyncThreads()
 	{
-	}
-	SystemCPU::~SystemCPU()
-	{
-		StopThreads();
-	}
+		if (context.threadPool.ThreadCount() == 0)
+			return;
 
-	void SystemCPU::Initialize(const SystemInitParameters& initParams)
-	{
-		behaviourParameters = initParams.particleBehaviourParameters;
-		boundParameters = initParams.particleBoundParameters;
-		smoothingKernelConstant = SmoothingKernelConstant(initParams.particleBehaviourParameters.maxInteractionDistance);
-		selfDensity = behaviourParameters.particleMass * SmoothingKernelD0(0, behaviourParameters.maxInteractionDistance) * smoothingKernelConstant;
-
-		hashesPerDynamicParticle = initParams.hashesPerDynamicParticle;
-
-		Array<DynamicParticle> dynamicParticles;
-		initParams.dynamicParticleGenerationParameters.generator->Generate(dynamicParticles);
-		initParams.staticParticleGenerationParameters.generator->Generate(staticParticles);
-		dynamicParticleCount = dynamicParticles.Count();
-		staticParticleCount = staticParticles.Count();
-
-		bufferSets.Clear();
-		bufferSets.Resize(initParams.bufferCount);
-		writeBufferSetIndex = 0;
-		readBufferSetIndex = 0;
-
-		for (auto& bufferSet : bufferSets)
-		{
-			bufferSet.dynamicParticlesBuffer.Allocate(
-				dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticles.Count(),
-				Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Read | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write,
-				Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentCoherent
-			);
-			bufferSet.staticParticlesBuffer.Allocate(
-				staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count()
-			);
-			bufferSet.dynamicParticleMap = (DynamicParticle*)bufferSet.dynamicParticlesBuffer.MapBufferRange(
-				0, sizeof(DynamicParticle) * dynamicParticles.Count(),
-				Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::None
-				//Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush |
-				//Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::Unsynchronized |
-				//Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::InvalidateBuffer 
-			);
-		}
-
-		dynamicHashMap.Resize(initParams.hashesPerDynamicParticle * dynamicParticleCount);
-		staticHashMap.Resize(initParams.hashesPerStaticParticle * dynamicParticleCount);
-		particleMap.Resize(dynamicParticleCount);
-		GenerateHashMap(staticParticles, staticHashMap, [gridSize = behaviourParameters.maxInteractionDistance, mod = staticHashMap.Count()](const StaticParticle& particle) {
-			return GetHash(Vec3i(particle.position / gridSize)) % mod;
-			});
-
-		StartThreads();
-
-		{
-			std::unique_lock<std::mutex> lock{ mutex };
-			RunThreadWork(lock, WorkType::CalculateHashAndParticleMap);
-		}
-		writeBufferSetIndex = (writeBufferSetIndex + 1) % bufferSets.Count();
-	}
-	void SystemCPU::Update(float deltaTime)
-	{
-		if (threadPool.ThreadCount() != 0)
-		{
-			bufferSets[writeBufferSetIndex].readFence.BlockClient(10);
-			std::unique_lock<std::mutex> lock{ mutex };
-			idleCV.wait(lock, [&]() { return threadIdleCount == threadPool.ThreadCount(); });
-			this->deltaTime = deltaTime;
-			writeBufferSetIndex = (writeBufferSetIndex + 1) % bufferSets.Count();
-			threadWorkType = WorkType::SimulateParticlesTimeStep;
-			threadIdleCount = 0;
-			idleCV.notify_all();
-		}
-		else
-			SimulateParticlesTimeStep(0, dynamicParticleCount);
-	}
-	void SystemCPU::StartRender(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext)
-	{
-		bufferSets[readBufferSetIndex].writeFence.BlockServer();
-	}
-	Graphics::OpenGLWrapper::VertexArray& SystemCPU::GetDynamicParticlesVertexArray()
-	{
-		return bufferSets[readBufferSetIndex].dynamicParticleVA;
-	}
-	Graphics::OpenGLWrapper::VertexArray& SystemCPU::GetStaticParticlesVertexArray()
-	{
-		return bufferSets[readBufferSetIndex].staticParticleVA;
-	}
-	void SystemCPU::EndRender()
-	{
-		bufferSets[readBufferSetIndex].readFence.SetFence();
-		readBufferSetIndex = (readBufferSetIndex + 1) % bufferSets.Count();
-	}
-
-	void SystemCPU::CalculateHashAndParticleMap(uintMem begin, uintMem end)
-	{
-		DynamicParticle* dynamicParticles = bufferSets[writeBufferSetIndex].dynamicParticleMap;
-
-		for (uintMem i = begin; i < end; ++i)
-		{
-			Vec3f particlePosition = dynamicParticles[i].position;
-
-			Vec3i cell = GetCell(particlePosition, behaviourParameters.maxInteractionDistance);
-			uint particleHash = GetHash(cell) % dynamicHashMap.Count();
-
-			dynamicParticles[i].hash = particleHash;			
-			++dynamicHashMap[particleHash];
-		}
-
-		SyncThreads();
-
-		if (begin == 0)
-		{
-			uint32 hashSum = 0;
-			for (auto& hash : dynamicHashMap)
-			{
-				hashSum += hash;
-				hash = hashSum;
-			}
-		}
-
-		SyncThreads();
-
-		for (uintMem i = begin; i < end; ++i)
-		{
-			float particleHash_FLOAT = dynamicParticles[i].hash;
-			uint particleHash = *(uint*)&particleHash_FLOAT;
-
-			uint index = --dynamicHashMap[particleHash];
-
-			particleMap[index] = i;
-		}
-	}
-	void SystemCPU::SimulateParticlesTimeStep(uintMem begin, uintMem end)
-	{
-		DynamicParticle* dynamicParticles = bufferSets[writeBufferSetIndex].dynamicParticleMap;
-
-		for (uintMem i = begin; i < end; ++i)
-		{
-			auto* particlePtr = dynamicParticles + i;
-
-			Vec3i cell = GetCell(particlePtr->position, behaviourParameters.maxInteractionDistance);
-
-			Vec3i beginCell = cell - Vec3i(1, 1, 1);
-			Vec3i endCell = cell + Vec3i(2, 2, 2);
-
-			float influenceSum = 0.0f;
-
-			Vec3i otherCell;
-			for (otherCell.x = beginCell.x; otherCell.x < endCell.x; ++otherCell.x)
-				for (otherCell.y = beginCell.y; otherCell.y < endCell.y; ++otherCell.y)
-					for (otherCell.z = beginCell.z; otherCell.z < endCell.z; ++otherCell.z)
-					{
-						uint otherHash = GetHash(otherCell);
-
-						//Calculating dynamic particle pressure
-						uint otherHashMod = otherHash % dynamicHashMap.Count();
-						uint beginIndex = dynamicHashMap[otherHashMod];
-						uint endIndex = dynamicHashMap[otherHashMod + 1];
-
-#ifdef DEBUG_BUFFERS				
-						if (beginIndex > endIndex)
-						{
-							printf("Begin index is bigger than end index. Begin: %u End: %u", beginIndex, endIndex);
-							break;
-						}
-						if (beginIndex > PARTICLE_COUNT)
-						{
-							printf("Invalid begin index: %u", beginIndex);
-							break;
-						}
-						if (endIndex > PARTICLE_COUNT)
-						{
-							printf("Invalid end index: %u", endIndex);
-							break;
-						}
-#endif
-
-						for (uint i = beginIndex; i < endIndex; ++i)
-						{
-							const DynamicParticle* otherParticlePtr = dynamicParticles + particleMap[i];
-
-							if (particlePtr == otherParticlePtr)
-								continue;
-
-#ifdef DEBUG_BUFFERS
-							if (particlePtr < firstPtr || particlePtr >= behindPtr)
-							{
-								printf("Reading outside valid memory of particles in neighbour loop");
-								continue;
-							}
-#endif					
-
-							Vec3f dir = otherParticlePtr->position - particlePtr->position;
-							float distSqr = dir.SqrLenght();
-
-							if (distSqr > behaviourParameters.maxInteractionDistance * behaviourParameters.maxInteractionDistance)
-								continue;
-
-							float dist = sqrt(distSqr);
-
-							influenceSum += SmoothingKernelD0(dist, behaviourParameters.maxInteractionDistance);
-						}
-
-						if (staticParticleCount == 0)
-							continue;
-
-						//Calculating static particle pressure
-						otherHashMod = otherHash % staticHashMap.Count();
-						beginIndex = staticHashMap[otherHashMod];
-						endIndex = staticHashMap[otherHashMod + 1];
-
-						for (uint i = beginIndex; i < endIndex; ++i)
-						{
-#ifdef DEBUG_BUFFERS
-							if (i >= STATIC_PARTICLE_COUNT)
-							{
-								printf("Reading outside valid memory of staticParticleMap in neighbour loop. begin: %4d end: %4d hash: %4d", beginIndex, endIndex, otherHash);
-								break;
-							}
-#endif
-
-							StaticParticle* otherParticlePtr = staticParticles.Ptr() + i;
-
-#ifdef DEBUG_BUFFERS
-							//					if (particlePtr < staticParticles || particlePtr >= staticParticles + STATIC_PARTICLE_COUNT)
-							//					{
-							//						printf("Reading outside valid memory of static particles in neighbour loop");
-							//						continue;
-							//					}					
-#endif
-
-							Vec3f dir = otherParticlePtr->position - particlePtr->position;
-							float distSqr = dir.SqrLenght();
-
-							if (distSqr > behaviourParameters.maxInteractionDistance * behaviourParameters.maxInteractionDistance)
-								continue;
-
-
-							float dist = sqrt(distSqr);
-
-							influenceSum += SmoothingKernelD0(dist, behaviourParameters.maxInteractionDistance);
-						}
-					}
-
-			influenceSum *= smoothingKernelConstant;
-
-			float particleDensity = selfDensity + influenceSum * behaviourParameters.particleMass;
-			particlePtr->pressure = behaviourParameters.gasConstant * (particleDensity - behaviourParameters.restDensity);
-		}
-
-		SyncThreads();
-
-		for (uintMem i = begin; i < end; ++i)
-		{
-			auto* particlePtr = dynamicParticles + i;
-
-			Vec3i cell = GetCell(particlePtr->position, behaviourParameters.maxInteractionDistance);
-
-			Vec3i beginCell = cell - Vec3i(1, 1, 1);
-			Vec3i endCell = cell + Vec3i(2, 2, 2);
-
-			Vec3f pressureForce = Vec3f(0, 0, 0);
-			Vec3f viscosityForce = Vec3f(0, 0, 0);
-
-			float particleDensity = particlePtr->pressure / behaviourParameters.gasConstant + behaviourParameters.restDensity;
-
-			Vec3i otherCell;
-			for (otherCell.x = beginCell.x; otherCell.x < endCell.x; ++otherCell.x)
-				for (otherCell.y = beginCell.y; otherCell.y < endCell.y; ++otherCell.y)
-					for (otherCell.z = beginCell.z; otherCell.z < endCell.z; ++otherCell.z)
-					{
-						uint otherHash = GetHash(otherCell);
-
-						uint otherHashMod = otherHash % dynamicHashMap.Count();
-						uint beginIndex = dynamicHashMap[otherHashMod];
-						uint endIndex = dynamicHashMap[otherHashMod + 1];
-
-						for (uint i = beginIndex; i < endIndex; ++i)
-						{
-							DynamicParticle* otherParticlePtr = dynamicParticles + particleMap[i];
-
-							if (particlePtr == otherParticlePtr)
-								continue;
-
-							const DynamicParticle otherParticle = *otherParticlePtr;
-
-							Vec3f dir = otherParticle.position - particlePtr->position;
-							float distSqr = dir.SqrLenght();
-
-							if (distSqr > behaviourParameters.maxInteractionDistance * behaviourParameters.maxInteractionDistance)
-								continue;
-
-							float dist = sqrt(distSqr);
-
-							if (distSqr == 0 || dist == 0)
-								dir = RandomDirection(i);
-							else
-								dir /= dist;
-
-							//apply pressure force					
-							pressureForce += dir * (particlePtr->pressure + otherParticle.pressure) * SmoothingKernelD1(dist, behaviourParameters.maxInteractionDistance);
-
-							//apply viscosity force					
-							viscosityForce += (otherParticle.velocity - particlePtr->velocity) * SmoothingKernelD2(dist, behaviourParameters.maxInteractionDistance);
-						}
-
-						if (staticParticleCount == 0)
-							continue;
-
-						otherHashMod = otherHash % staticHashMap.Count();
-						beginIndex = staticHashMap[otherHashMod];
-						endIndex = staticHashMap[otherHashMod + 1];
-
-						for (uint i = beginIndex; i < endIndex; ++i)
-						{
-							const StaticParticle* otherParticlePtr = staticParticles.Ptr() + i;
-							struct StaticParticle otherParticle = *otherParticlePtr;
-
-							Vec3f dir = otherParticle.position - particlePtr->position;
-							float distSqr = dir.SqrLenght();
-
-							if (distSqr > behaviourParameters.maxInteractionDistance * behaviourParameters.maxInteractionDistance)
-								continue;
-
-							float dist = sqrt(distSqr);
-
-							if (distSqr == 0 || dist == 0)
-								dir = RandomDirection(i);
-							else
-								dir /= dist;
-
-							//apply pressure force					
-							pressureForce += dir * (fabs(particlePtr->pressure) * 4) * SmoothingKernelD1(dist, behaviourParameters.maxInteractionDistance);
-
-							//apply viscosity force					
-							viscosityForce += -particlePtr->velocity * SmoothingKernelD2(dist, behaviourParameters.maxInteractionDistance);
-						}
-					}
-
-			pressureForce *= behaviourParameters.particleMass / (2 * particleDensity) * smoothingKernelConstant;
-			viscosityForce *= behaviourParameters.viscosity * behaviourParameters.particleMass * smoothingKernelConstant;
-
-			Vec3f particleForce = pressureForce + viscosityForce;
-			Vec3f acceleration = particleForce / particleDensity + behaviourParameters.gravity;
-
-			//Integrate
-			particlePtr->velocity += acceleration * deltaTime;
-			particlePtr->position += particlePtr->velocity * deltaTime;
-
-			if (boundParameters.bounded)
-			{
-				if (boundParameters.boundedByWalls)
-				{
-
-					if (particlePtr->position.x < boundParameters.boxOffset.x) {
-						particlePtr->position.x = boundParameters.boxOffset.x;
-						particlePtr->velocity.x = -particlePtr->velocity.x * behaviourParameters.elasticity;
-					}
-
-					if (particlePtr->position.x >= boundParameters.boxOffset.x) {
-						particlePtr->position.x = boundParameters.boxOffset.x - FLT_EPSILON;
-						particlePtr->velocity.x = -particlePtr->velocity.x * behaviourParameters.elasticity;
-					}
-
-					if (particlePtr->position.z < boundParameters.boxOffset.z) {
-						particlePtr->position.z = boundParameters.boxOffset.z;
-						particlePtr->velocity.z = -particlePtr->velocity.z * behaviourParameters.elasticity;
-					}
-
-					if (particlePtr->position.z >= boundParameters.boxOffset.z + boundParameters.boxSize.z) {
-						particlePtr->position.z = boundParameters.boxOffset.z + boundParameters.boxSize.z - FLT_EPSILON;
-						particlePtr->velocity.z = -particlePtr->velocity.z * behaviourParameters.elasticity;
-					}
-				}
-
-				if (boundParameters.boundedByRoof)
-				{
-					if (particlePtr->position.y >= boundParameters.boxOffset.y + boundParameters.boxSize.y)
-					{
-						particlePtr->position.y = boundParameters.boxOffset.y + boundParameters.boxSize.y - FLT_EPSILON;
-						particlePtr->velocity.y = -particlePtr->velocity.y * behaviourParameters.elasticity;
-					}
-				}
-
-				if (particlePtr->position.y < boundParameters.boxOffset.y)
-				{
-					particlePtr->position.y = boundParameters.boxOffset.y;
-					particlePtr->velocity.y = -particlePtr->velocity.y * behaviourParameters.elasticity;
-				}
-			}
-			cell = GetCell(particlePtr->position, behaviourParameters.maxInteractionDistance);
-			particlePtr->hash = GetHash(cell) % dynamicHashMap.Count();
-		}
-
-		SyncThreads();
-
-		if (begin == 0)
-			bufferSets[writeBufferSetIndex].writeFence.SetFence();
+		std::unique_lock<std::mutex> lock{ context.mutex };
 		
-		memset(dynamicHashMap.Ptr() + begin * hashesPerDynamicParticle, 0, (end - begin) * hashesPerDynamicParticle * sizeof(uint32));
+		++context.threadSyncCount1;
+		context.syncCV.notify_all();				
+		context.syncCV.wait(lock, [&]() { return context.threadSyncCount1 % context.threadPool.ThreadCount() == 0; });				
 
-		SyncThreads();
-
-		for (uintMem i = begin; i < end; ++i)		
-			++dynamicHashMap[dynamicParticles[i].hash];		
-
-		SyncThreads();
-
-		if (begin == 0)
-		{
-			uint32 hashSum = 0;
-			for (auto& hash : dynamicHashMap)
-			{
-				hashSum += hash;
-				hash = hashSum;
-			}
-		}
-
-		SyncThreads();
-
-		for (uintMem i = begin; i < end; ++i)
-		{						
-			uint index = --dynamicHashMap[dynamicParticles[i].hash];
-
-			particleMap[index] = i;
-		}
-
+		++context.threadSyncCount2;
+		context.syncCV.notify_all();
+		context.syncCV.wait(lock, [&]() { return context.threadSyncCount2 % context.threadPool.ThreadCount() == 0; });
 	}
-	void SystemCPU::RunThreadWork(std::unique_lock<std::mutex>& lock, WorkType workType)
-	{        
-		idleCV.wait(lock, [&]() { return threadIdleCount == threadPool.ThreadCount(); });
-		threadWorkType = workType;
-		threadIdleCount = 0;
-		idleCV.notify_all();
+	TaskThreadContext::TaskThreadContext(ThreadContext& context) : context(context)
+	{
 	}
-	void SystemCPU::WaitForAllThreadsIdle(std::unique_lock<std::mutex>& lock)
-	{        
-		idleCV.wait(lock, [&]() { return threadIdleCount == threadPool.ThreadCount(); });
+	ThreadContext::ThreadContext(ThreadPool& threadPool) :
+		threadPool(threadPool), threadIdleCount(0), threadSyncCount1(0), exit(false), taskThreadContext(*this), begin(0), end(0), threadSyncCount2(0)
+	{		
 	}
-	void SystemCPU::StopThreads()
+	ThreadContext::~ThreadContext()
 	{
 		if (threadPool.ThreadCount() == 0)
 			return;
@@ -456,75 +35,384 @@ namespace SPH
 			return;
 
 		{
-			std::unique_lock<std::mutex> lock{ mutex };
-			idleCV.wait(lock, [&]() { return threadIdleCount == threadPool.ThreadCount(); });
-			threadWorkType = WorkType::Exit;
-			threadIdleCount = 0;
+			std::lock_guard lock{ mutex };			
+			exit = true;			
 			idleCV.notify_all();
 		}
-		
+
 		if (threadPool.WaitForAll(1.0f) != threadPool.ThreadCount())
-			Debug::Logger::LogWarning("Client", "Threads didn't exit on time");        
-
-		threadIdleCount = threadPool.ThreadCount();
+			Debug::Logger::LogWarning("Client", "Threads didn't exit on time");		
 	}
-	void SystemCPU::StartThreads()
+	void ThreadContext::FinishTasks()
 	{
-		if (threadPool.ThreadCount() == 0)
-			return;
-
-		StopThreads();
-
-		threadIdleCount = 0;
-		
-		threadPool.RunTask(0, dynamicParticleCount, [this](uintMem begin, uintMem end) -> uint {
-			SimulationThreadFunc(begin, end);
-			return 0;
-		});
-	}
-	void SystemCPU::SimulationThreadFunc(uintMem begin, uintMem end)           
-	{
-		bool exit = false;
-		while (!exit)
-		{
-			{
-				std::unique_lock<std::mutex> lock{ mutex };
-				++threadIdleCount;
-				idleCV.notify_all();
-				idleCV.wait(lock, [&]() { return threadIdleCount == 0; });                
-			}
-
-			switch (threadWorkType)
-			{
-			case SPH::SystemCPU::WorkType::CalculateHashAndParticleMap:
-				CalculateHashAndParticleMap(begin, end);
-				break;
-			case SPH::SystemCPU::WorkType::SimulateParticlesTimeStep:
-				SimulateParticlesTimeStep(begin, end);				
-				break;						
-			case SPH::SystemCPU::WorkType::Exit:
-				exit = true;
-				break;
-			}
-		}
-	}
-	void SystemCPU::SyncThreads()
-	{
-		if (threadPool.ThreadCount() == 0)
+		if (!threadPool.IsAnyRunning())
 			return;
 
 		std::unique_lock<std::mutex> lock{ mutex };
-		++threadSyncCount;		
-
-		if (threadSyncCount == threadPool.ThreadCount())
-		{ 
-			threadSyncCount = 0;
-			syncCV.notify_all();
-		}
-		else
+		idleCV.wait(lock, [&]() { return threadIdleCount == threadPool.ThreadCount(); });
+	}
+	void ThreadContext::StartThreads(uintMem begin, uintMem end)
+	{
+		if (threadPool.IsAnyRunning())
 		{
-			syncCV.notify_all();
-			syncCV.wait(lock, [&]() { return threadSyncCount == 0; });
+			{
+				std::lock_guard lock{ mutex };
+				exit = true;
+				idleCV.notify_all();
+			}
+
+			if (threadPool.WaitForAll(1.0f) != threadPool.ThreadCount())
+				Debug::Logger::LogWarning("Client", "Threads didn't exit on time");
+		}
+
+		this->begin = begin;
+		this->end = end;
+		threadIdleCount = 0;
+		threadSyncCount1 = 0;
+		threadSyncCount2 = 0;
+		exit = false;
+
+		if (threadPool.ThreadCount() == 0)
+			return;
+
+		threadPool.RunTask(begin, end, [this](uintMem begin, uintMem end) -> uint {
+			SimulationThreadFunc(taskThreadContext, begin, end);
+			return 0;
+			});
+	}
+	void ThreadContext::StopThreads()
+	{
+		if (threadPool.IsAnyRunning())
+		{
+			{
+				std::lock_guard lock{ mutex };
+				exit = true;
+				idleCV.notify_all();
+			}
+
+			if (threadPool.WaitForAll(1.0f) != threadPool.ThreadCount())
+				Debug::Logger::LogWarning("Client", "Threads didn't exit on time");			
 		}
 	}
+	void ThreadContext::EnqueueTask(TaskFunction taskFunction)
+	{
+		if (threadPool.ThreadCount() == 0)		
+			taskFunction(taskThreadContext, begin, end);		
+		else
+		{
+			std::lock_guard lk{ mutex };
+			tasks.push(taskFunction);			
+			idleCV.notify_all();
+		}
+	}	
+	void ThreadContext::SimulationThreadFunc(TaskThreadContext& taskThreadContext, uintMem begin, uintMem end)
+	{		
+		while (true)
+		{			
+			std::unique_lock<std::mutex> lock{ mutex };
+			
+			++threadIdleCount;
+			idleCV.notify_all();
+			idleCV.wait(lock, [&]() { return exit || !tasks.empty(); });			
+			--threadIdleCount;
+			
+			if (exit)
+				break;
+
+			TaskFunction task = tasks.front();
+			
+			lock.unlock();
+
+			taskThreadContext.SyncThreads();			
+
+			if (begin == 0)
+			{
+				std::lock_guard lg{ lock };				
+
+				tasks.pop();				
+			}
+
+			task(taskThreadContext, begin, end);			
+		}
+	}
+
+	SystemCPU::SystemCPU(ThreadPool& threadPool) :
+		threadContext(threadPool)
+	{
+	}
+	SystemCPU::~SystemCPU()
+	{
+		Clear();
+	}
+	void SystemCPU::Initialize(const SystemInitParameters& initParams)
+	{				
+		Clear();
+
+		Array<DynamicParticle> dynamicParticles;
+		initParams.dynamicParticleGenerationParameters.generator->Generate(dynamicParticles);
+		initParams.staticParticleGenerationParameters.generator->Generate(staticParticles);
+		dynamicParticleCount = dynamicParticles.Count();
+		staticParticleCount = staticParticles.Count();
+
+		bufferSets.Clear();
+		bufferSets = Array<ParticleBufferSet>(std::max(initParams.bufferCount, 2Ui64));		
+
+		renderBufferSetIndex = 0;
+		simulationWriteBufferSetIndex = 1;
+		simulationReadBufferSetIndex = 0;
+
+		for (auto& bufferSet : bufferSets)
+		{
+			bufferSet.dynamicParticlesBuffer.Allocate(
+				dynamicParticles.Ptr(), sizeof(DynamicParticle) * dynamicParticles.Count(),
+				Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Read | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write,
+				Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentCoherent
+			);			
+			bufferSet.dynamicParticleMap = (DynamicParticle*)bufferSet.dynamicParticlesBuffer.MapBufferRange(
+				0, sizeof(DynamicParticle) * dynamicParticles.Count(),
+				Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::None
+				//Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush |
+				//Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::Unsynchronized |
+				//Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::InvalidateBuffer 
+			);
+
+			bufferSet.dynamicParticleVA.EnableVertexAttribute(0);
+			bufferSet.dynamicParticleVA.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, position));
+			bufferSet.dynamicParticleVA.SetVertexAttributeBuffer(0, &bufferSet.dynamicParticlesBuffer, sizeof(DynamicParticle), 0);
+			bufferSet.dynamicParticleVA.SetVertexAttributeDivisor(0, 1);
+
+			bufferSet.dynamicParticleVA.EnableVertexAttribute(1);
+			bufferSet.dynamicParticleVA.SetVertexAttributeFormat(1, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, velocity));
+			bufferSet.dynamicParticleVA.SetVertexAttributeBuffer(1, &bufferSet.dynamicParticlesBuffer, sizeof(DynamicParticle), 0);
+			bufferSet.dynamicParticleVA.SetVertexAttributeDivisor(1, 1);
+
+			bufferSet.dynamicParticleVA.EnableVertexAttribute(2);
+			bufferSet.dynamicParticleVA.SetVertexAttributeFormat(2, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, offsetof(DynamicParticle, pressure));
+			bufferSet.dynamicParticleVA.SetVertexAttributeBuffer(2, &bufferSet.dynamicParticlesBuffer, sizeof(DynamicParticle), 0);
+			bufferSet.dynamicParticleVA.SetVertexAttributeDivisor(2, 1);			
+
+			bufferSet.writeFinished.test_and_set();
+		}
+
+		staticParticlesBuffer = decltype(staticParticlesBuffer)();
+		staticParticlesBuffer.Allocate(
+			staticParticles.Ptr(), sizeof(StaticParticle) * staticParticles.Count()
+		);
+
+		staticParticleVA.EnableVertexAttribute(0);
+		staticParticleVA.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(StaticParticle, position));
+		staticParticleVA.SetVertexAttributeBuffer(0, &staticParticlesBuffer, sizeof(StaticParticle), 0);
+		staticParticleVA.SetVertexAttributeDivisor(0, 1);
+
+		dynamicParticleHashMapSize = initParams.hashesPerDynamicParticle * dynamicParticleCount ;
+		staticParticleHashMapSize = initParams.hashesPerStaticParticle * staticParticleCount;
+
+		dynamicParticleReadHashMapBuffer.Resize(dynamicParticleHashMapSize + 1);
+		dynamicParticleWriteHashMap.Resize(dynamicParticleHashMapSize + 1);
+		staticParticleHashMap.Resize(staticParticleHashMapSize + 1);
+		memset(dynamicParticleReadHashMapBuffer.Ptr(), 0, sizeof(uint32) * dynamicParticleReadHashMapBuffer.Count());
+		dynamicParticleReadHashMapBuffer.Last() = dynamicParticleCount;
+		memset(dynamicParticleWriteHashMap.Ptr(), 0, sizeof(uint32) * dynamicParticleWriteHashMap.Count());
+		dynamicParticleWriteHashMap.Last() = dynamicParticleCount;
+		memset(staticParticleHashMap.Ptr(), 0, sizeof(uint32) * staticParticleHashMap.Count());		
+
+		particleMap.Resize(dynamicParticleCount);
+				
+		simulationParameters.behaviour = initParams.particleBehaviourParameters;
+		simulationParameters.bounds = initParams.particleBoundParameters;
+		simulationParameters.dynamicParticleCount = dynamicParticleCount;
+		simulationParameters.dynamicParticleHashMapSize = dynamicParticleReadHashMapBuffer.Count() - 1;
+		simulationParameters.smoothingKernelConstant = SmoothingKernelConstant(initParams.particleBehaviourParameters.maxInteractionDistance);
+		simulationParameters.selfDensity = initParams.particleBehaviourParameters.particleMass * SmoothingKernelD0(0, initParams.particleBehaviourParameters.maxInteractionDistance) * simulationParameters.smoothingKernelConstant;
+		simulationParameters.staticParticleCount = staticParticleCount;
+		simulationParameters.staticParticleHashMapSize = staticParticleHashMap.Count() - 1;
+		
+		threadContext.StartThreads(0, dynamicParticleCount);		
+
+		auto GetStaticParticleHash = [gridSize = initParams.particleBehaviourParameters.maxInteractionDistance, mod = staticParticleHashMapSize](const StaticParticle& particle) {
+			return GetHash(Vec3i(particle.position / gridSize)) % mod;
+			};
+		staticParticles = GenerateHashMapAndReorderParticles(staticParticles, staticParticleHashMap, GetStaticParticleHash);		
+		
+		CalculateHashAndParticleMapTask task{
+			.particles = bufferSets[0].dynamicParticleMap,
+			.simulationParameters = &simulationParameters,
+			.hashMap = dynamicParticleReadHashMapBuffer.Ptr(),
+			.particleMap = particleMap.Ptr(),
+		};
+		threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem begin, uintMem end) {
+			CalculateHashAndParticleMap(context, begin, end, task);
+			});		
+	}
+	void SystemCPU::Clear()
+	{
+		threadContext.StopThreads();
+
+		dynamicParticleCount = 0;
+		dynamicParticleHashMapSize = 0;
+		staticParticleCount = 0;
+		staticParticleHashMapSize = 0;
+
+		bufferSets.Clear();
+		dynamicParticleReadHashMapBuffer.Clear();
+		dynamicParticleWriteHashMap.Clear();
+		particleMap.Clear();
+		staticParticles.Clear();
+		staticParticleHashMap.Clear();
+
+		staticParticlesBuffer = decltype(staticParticlesBuffer)();
+		staticParticleVA = decltype(staticParticleVA)();
+
+		simulationWriteBufferSetIndex = 0;
+		simulationReadBufferSetIndex = 0;
+		renderBufferSetIndex = 0;
+
+		simulationParameters = { };
+	}
+	void SystemCPU::Update(float deltaTime)
+	{
+		SimulateParticlesTimeStepTask task{
+			.readParticles = bufferSets[simulationReadBufferSetIndex].dynamicParticleMap,
+			.writeParticles = bufferSets[simulationWriteBufferSetIndex].dynamicParticleMap,
+			.dynamicParticleReadHashMapBuffer = dynamicParticleReadHashMapBuffer.Ptr(),
+			.dynamicParticleWriteHashMap = dynamicParticleWriteHashMap.Ptr(),
+			.particleMap = particleMap.Ptr(),
+			.staticParticles = staticParticles.Ptr(),
+			.staticParticleHashMap = staticParticleHashMap.Ptr(),
+			.simulationParameters = &simulationParameters,			
+			.readStarted = &bufferSets[simulationWriteBufferSetIndex].readStarted,
+			.readFinished = &bufferSets[simulationWriteBufferSetIndex].readFinished,
+			.writeFinished = &bufferSets[simulationWriteBufferSetIndex].writeFinished,
+			.dt = deltaTime,
+		};
+		threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem begin, uintMem end) {
+			SimulateParticlesTimeStep(context, begin, end, task);
+			});
+
+		std::swap(dynamicParticleReadHashMapBuffer, dynamicParticleWriteHashMap);
+		
+		simulationReadBufferSetIndex = (simulationReadBufferSetIndex + 1) % bufferSets.Count();
+		simulationWriteBufferSetIndex = (simulationWriteBufferSetIndex + 1) % bufferSets.Count();		
+	}
+	void SystemCPU::StartRender(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext)
+	{
+		bufferSets[renderBufferSetIndex].readStarted.test_and_set();
+		bufferSets[renderBufferSetIndex].writeFinished.wait(false);				
+		renderBufferSetIndex = simulationReadBufferSetIndex;
+	}
+	Graphics::OpenGLWrapper::VertexArray& SystemCPU::GetDynamicParticlesVertexArray()
+	{
+		return bufferSets[renderBufferSetIndex].dynamicParticleVA;
+	}
+	Graphics::OpenGLWrapper::VertexArray& SystemCPU::GetStaticParticlesVertexArray()
+	{
+		return staticParticleVA;
+	}
+	void SystemCPU::EndRender()
+	{		
+		bufferSets[renderBufferSetIndex].readFinished.SetFence();		
+	}	
+	void SystemCPU::CalculateHashAndParticleMap(TaskThreadContext& context, uintMem begin, uintMem end, CalculateHashAndParticleMapTask task)
+	{
+		for (uintMem i = begin; i < end; ++i)
+		{
+			Vec3f particlePosition = task.particles[i].position;
+
+			Vec3i cell = GetCell(particlePosition, task.simulationParameters->behaviour.maxInteractionDistance);
+			uint particleHash = GetHash(cell) % task.simulationParameters->dynamicParticleHashMapSize;
+
+			task.particles[i].hash = particleHash;		
+			++task.hashMap[particleHash];
+		}
+
+		context.SyncThreads();
+
+		if (begin == 0)
+		{
+			uint32 valueSum = 0;
+			for (uintMem i = 0; i < task.simulationParameters->dynamicParticleHashMapSize; ++i)
+			{
+				valueSum += task.hashMap[i];
+				task.hashMap[i] = valueSum;
+			}
+		}
+
+		context.SyncThreads();
+
+		for (uintMem i = begin; i < end; ++i)
+		{
+			uint index = --task.hashMap[task.particles[i].hash];
+			task.particleMap[index] = i;
+		}		
+	}
+	void SystemCPU::SimulateParticlesTimeStep(TaskThreadContext& context, uintMem begin, uintMem end, SimulateParticlesTimeStepTask task)
+	{		
+		if (begin == 0)
+		{
+			if (task.readStarted->test())
+			{
+				task.readFinished->BlockClient(10);				
+				task.readFinished->Clear();
+				task.readStarted->clear();
+			}
+			task.writeFinished->clear();
+		}
+
+		context.SyncThreads();
+		
+		for (uintMem i = begin; i < end; ++i)
+			UpdateParticlePressure(
+				i,
+				task.readParticles,
+				task.writeParticles,
+				task.dynamicParticleReadHashMapBuffer,
+				task.particleMap,
+				task.staticParticles,
+				task.staticParticleHashMap,
+				task.simulationParameters
+			);
+
+		if (begin == 0)		
+			memset(task.dynamicParticleWriteHashMap, 0, task.simulationParameters->dynamicParticleHashMapSize * sizeof(uint32));
+
+		context.SyncThreads();
+
+		for (uintMem i = begin; i < end; ++i)
+			UpdateParticleDynamics(
+				i,
+				task.readParticles,
+				task.writeParticles,
+				task.dynamicParticleReadHashMapBuffer,
+				task.dynamicParticleWriteHashMap,
+				task.particleMap,
+				task.staticParticles,
+				task.staticParticleHashMap,
+				task.dt,
+				task.simulationParameters
+			);		
+
+		context.SyncThreads();
+		
+
+		if (begin == 0)
+		{			
+			task.writeFinished->test_and_set();
+			task.writeFinished->notify_all();
+					
+			uint32 valueSum = 0;
+			for (uintMem i = 0; i < task.simulationParameters->dynamicParticleHashMapSize; ++i)
+			{
+				valueSum += task.dynamicParticleWriteHashMap[i];
+				task.dynamicParticleWriteHashMap[i] = valueSum;
+			}
+		}
+
+		context.SyncThreads();
+
+		for (uintMem i = begin; i < end; ++i)
+		{						
+			uint index = --task.dynamicParticleWriteHashMap[task.writeParticles[i].hash];
+			task.particleMap[index] = i;
+		}		
+	}			
 }

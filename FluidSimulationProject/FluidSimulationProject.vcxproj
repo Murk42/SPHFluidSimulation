@@ -178,6 +178,7 @@
     <ClInclude Include="src\SPH\ParticleGenerator\FileModelShellGenerator.h" />
     <ClInclude Include="src\SPH\ParticleGenerator\FilledBoxParticleGenerator.h" />
     <ClInclude Include="src\SPH\ParticleGenerator\ParticleGenerator.h" />
+    <ClInclude Include="kernels\CL_CPP_SPHDeclarations.h" />
     <ClInclude Include="src\SPH\SPHFunctions.h" />
     <ClInclude Include="src\SPH\System\System.h" />
     <ClInclude Include="src\SPH\System\SystemCPU.h" />

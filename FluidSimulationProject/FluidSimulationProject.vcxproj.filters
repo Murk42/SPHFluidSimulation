@@ -104,6 +104,9 @@
     <ClInclude Include="src\SPH\Graphics\SystemCPURenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kernels\CL_CPP_SPHDeclarations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props">
