@@ -1,15 +1,16 @@
 
 //array should be sized get_enqueued_local_size(0) * get_num_groups(0) * 2
-void kernel scanOnComputeGroups(local uint* temp, global uint* array, uint scale)
-{	
+void kernel scanOnComputeGroups(local uint* temp, global uint* array, uint scale, uint arrayOffset)
+{		
 	const uint n = min((get_global_size(0) - get_local_size(0) * get_group_id(0)), get_local_size(0)) * 2;
-	global uint* ptr = array + get_local_size(0) * get_group_id(0) * 2 * scale;
+	global uint* ptrIn = array + get_local_size(0) * get_group_id(0) * 2 * scale;
+	global uint* ptrOut = ptrIn + arrayOffset;
 
 	int thid = get_local_id(0);
 	int offset = 1;	
 	
-	temp[2 * thid + 0] = ptr[(2 * thid + 1) * scale - 1]; // load input into shared memory
-	temp[2 * thid + 1] = ptr[(2 * thid + 2) * scale - 1];	
+	temp[2 * thid + 0] = ptrIn[(2 * thid + 1) * scale - 1]; // load input into shared memory
+	temp[2 * thid + 1] = ptrIn[(2 * thid + 2) * scale - 1];	
 	
 	for (int d = n>>1; d > 0; d >>= 1) // build sum in place up the tree
 	{
@@ -52,12 +53,14 @@ void kernel scanOnComputeGroups(local uint* temp, global uint* array, uint scale
 	
 	barrier(CLK_LOCAL_MEM_FENCE);		
 	
-	ptr[(2 * thid + 1) * scale - 1] = temp[2*thid + 1]; // write results to device memory
-	ptr[(2 * thid + 2) * scale - 1] = temp[2*thid + 2];
+	ptrOut[(2 * thid + 1) * scale - 1] = temp[2*thid + 1]; // write results to device memory
+	ptrOut[(2 * thid + 2) * scale - 1] = temp[2*thid + 2];
 }
 
-void kernel addToComputeGroupArrays(global uint* arrays, uint scale)
+void kernel addToComputeGroupArrays(global uint* arrays, uint scale, uint arrayOffset)
 {	
+	arrays += arrayOffset;
+
 	uint index = (get_group_id(0) + 1) * scale * (get_local_size(0) + 1);
 	uint inc = arrays[index - 1];
 

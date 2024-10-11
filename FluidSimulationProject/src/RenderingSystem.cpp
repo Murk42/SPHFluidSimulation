@@ -22,7 +22,7 @@ RenderingSystem::RenderingSystem() :
 	UIRenderPipeline(texturedRectRenderer, panelRenderer),
 	sphSystemRenderCache(nullptr)
 {
-	graphicsContext.SetClearColor(0x101510ff);	
+	graphicsContext.SetClearColor(clearColor);	
 
 	windowResizedEvent.SetFunction([&](auto event) {
 		graphicsContext.Flush();
@@ -59,17 +59,26 @@ void RenderingSystem::SetScreen(UI::Screen* screen)
 
 void RenderingSystem::Render()
 {
-
 	graphicsContext.ClearTarget();
 
 	graphicsContext.EnableDepthTest(true);
-
+	
 	if (sphSystemRenderCache != nullptr)	
 		sphSystemRenderer->Render(*sphSystemRenderCache, viewMatrix, projectionMatrix);		
-
+	
 	graphicsContext.EnableDepthTest(false);
 
 	UIRenderPipeline.Render(renderWindow.GetSize());
 
 	renderWindow.GetWindowSDL().SwapBuffers();
+}
+
+void RenderingSystem::SetCustomClearColor(ColorRGBAf color)
+{
+	graphicsContext.SetClearColor(color);
+}
+
+void RenderingSystem::DisableCustomClearColor()
+{
+	graphicsContext.SetClearColor(clearColor);
 }

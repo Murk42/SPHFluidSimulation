@@ -22,6 +22,9 @@ float sqrDistance(vec3 a, vec3 b)
 	return dot(a, a);
 }
 
+#define FADE_START 5
+#define FADE_END 4
+
 void main()
 {
 	vec3 center = (u_modelView * vec4(i_pos, 1)).xyz;	
@@ -43,20 +46,26 @@ void main()
 		pos += -up -right;
 	if (gl_VertexID == 3)	
 		pos += -up +right;	
+
 			
+	vec4 color;
 	if (i_color == 0)
-	{
+	{		
+
 		float colorCoef = clamp(1 - exp(-i_pressure / 2000), 0, 1);
 		
-		f_color = mix(u_color, vec4(1.0f, 0.0f, 0.0f, 1.0f), colorCoef);	
+		color = mix(u_color, vec4(1.0f, 0.0f, 0.0f, 1.0f), colorCoef);	
 	}
 	else if (i_color == 1)
-		f_color = vec4(0, 0, 1, 1);
+		color = vec4(0, 0, 1, 1);
 	else if (i_color == 2)
-		f_color = vec4(0, 1, 0, 1);
+		color = vec4(0, 1, 0, 1);
 	else
-		f_color = vec4(1, 0, 0, 1);
+		color = vec4(1, 0, 0, 1);
+	
+	color.a *= (1 - smoothstep(FADE_START, FADE_END, dist));
 
+	f_color = color;
 	f_center = center;
 	f_radiusSqr = sqrDistance(center, center + right);
 	f_pos = pos;

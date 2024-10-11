@@ -26,6 +26,8 @@ namespace SPH
 		uintMem bufferCount;
 		float hashesPerDynamicParticle;
 		float hashesPerStaticParticle;
+
+		void ParseJSON(const JSON& json);
 	};
 
 	template<typename T>
@@ -37,41 +39,58 @@ namespace SPH
 	template<typename T>
 	concept ParticleWithPressure = requires (const T & particle) { { particle.pressure } -> std::same_as<const float&>; };
 
+	struct SystemProfilingData
+	{
+		uint64 timePerStep_ns;
+	};
+
 	class System
 	{
 	public:
 		virtual ~System() { }
 
-		virtual void Initialize(const SystemInitParameters&) = 0;		
-
-		virtual void Update(float dt) = 0;
+		void Initialize(const SystemInitParameters&);
+		virtual void Clear() = 0;
+		virtual void Update(float dt, uint simulationSteps) = 0;
 
 		virtual StringView SystemImplementationName() = 0;			
 		
 		virtual uintMem GetDynamicParticleCount() const = 0;
 		virtual uintMem GetStaticParticleCount() const = 0;
 
-		virtual Array<DynamicParticle> GetParticles() { return { }; }
-		virtual Array<uintMem> FindNeighbors(Array<DynamicParticle>& particles, Vec3f position) { return {}; }
+		virtual void StartRender() = 0;
+		virtual Graphics::OpenGLWrapper::VertexArray* GetDynamicParticlesVertexArray() = 0;
+		virtual Graphics::OpenGLWrapper::VertexArray* GetStaticParticlesVertexArray() = 0;
+		virtual void EndRender() = 0;
+
+		virtual void EnableProfiling(bool enable) = 0;
+		virtual SystemProfilingData GetProfilingData() = 0;
+		virtual float GetSimulationTime() = 0;
 	protected:				
+		virtual void CreateStaticParticlesBuffers(Array<StaticParticle>& staticParticles, uintMem hashesPerStaticParticle, float maxInteractionDistance) = 0;
+		virtual void CreateDynamicParticlesBuffers(Array<DynamicParticle>& dynamicParticles, uintMem bufferCount, uintMem hashesPerDynamicParticle, float maxInteractionDistance) = 0;
+		virtual void InitializeInternal(const SystemInitParameters&) = 0;
+
 		template<typename T, typename F> requires std::invocable<F, const T&>
 		static Array<T> GenerateHashMapAndReorderParticles(const Array<T>& particles, Array<uint32>& hashMap, const F& hashGetter);		
 
 		template<typename T>
 		static void DebugParticles(ArrayView<T> particles, float maxInteractionDistance, uintMem hashMapSize);
-		template<typename T> requires ParticleWithHash<T>
-		static void DebugPrePrefixSumHashes(ArrayView<T> particles, Array<uint32> hashMap);
-		template<ParticleWithHash T>
-		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<uint32> hashMap, ArrayView<uint32> particleMap);
+		template<typename T, typename H> requires ParticleWithHash<T>
+		static void DebugPrePrefixSumHashes(ArrayView<T> particles, Array<H> hashMap);
+		template<ParticleWithHash T, typename H>
+		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap);
+		template<typename T, typename H, typename F> requires std::invocable<F, const T&>
+		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap, const F& hashGetter);
 	};	
 	
 	template<typename T, typename F> requires std::invocable<F, const T&>
 	inline Array<T> System::GenerateHashMapAndReorderParticles(const Array<T>& particles, Array<uint32>& hashMap, const F& hashGetter)
 	{
-		memset(hashMap.Ptr(), 0, sizeof(uint) * hashMap.Count());
+		memset(hashMap.Ptr(), 0, sizeof(uint32) * hashMap.Count());
 
-		for (uintMem i = 0; i < particles.Count(); ++i)
-			++hashMap[hashGetter(particles[i])];
+		for (const auto& particle : particles)
+			++hashMap[hashGetter(particle)];
 
 		uint indexSum = 0;
 		for (auto& index : hashMap)
@@ -151,8 +170,8 @@ namespace SPH
 			}
 		}
 	}
-	template<typename T> requires ParticleWithHash<T>
-	inline void System::DebugPrePrefixSumHashes(ArrayView<T> particles, Array<uint32> hashMap)
+	template<typename T, typename H> requires ParticleWithHash<T>
+	inline void System::DebugPrePrefixSumHashes(ArrayView<T> particles, Array<H> hashMap)
 	{		
 		for (auto& particle : particles)
 			hashMap[particle.hash]--;
@@ -164,8 +183,15 @@ namespace SPH
 				__debugbreak();
 			}
 	}
-	template<ParticleWithHash T>
-	inline void System::DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<uint32> hashMap, ArrayView<uint32> particleMap)
+	template<ParticleWithHash T, typename H>
+	inline void System::DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap)
+	{
+		DebugHashAndParticleMap<T, H>(particles, hashMap, particleMap, [](const T& particle) {
+			return particle.hash;
+			});
+	}
+	template<typename T, typename H, typename F> requires std::invocable<F, const T&>
+	inline void System::DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap, const F& hashGetter)
 	{
 		if (hashMap[0] != 0)
 		{
@@ -196,14 +222,24 @@ namespace SPH
 				__debugbreak();
 			}
 
-			for (uint32 j = lastValue; j < value; ++j)
-			{
-				if (particles[particleMap[j]].hash != i - 1)
+			if (particleMap.Empty())
+				for (uint32 j = lastValue; j < value; ++j)
 				{
-					Debug::Logger::LogDebug("Client", "Invalid particleMap value");
-					__debugbreak();
+					if (hashGetter(particles[j]) != i - 1)
+					{
+						Debug::Logger::LogDebug("Client", "Invalid hash value");
+						__debugbreak();
+					}
 				}
-			}
+			else
+				for (uint32 j = lastValue; j < value; ++j)
+				{										
+					if (hashGetter(particles[particleMap[j]]) != i - 1)
+					{
+						Debug::Logger::LogDebug("Client", "Invalid particleMap value");
+						__debugbreak();
+					}
+				}
 
 			lastValue = value;
 		}

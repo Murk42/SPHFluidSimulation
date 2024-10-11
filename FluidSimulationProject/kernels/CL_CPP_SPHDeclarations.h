@@ -3,6 +3,7 @@
 #ifdef CL_COMPILER
 #define Vec3i int3
 #define Vec3f float3
+#define HASH_TYPE uint
 
 #define modf fract
 
@@ -37,6 +38,7 @@ static Vec3f floor(const Vec3f x)
 #define CONVERT_VEC3F(x) Vec3f(x)
 #define NEW_VEC3I(x, y, z) Vec3i(x, y, z)
 #define NEW_VEC3F(x, y, z) Vec3f(x, y, z)
+#define HASH_TYPE std::atomic_uint32_t
 
 struct DynamicParticle
 {

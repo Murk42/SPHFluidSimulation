@@ -8,24 +8,13 @@ public:
 	void AllocateThreads(uintMem threads);
 
 	template<typename ... Args, std::invocable<uintMem, uintMem, Args...> F> 
-	void RunTask(uintMem begin, uintMem end, const F& task, Args&& ... args)
+	void RunTask(const F& task, Args&& ... args)
 	{	
-		if (threads.Empty())
-		{
-			task(begin, end);
-		}
-		else
-		{
-			uintMem count = end - begin;
-			uintMem offset = begin;
-			for (uint i = 0; i < threads.Count(); ++i)
-			{
-				uintMem elementCount = count / (threads.Count() - i);
-				threads[i].Run(task, uintMem(offset), uintMem(offset + elementCount), std::forward<Args>(args)...);
-				count -= elementCount;
-				offset += elementCount;
-			}
-		}
+		if (threads.Empty())		
+			task(0, 1);
+		else		
+			for (uintMem i = 0; i < threads.Count(); ++i)			
+				threads[i].Run(task, (uintMem)i, threads.Count(), std::forward<Args>(args)...);									
 	}
 
 	bool IsAnyRunning();

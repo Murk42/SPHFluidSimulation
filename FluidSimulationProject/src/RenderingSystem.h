@@ -15,11 +15,16 @@ public:
 
 	void Render();
 
+	void SetCustomClearColor(ColorRGBAf color);
+	void DisableCustomClearColor();
+
 	inline Window& GetWindow() { return renderWindow.GetWindowSDL(); }
 	inline Graphics::OpenGL::GraphicsContext_OpenGL& GetGraphicsContext() { return graphicsContext; }
 	inline const Mat4f& GetViewMatrix() const { return viewMatrix; }
 	inline const Mat4f& GetProjectionMatrix() const { return projectionMatrix; }
 private:
+	ColorRGBAf clearColor = 0x101510ff;
+
 	Graphics::OpenGL::GraphicsContext_OpenGL graphicsContext;
 	Graphics::OpenGL::RenderWindow_OpenGL renderWindow;
 	Graphics::OpenGL::TexturedRectRenderer_OpenGL texturedRectRenderer;

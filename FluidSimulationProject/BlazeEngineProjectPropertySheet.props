@@ -16,11 +16,11 @@
       <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(BlazeDir)install\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngine\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineCore\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineGraphics\build\$(Configuration)\$(PlatformTarget)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>BlazeEngineCore-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngine-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineGraphics-static-$(PlatformTarget)-$(Configuration).lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(BlazeDir)BlazeEngineCore\build\$(Configuration)\$(PlatformTarget)\*.dll" "$(OutputPath)" /y /d</Command>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
     </PostBuildEvent>
     <PreLinkEvent>
       <Command>

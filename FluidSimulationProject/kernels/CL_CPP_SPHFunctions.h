@@ -1,5 +1,5 @@
 
-//#define DEBUG_BUFFERS
+//#define DEBUG_BUFFERS_KERNEL
 
 Vec3i GetCell(Vec3f position, float maxInteractionDistance)
 {
@@ -91,7 +91,7 @@ void UpdateParticlePressure(
 	uint threadID,
 	GLOBAL const STRUCT DynamicParticle* inParticles,
 	GLOBAL STRUCT DynamicParticle* outParticles,
-	GLOBAL const uint* hashMap,
+	GLOBAL const HASH_TYPE* hashMap,
 	GLOBAL const uint* particleMap,
 	GLOBAL STRUCT StaticParticle* staticParticles,
 	GLOBAL const uint* staticParticlesHashMap,
@@ -100,16 +100,12 @@ void UpdateParticlePressure(
 	GLOBAL const STRUCT DynamicParticle* inParticlePtr = inParticles + threadID;
 	GLOBAL STRUCT DynamicParticle* outParticlePtr = outParticles + threadID;
 
-#ifdef DEBUG_BUFFERS
+#ifdef DEBUG_BUFFERS_KERNEL
 	if (threadID >= parameters->dynamicParticleCount)
 	{
 		printf("Allocating more work items than particles");
 		return;
 	}
-#endif
-#ifdef VISUALIZE_NEIGHBOURS
-	//	if (get_global_id(0) == 0)
-	//		dynamicParticleColors[0] = 1.0f;
 #endif
 
 	Vec3f particlePosition = inParticlePtr->positionAndPressure.xyz();
@@ -134,38 +130,36 @@ void UpdateParticlePressure(
 				uint beginIndex = hashMap[otherHashMod];
 				uint endIndex = hashMap[otherHashMod + 1];
 
-#ifdef DEBUG_BUFFERS				
+#ifdef DEBUG_BUFFERS_KERNEL				
 				if (beginIndex > endIndex)
 				{
-					printf("Begin index is bigger than end index. Begin: %u End: %u", beginIndex, endIndex);
+					printf("Dynamic particle map begin index is bigger than end index. Begin: %u End: %u", beginIndex, endIndex);
 					break;
 				}
 				if (beginIndex > parameters->dynamicParticleCount)
 				{
-					printf("Invalid begin index: %u", beginIndex);
+					printf("Invalid dynamic particle map begin index: %u", beginIndex);
 					break;
 				}
 				if (endIndex > parameters->dynamicParticleCount)
 				{
-					printf("Invalid end index: %u", endIndex);
+					printf("Invalid dynamic particle map end index: %u", endIndex);
 					break;
 				}
-#endif
+#endif								
 
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{
 					uint index = particleMap[i];
 
+#ifdef DEBUG_BUFFERS_KERNEL
 					if (index >= parameters->dynamicParticleCount)
 					{
 						printf("DynamicParticle map value outside valid range");
 						continue;
 					}
-
-#ifdef VISUALIZE_NEIGHBOURS
-					//if (index == 0)
-					//	dynamicParticleColors[get_global_id(0)] = 0.5f;
 #endif
+
 
 					GLOBAL const STRUCT DynamicParticle* otherParticlePtr = inParticles + index;
 
@@ -188,31 +182,26 @@ void UpdateParticlePressure(
 				beginIndex = staticParticlesHashMap[otherHashMod];
 				endIndex = staticParticlesHashMap[otherHashMod + 1];
 
-#ifdef DEBUG_BUFFERS				
+#ifdef DEBUG_BUFFERS_KERNEL				
 				if (beginIndex > endIndex)
 				{
-					printf("Begin index is bigger than end index for static particles. Begin: %u End: %u", beginIndex, endIndex);
+					printf("Static begin index is bigger than end index for static particles. Begin: %u End: %u", beginIndex, endIndex);
 					break;
 				}
 				if (beginIndex > parameters->staticParticleCount)
 				{
-					printf("Invalid begin index: %u", beginIndex);
+					printf("Invalid static begin index: %u", beginIndex);
 					break;
 				}
 				if (endIndex > parameters->staticParticleCount)
 				{
-					printf("Invalid end index: %u", endIndex);
+					printf("Invalid static end index: %u", endIndex);
 					break;
 				}
 #endif
 
 				for (uint i = beginIndex; i < endIndex; ++i)
 				{
-#ifdef VISUALIZE_NEIGHBOURS
-					//if (get_global_id(0) == 0)
-					//	staticParticleColors[i] = 0.5f;
-#endif
-
 					GLOBAL const STRUCT StaticParticle* otherParticlePtr = staticParticles + i;
 
 					Vec3f dir = otherParticlePtr->positionAndPressure.xyz() - particlePosition;
@@ -221,11 +210,11 @@ void UpdateParticlePressure(
 					if (distSqr > parameters->behaviour.maxInteractionDistance * parameters->behaviour.maxInteractionDistance)
 						continue;
 
-					float dist = sqrt(distSqr);
+					float dist = sqrt(distSqr);					
 
 					staticParticleInfluenceSum += SmoothingKernelD0(dist, parameters->behaviour.maxInteractionDistance);
 				}	
-			}
+			}					
 
 	float particleDensity = parameters->selfDensity + (dynamicParticleInfluenceSum * parameters->behaviour.particleMass + staticParticleInfluenceSum * parameters->behaviour.particleMass) * parameters->smoothingKernelConstant;
 	float particlePressure = parameters->behaviour.gasConstant * (particleDensity - parameters->behaviour.restDensity);
@@ -237,8 +226,8 @@ void UpdateParticleDynamics(
 	uint threadID,
 	GLOBAL const STRUCT DynamicParticle* inParticles,
 	GLOBAL STRUCT DynamicParticle* outParticles,
-	GLOBAL const uint* hashMap,
-	GLOBAL uint* newHashMap,
+	GLOBAL const HASH_TYPE* hashMap,
+	GLOBAL HASH_TYPE* newHashMap,
 	GLOBAL const uint* particleMap,
 	GLOBAL const STRUCT StaticParticle* staticParticles,
 	GLOBAL const uint* staticParticlesHashMap,
@@ -335,7 +324,7 @@ void UpdateParticleDynamics(
 						printf("A dynamic particle and a static particle have the same position. Simulation wont be deterministic. First position: % 3.3v3f; second position: % 3.3v3f", particlePosition, otherParticle.positionAndPressure.xyz());
 					}
 					else
-						dir /= dist;
+						dir /= dist;					
 
 					//apply pressure force					
 					staticParticlePressureForce += dir * fabs(particlePressure) * SmoothingKernelD1(dist, parameters->behaviour.maxInteractionDistance);

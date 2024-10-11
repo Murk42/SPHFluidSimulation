@@ -19,7 +19,17 @@ void kernel computeParticleMap(global const struct DynamicParticle* particles, g
 
 	uint index = atomic_dec(hashMap + particleHash) - 1;
 		
-	particleMap[index] = get_global_id(0);	
+	particleMap[index] = get_global_id(0);
+}
+
+void kernel reorderParticles(global const struct DynamicParticle* inArray, global struct DynamicParticle* outArray, global uint* map)
+{
+	uint oldIndex = map[get_global_id(0)];
+	map[get_global_id(0)] = get_global_id(0);
+
+	struct DynamicParticle particle = inArray[oldIndex];
+
+	outArray[get_global_id(0)] = particle;
 }
 
 void kernel updateParticlesPressure(
@@ -30,10 +40,6 @@ void kernel updateParticlesPressure(
 	global const struct StaticParticle* staticParticles,
 	global const uint* staticParticleHashMap,
 	global struct ParticleSimulationParameters* simulationParameters
-#ifdef VISUALIZE_NEIGHBOURS
-	, global uint* dynamicParticleColors,
-	global uint* staticParticleColors
-#endif
 ) {
 	UpdateParticlePressure(
 		get_global_id(0),

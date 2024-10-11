@@ -12,10 +12,12 @@ float sqrDistance(vec3 a, vec3 b)
 	return dot(a, a);
 }
 
+out vec4 o_color;
+
 void main()
 {
-	if (sqrDistance(f_center, f_pos) > f_radiusSqr)
+	if (sqrDistance(f_center, f_pos) > f_radiusSqr || f_color.a == 0)
 		discard;
 
-	gl_FragColor = vec4(f_color);
+	o_color = vec4(f_color);
 }

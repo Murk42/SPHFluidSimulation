@@ -10,6 +10,7 @@ namespace SPH
 	class ParticleGenerator
 	{
 	public:
+		~ParticleGenerator() { }
 		virtual void Generate(Array<T>& particles) = 0;
 	};
 }

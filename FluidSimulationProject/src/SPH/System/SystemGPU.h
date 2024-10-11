@@ -2,8 +2,7 @@
 #include "OpenCLContext.h"
 #include "SPH/System/System.h"
 
-//#define VISUALIZE_NEIGHBOURS
-//#define DEBUG_ARRAYS
+#define DEBUG_BUFFERS_GPU
 
 namespace SPH
 {
@@ -17,16 +16,12 @@ namespace SPH
 		cl::Event writeFinishedEvent;
 		cl::Event readFinishedEvent;
 
-		ParticleBufferSet(const Array<StaticParticle>& staticParticles);
+		ParticleBufferSet();
 		virtual ~ParticleBufferSet() { }
 
 		virtual Graphics::OpenGLWrapper::GraphicsBuffer& GetDynamicParticleBufferGL() = 0;
-
 		virtual cl::Buffer& GetDynamicParticleBufferCL() = 0;
-#ifdef VISUALIZE_NEIGHBOURS
-		virtual cl::Buffer& GetDynamicParticleColorBufferCL() = 0;
-		virtual cl::Buffer& GetStaticParticleColorBufferCL() = 0;
-#endif
+
 		virtual void StartRender(cl::CommandQueue& queue) = 0;
 		virtual void EndRender(cl::CommandQueue& queue) = 0;
 		virtual void StartSimulationRead(cl::CommandQueue& queue) = 0;
@@ -36,19 +31,11 @@ namespace SPH
 	};
 
 	struct ParticleBufferSetInterop : ParticleBufferSet
-	{
-		SystemGPU& system;
+	{		
 		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleBufferGL;
 		cl::BufferGL dynamicParticleBufferCL;
 
-#ifdef VISUALIZE_NEIGHBOURS
-		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticleColorBufferGL;
-		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer staticParticleColorBufferGL;
-		cl::BufferGL dynamicParticleColorBufferCL;
-		cl::BufferGL staticParticleColorBufferCL;
-#endif	
-
-		ParticleBufferSetInterop(SystemGPU& system, const Array<DynamicParticle>& dynamicParticles, const Array<StaticParticle>& staticParticles);
+		ParticleBufferSetInterop(OpenCLContext& CLContext, const Array<DynamicParticle>& dynamicParticles);
 
 		Graphics::OpenGLWrapper::GraphicsBuffer& GetDynamicParticleBufferGL() override { return dynamicParticleBufferGL; }
 		cl::Buffer& GetDynamicParticleBufferCL() override { return dynamicParticleBufferCL; }
@@ -59,34 +46,16 @@ namespace SPH
 		void StartSimulationWrite(cl::CommandQueue& queue) override;
 		void EndSimulationRead(cl::CommandQueue& queue) override;
 		void EndSimulationWrite(cl::CommandQueue& queue) override;
-
-#ifdef VISUALIZE_NEIGHBOURS
-		cl::Buffer& GetDynamicParticleColorBufferCL() override { return dynamicParticleColorBufferCL; }
-		cl::Buffer& GetStaticParticleColorBufferCL() override { return staticParticleColorBufferCL; }
-#endif
 	};
 
 	struct ParticleBufferSetNoInterop : ParticleBufferSet
-	{
-		SystemGPU& system;
+	{		
 		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleBufferGL;
 		cl::Buffer dynamicParticleBufferCL;
-
 		void* dynamicParticleBufferMap;
-#ifdef VISUALIZE_NEIGHBOURS
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleColorBufferGL;
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer staticParticleColorBufferGL;
-		cl::Buffer dynamicParticleColorBufferCL;
-		cl::Buffer staticParticleColorBufferCL;
+		const uintMem dynamicParticleCount;		
 
-		void* dynamicParticleColorBufferMap;
-		void* staticParticleColorBufferMap;
-#endif	
-
-		const uintMem dynamicParticleCount;
-		const uintMem staticParticleCount;
-
-		ParticleBufferSetNoInterop(SystemGPU& system, const Array<DynamicParticle>& dynamicParticles, const Array<StaticParticle>& staticParticles);
+		ParticleBufferSetNoInterop(OpenCLContext& CLContext, const Array<DynamicParticle>& dynamicParticles);
 
 		Graphics::OpenGLWrapper::GraphicsBuffer& GetDynamicParticleBufferGL() override { return dynamicParticleBufferGL; }
 		cl::Buffer& GetDynamicParticleBufferCL() override { return dynamicParticleBufferCL; }
@@ -97,31 +66,30 @@ namespace SPH
 		void StartSimulationWrite(cl::CommandQueue& queue) override;
 		void EndSimulationRead(cl::CommandQueue& queue) override;
 		void EndSimulationWrite(cl::CommandQueue& queue) override;
-
-#ifdef VISUALIZE_NEIGHBOURS
-		cl::Buffer& GetDynamicParticleColorBufferCL() override { return dynamicParticleColorBufferCL; }
-		cl::Buffer& GetStaticParticleColorBufferCL() override { return staticParticleColorBufferCL; }
-#endif
 	};
 
 	class SystemGPU : public System
 	{
 	public:
+
 		SystemGPU(OpenCLContext& clContext, Graphics::OpenGL::GraphicsContext_OpenGL& glContext);
 		~SystemGPU();
 
-		void Clear();
-		void Initialize(const SystemInitParameters& initParams) override;		
-		void Update(float dt) override;
+		void Clear() override;		
+		void Update(float dt, uint simulationSteps) override;
 
 		uintMem GetDynamicParticleCount() const override { return dynamicParticleCount; }
 		uintMem GetStaticParticleCount() const override { return staticParticleCount; }
 		StringView SystemImplementationName() override { return "GPU"; };
 
-		void StartRender(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext);
-		Graphics::OpenGLWrapper::VertexArray& GetDynamicParticlesVertexArray();
-		Graphics::OpenGLWrapper::VertexArray& GetStaticParticlesVertexArray();
-		void EndRender();
+		void StartRender() override;
+		Graphics::OpenGLWrapper::VertexArray* GetDynamicParticlesVertexArray() override;
+		Graphics::OpenGLWrapper::VertexArray* GetStaticParticlesVertexArray() override;
+		void EndRender() override;
+
+		void EnableProfiling(bool enable) override { this->profiling = enable; }
+		SystemProfilingData GetProfilingData() override { return { lastTimePerStep_ns }; }
+		float GetSimulationTime() override { return simulationTime; }
 	private:
 		OpenCLContext& clContext;
 		Graphics::OpenGL::GraphicsContext_OpenGL& glContext;
@@ -129,7 +97,7 @@ namespace SPH
 		//Wether the OpenCL implementation will handle sync or the user should
 		bool userOpenCLOpenGLSync;
 
-		SystemInitParameters initParams;		
+		//SystemInitParameters initParams;		
 
 		cl::CommandQueue queue;
 
@@ -142,6 +110,7 @@ namespace SPH
 		cl::Kernel computeParticleMapKernel;
 		cl::Kernel updateParticlesPressureKernel;
 		cl::Kernel updateParticlesDynamicsKernel;
+		cl::Kernel reorderParticlesKernel;
 
 		Graphics::OpenGLWrapper::VertexArray staticParticleVertexArray;
 		Graphics::OpenGLWrapper::ImmutableStaticGraphicsBuffer staticParticleBufferGL;
@@ -155,50 +124,50 @@ namespace SPH
 
 		Array<ParticleBufferSet*> bufferSetsPointers;		
 
-		cl::Buffer dynamicParticleWriteHashMapBuffer;
+		cl::Buffer dynamicParticleWriteHashMapBuffer;		
 		cl::Buffer dynamicParticleReadHashMapBuffer;
 		cl::Buffer particleMapBuffer;
 		cl::Buffer staticParticleBuffer;
 		cl::Buffer staticHashMapBuffer;
 		cl::Buffer simulationParametersBuffer;
+		cl::Buffer dynamicParticleIntermediateBuffer;
 
 		uintMem dynamicParticleCount;
 		uintMem staticParticleCount;
 		uintMem dynamicParticleHashMapSize;
-		uintMem staticParticleHashMapSize;
-		//uintMem staticHashMapSize;
+		uintMem staticParticleHashMapSize;		
 
 		uintMem scanKernelElementCountPerGroup;				
+		uintMem hashMapBufferGroupSize;
 
-		float particleMoveElapsedTime;
+		uintMem stepCount;
 
-#ifdef DEBUG_ARRAYS
+		bool profiling;		
+		float simulationTime;
+		uint64 lastTimePerStep_ns;
+
+#ifdef DEBUG_BUFFERS_GPU
+		float debugMaxInteractionDistance;
 		Array<DynamicParticle> debugParticlesArray;
 		Array<uint32> debugHashMapArray;
 		Array<uint32> debugParticleMapArray;
-#endif
-
-		ParticleSimulationParameters simulationParameters;
-
-		void IncrementRenderBufferSet();
-		void IncrementSimulationBufferSets();
-
+#endif						
 		void LoadKernels();		
-		void GenerateParticles(Array<DynamicParticle>& dynamicParticles, Array<StaticParticle>& staticParticles);
-		void CreateBuffers(const Array<DynamicParticle>& dynamicParticles, const Array<StaticParticle>& staticParticles, uintMem dynamicParticleHashMapSize, const Array<uint32>& staticParticleHashMap);
-		void CalculateDynamicParticleHashes(ParticleBufferSet* bufferSet, uintMem dynamicParticleCount, uintMem dynamicParticleHashMapSize, float maxInteractionDistance);
-		Array<uint32> CalculateStaticParticleHashes(Array<StaticParticle>& staticParticles, uintMem staticHashMapSize, float maxInteractionDistance);
+		void CreateStaticParticlesBuffers(Array<StaticParticle>& staticParticles, uintMem hashesPerStaticParticle, float maxInteractionDistance) override;
+		void CreateDynamicParticlesBuffers(Array<DynamicParticle>& dynamicParticles, uintMem bufferCount, uintMem hashesPerDynamicParticle, float maxInteractionDistance) override;
+		void InitializeInternal(const SystemInitParameters& initParams) override;
 
 		void EnqueueComputeParticleHashesKernel(ParticleBufferSet* bufferSet, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, cl_event* finishedEvent);
 		void EnqueueComputeParticleMapKernel(ParticleBufferSet* bufferSet, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer, cl_event* finishedEvent);
 		void EnqueueUpdateParticlesPressureKernel();
 		void EnqueueUpdateParticlesDynamicsKernel(float deltaTime);
-		void EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize);
+		void EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, uintMem offset);
+		void EnqueueReorderParticles(cl::Buffer& inArray, cl::Buffer& outArray, cl::Buffer& particleMap, cl_event* finishedEvent);
 
-#ifdef DEBUG_ARRAYS
+#ifdef DEBUG_BUFFERS_GPU
 		void DebugParticles(ParticleBufferSet& bufferSet);
-		void DebugPrePrefixSumHashes(ParticleBufferSet& bufferSet);
-		void DebugHashes(ParticleBufferSet& bufferSet);
+		void DebugPrePrefixSumHashes(ParticleBufferSet& bufferSet, cl::Buffer& hashMapBuffer);
+		void DebugHashes(ParticleBufferSet& bufferSet, cl::Buffer& hashMapBuffer);
 #endif
 
 		friend struct ParticleBufferSetInterop;

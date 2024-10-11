@@ -24,7 +24,7 @@
     <ClCompile Include="src\RenderingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\UI.cpp">
+    <ClCompile Include="src\Scenes\SimulationVisualisationScene\SimVisUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ThreadPool.cpp">
@@ -39,16 +39,22 @@
     <ClCompile Include="src\SPH\System\System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\Graphics\SystemGPURenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\SPH\SPHFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\SPH\System\SystemCPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\Graphics\SystemCPURenderer.cpp">
+    <ClCompile Include="src\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Scenes\ProfilingScene\ProfilingScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Scenes\ProfilingScene\ProfilingUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SPH\Graphics\SystemRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,7 +68,7 @@
     <ClInclude Include="src\SPH\Graphics\SystemRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\UI.h">
+    <ClInclude Include="src\Scenes\SimulationVisualisationScene\SimVisUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ThreadPool.h">
@@ -75,9 +81,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\SPH\System\System.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SPH\Graphics\SystemGPURenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\SPH\ParticleGenerator\BoxShellParticleGenerator.h">
@@ -101,10 +104,25 @@
     <ClInclude Include="src\SPH\System\SystemCPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\Graphics\SystemCPURenderer.h">
+    <ClInclude Include="kernels\CL_CPP_SPHDeclarations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="kernels\CL_CPP_SPHDeclarations.h">
+    <ClInclude Include="src\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scenes\Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scenes\ProfilingScene\ProfilingScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scenes\ProfilingScene\ProfilingUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\JSONParsing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -117,5 +135,7 @@
     <None Include="vcpkg.json" />
     <None Include="kernels\SPH.cl" />
     <None Include="kernels\partialSum.cl" />
+    <None Include="simulationProfiles\systemProfilingProfiles.json" />
+    <None Include="simulationProfiles\systemVisualisationProfile.json" />
   </ItemGroup>
 </Project>
