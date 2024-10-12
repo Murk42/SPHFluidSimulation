@@ -2,7 +2,7 @@
 #include "OpenCLContext.h"
 #include "SPH/System/System.h"
 
-#define DEBUG_BUFFERS_GPU
+//#define DEBUG_BUFFERS_GPU
 
 namespace SPH
 {

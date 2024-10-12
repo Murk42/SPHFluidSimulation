@@ -104,6 +104,12 @@ void ProfilingScene::StartProfiling()
 {
 	LoadProfiles();
 
+	if (profiles.Empty())
+	{
+		Debug::Logger::LogWarning("Client", "No profiles loaded");
+		return;
+	}
+
 	for (auto& profile : profiles)
 		FileSystem::DeleteFile(profile.outputFilePath);
 
@@ -117,13 +123,8 @@ void ProfilingScene::StartProfiling()
 		outputFile.Open(profiles[profileIndex].outputFilePath, FileAccessPermission::Write, { .openOption = FileOpenOptions::OpenAlways });
 
 
-		if (!SPHSystems.Empty())
-		{
-			SPHSystems[systemIndex]->Initialize(profiles[profileIndex].systemInitParameters);
-
-			uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex]->SystemImplementationName() + "\"\n");
-			WriteToOutputFile("Running system implementation \"" + SPHSystems[systemIndex]->SystemImplementationName() + "\"\n");
-		}
+		if (!SPHSystems.Empty())		
+			SPHSystems[systemIndex]->Initialize(profiles[profileIndex].systemInitParameters);					
 
 		String outputString = 
 			"Started profiling profile named \"" + profiles[profileIndex].name + "\".\n"
@@ -131,6 +132,12 @@ void ProfilingScene::StartProfiling()
 			"   Number of static particles: " + StringParsing::Convert(SPHSystems[systemIndex]->GetStaticParticleCount()) + "\n";
 		uiScreen.LogProfiling(outputString);
 		WriteToOutputFile(outputString);
+
+		if (!SPHSystems.Empty())
+		{
+			uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex]->SystemImplementationName() + "\"\n");
+			WriteToOutputFile("Running system implementation \"" + SPHSystems[systemIndex]->SystemImplementationName() + "\"\n");
+		}
 	}
 }
 
@@ -174,6 +181,8 @@ void ProfilingScene::UpdateProfilingState()
 					"   Number of static particles: " + StringParsing::Convert(SPHSystems[systemIndex]->GetStaticParticleCount()) + "\n";
 				uiScreen.LogProfiling(outputString);
 				WriteToOutputFile(outputString);
+				uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex]->SystemImplementationName() + "\"\n");
+				WriteToOutputFile("Running system implementation \"" + SPHSystems[systemIndex]->SystemImplementationName() + "\"\n");
 			}
 		}		
 		else
