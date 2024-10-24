@@ -15,114 +15,144 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cpp">
+    <ClCompile Include="source\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\pch.cpp">
+    <ClCompile Include="source\pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\RenderingSystem.cpp">
+    <ClCompile Include="source\RenderingSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Scenes\SimulationVisualisationScene\SimVisUI.cpp">
+    <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimVisUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ThreadPool.cpp">
+    <ClCompile Include="source\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\System\SystemGPU.cpp">
+    <ClCompile Include="source\SPH\System\SystemGPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\OpenCLContext.cpp">
+    <ClCompile Include="source\OpenCLContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\System\System.cpp">
+    <ClCompile Include="source\SPH\System\System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\SPHFunctions.cpp">
+    <ClCompile Include="source\SPH\SPHFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\System\SystemCPU.cpp">
+    <ClCompile Include="source\SPH\System\SystemCPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp">
+    <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Scenes\ProfilingScene\ProfilingScene.cpp">
+    <ClCompile Include="source\Scenes\ProfilingScene\ProfilingScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Scenes\ProfilingScene\ProfilingUI.cpp">
+    <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SPH\Graphics\SystemRenderer.cpp">
+    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\pch.h">
+    <ClInclude Include="source\pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RenderingSystem.h">
+    <ClInclude Include="source\RenderingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\Graphics\SystemRenderer.h">
+    <ClInclude Include="source\SPH\Graphics\SystemRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Scenes\SimulationVisualisationScene\SimVisUI.h">
+    <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ThreadPool.h">
+    <ClInclude Include="source\ThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\System\SystemGPU.h">
+    <ClInclude Include="source\SPH\System\SystemGPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\OpenCLContext.h">
+    <ClInclude Include="source\OpenCLContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\System\System.h">
+    <ClInclude Include="source\SPH\System\System.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\ParticleGenerator\BoxShellParticleGenerator.h">
+    <ClInclude Include="source\SPH\ParticleGenerator\BoxShellParticleGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\ParticleGenerator\FileModelShellGenerator.h">
+    <ClInclude Include="source\SPH\ParticleGenerator\FileModelShellGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\ParticleGenerator\FilledBoxParticleGenerator.h">
+    <ClInclude Include="source\SPH\ParticleGenerator\FilledBoxParticleGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\ParticleGenerator\ParticleGenerator.h">
+    <ClInclude Include="source\SPH\ParticleGenerator\ParticleGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\SPHFunctions.h">
+    <ClInclude Include="source\SPH\SPHFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="kernels\CL_CPP_SPHFunctions.h">
+    <ClInclude Include="assets\kernels\CL_CPP_SPHFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SPH\System\SystemCPU.h">
+    <ClInclude Include="source\SPH\System\SystemCPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="kernels\CL_CPP_SPHDeclarations.h">
+    <ClInclude Include="assets\kernels\CL_CPP_SPHDeclarations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\json.hpp">
+    <ClInclude Include="source\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h">
+    <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Scenes\Scene.h">
+    <ClInclude Include="source\Scenes\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Scenes\ProfilingScene\ProfilingScene.h">
+    <ClInclude Include="source\Scenes\ProfilingScene\ProfilingScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Scenes\ProfilingScene\ProfilingUI.h">
+    <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\JSONParsing.h">
+    <ClInclude Include="source\JSONParsing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\GPUParticleBufferSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\CPUParticleBufferSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -130,12 +160,33 @@
     <None Include="BlazeEngineProjectPropertySheet.props">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="shaders\particle.frag" />
-    <None Include="shaders\particle.vert" />
+    <None Include="assets\shaders\particle.frag" />
+    <None Include="assets\shaders\particle.vert" />
     <None Include="vcpkg.json" />
-    <None Include="kernels\SPH.cl" />
-    <None Include="kernels\partialSum.cl" />
-    <None Include="simulationProfiles\systemProfilingProfiles.json" />
-    <None Include="simulationProfiles\systemVisualisationProfile.json" />
+    <None Include="assets\kernels\SPH.cl" />
+    <None Include="assets\kernels\partialSum.cl" />
+    <None Include="assets\simulationProfiles\systemProfilingProfiles.json" />
+    <None Include="assets\simulationProfiles\systemVisualisationProfile.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="outputs\output100000p.txt" />
+    <Text Include="outputs\output1000p.txt" />
+    <Text Include="outputs\output2000p.txt" />
+    <Text Include="outputs\output3000p.txt" />
+    <Text Include="outputs\output4000p.txt" />
+    <Text Include="outputs\output5000p.txt" />
+    <Text Include="outputs\output6000p.txt" />
+    <Text Include="outputs\output7000p.txt" />
+    <Text Include="outputs\output8000p.txt" />
+    <Text Include="outputs\output9000p.txt" />
+    <Text Include="outputs\output10000p.txt" />
+    <Text Include="outputs\output20000p.txt" />
+    <Text Include="outputs\output30000p.txt" />
+    <Text Include="outputs\output40000p.txt" />
+    <Text Include="outputs\output50000p.txt" />
+    <Text Include="outputs\output60000p.txt" />
+    <Text Include="outputs\output70000p.txt" />
+    <Text Include="outputs\output80000p.txt" />
+    <Text Include="outputs\output90000p.txt" />
   </ItemGroup>
 </Project>

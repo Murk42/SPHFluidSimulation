@@ -124,7 +124,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,6 +133,9 @@
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />
+    <PostBuildEvent>
+      <Command>xcopy /s /e /i /r /f /y /d $(ProjectDir)assets $(OutDir)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -142,7 +145,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -156,59 +159,90 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\OpenCLContext.cpp" />
-    <ClCompile Include="src\Scenes\ProfilingScene\ProfilingScene.cpp" />
-    <ClCompile Include="src\Scenes\ProfilingScene\ProfilingUI.cpp" />
-    <ClCompile Include="src\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp" />
-    <ClCompile Include="src\SPH\Graphics\SystemRenderer.cpp" />
-    <ClCompile Include="src\SPH\SPHFunctions.cpp" />
-    <ClCompile Include="src\SPH\System\System.cpp" />
-    <ClCompile Include="src\SPH\System\SystemCPU.cpp" />
-    <ClCompile Include="src\SPH\System\SystemGPU.cpp" />
-    <ClCompile Include="src\pch.cpp">
+    <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\OpenCLContext.cpp" />
+    <ClCompile Include="source\Scenes\ProfilingScene\ProfilingScene.cpp" />
+    <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp" />
+    <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp" />
+    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSet.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.cpp" />
+    <ClCompile Include="source\SPH\SPHFunctions.cpp" />
+    <ClCompile Include="source\SPH\System\System.cpp" />
+    <ClCompile Include="source\SPH\System\SystemCPU.cpp" />
+    <ClCompile Include="source\SPH\System\SystemGPU.cpp" />
+    <ClCompile Include="source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\RenderingSystem.cpp" />
-    <ClCompile Include="src\ThreadPool.cpp" />
-    <ClCompile Include="src\Scenes\SimulationVisualisationScene\SimVisUI.cpp" />
+    <ClCompile Include="source\RenderingSystem.cpp" />
+    <ClCompile Include="source\ThreadPool.cpp" />
+    <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimVisUI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\json.hpp" />
-    <ClInclude Include="src\JSONParsing.h" />
-    <ClInclude Include="src\OpenCLContext.h" />
-    <ClInclude Include="src\pch.h" />
-    <ClInclude Include="kernels\CL_CPP_SPHFunctions.h" />
-    <ClInclude Include="src\Scenes\ProfilingScene\ProfilingScene.h" />
-    <ClInclude Include="src\Scenes\ProfilingScene\ProfilingUI.h" />
-    <ClInclude Include="src\Scenes\Scene.h" />
-    <ClInclude Include="src\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h" />
-    <ClInclude Include="src\SPH\ParticleGenerator\BoxShellParticleGenerator.h" />
-    <ClInclude Include="src\SPH\ParticleGenerator\FileModelShellGenerator.h" />
-    <ClInclude Include="src\SPH\ParticleGenerator\FilledBoxParticleGenerator.h" />
-    <ClInclude Include="src\SPH\ParticleGenerator\ParticleGenerator.h" />
-    <ClInclude Include="kernels\CL_CPP_SPHDeclarations.h" />
-    <ClInclude Include="src\SPH\SPHFunctions.h" />
-    <ClInclude Include="src\SPH\System\System.h" />
-    <ClInclude Include="src\SPH\System\SystemCPU.h" />
-    <ClInclude Include="src\SPH\System\SystemGPU.h" />
-    <ClInclude Include="src\SPH\Graphics\SystemRenderer.h" />
-    <ClInclude Include="src\RenderingSystem.h" />
-    <ClInclude Include="src\ThreadPool.h" />
-    <ClInclude Include="src\Scenes\SimulationVisualisationScene\SimVisUI.h" />
+    <ClInclude Include="source\json.hpp" />
+    <ClInclude Include="source\JSONParsing.h" />
+    <ClInclude Include="source\OpenCLContext.h" />
+    <ClInclude Include="source\pch.h" />
+    <ClInclude Include="assets\kernels\CL_CPP_SPHFunctions.h" />
+    <ClInclude Include="source\Scenes\ProfilingScene\ProfilingScene.h" />
+    <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h" />
+    <ClInclude Include="source\Scenes\Scene.h" />
+    <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\CPUParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\GPUParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleGenerator\BoxShellParticleGenerator.h" />
+    <ClInclude Include="source\SPH\ParticleGenerator\FileModelShellGenerator.h" />
+    <ClInclude Include="source\SPH\ParticleGenerator\FilledBoxParticleGenerator.h" />
+    <ClInclude Include="source\SPH\ParticleGenerator\ParticleGenerator.h" />
+    <ClInclude Include="assets\kernels\CL_CPP_SPHDeclarations.h" />
+    <ClInclude Include="source\SPH\SPHFunctions.h" />
+    <ClInclude Include="source\SPH\System\System.h" />
+    <ClInclude Include="source\SPH\System\SystemCPU.h" />
+    <ClInclude Include="source\SPH\System\SystemGPU.h" />
+    <ClInclude Include="source\SPH\Graphics\SystemRenderer.h" />
+    <ClInclude Include="source\RenderingSystem.h" />
+    <ClInclude Include="source\ThreadPool.h" />
+    <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props" />
-    <None Include="kernels\SPH.cl" />
-    <None Include="kernels\partialSum.cl" />
-    <None Include="shaders\particle.frag" />
-    <None Include="shaders\particle.vert" />
-    <None Include="simulationProfiles\systemProfilingProfiles.json" />
-    <None Include="simulationProfiles\systemVisualisationProfile.json" />
+    <None Include="assets\kernels\SPH.cl" />
+    <None Include="assets\kernels\partialSum.cl" />
+    <None Include="assets\shaders\particle.frag" />
+    <None Include="assets\shaders\particle.vert" />
+    <None Include="assets\simulationProfiles\systemProfilingProfiles.json" />
+    <None Include="assets\simulationProfiles\systemVisualisationProfile.json" />
     <None Include="vcpkg.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="outputs\output100000p.txt" />
+    <Text Include="outputs\output10000p.txt" />
+    <Text Include="outputs\output1000p.txt" />
+    <Text Include="outputs\output20000p.txt" />
+    <Text Include="outputs\output2000p.txt" />
+    <Text Include="outputs\output30000p.txt" />
+    <Text Include="outputs\output3000p.txt" />
+    <Text Include="outputs\output40000p.txt" />
+    <Text Include="outputs\output4000p.txt" />
+    <Text Include="outputs\output50000p.txt" />
+    <Text Include="outputs\output5000p.txt" />
+    <Text Include="outputs\output60000p.txt" />
+    <Text Include="outputs\output6000p.txt" />
+    <Text Include="outputs\output70000p.txt" />
+    <Text Include="outputs\output7000p.txt" />
+    <Text Include="outputs\output80000p.txt" />
+    <Text Include="outputs\output8000p.txt" />
+    <Text Include="outputs\output90000p.txt" />
+    <Text Include="outputs\output9000p.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

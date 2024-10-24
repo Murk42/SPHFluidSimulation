@@ -1,0 +1,26 @@
+Started profiling profile named "2000".
+   Number of dynamic particles: 1728
+   Number of static particles: 2160002
+Running system implementation "GPU"
+299970ns
+190044ns
+618488ns
+574771ns
+774092ns
+853698ns
+935505ns
+999526ns
+1056921ns
+1045647ns
+Running system implementation "CPU"
+1519503ns
+1417634ns
+1585410ns
+1460487ns
+1540071ns
+1557881ns
+1572360ns
+1579974ns
+1625719ns
+1687680ns
+Finished profiling profile named "2000"

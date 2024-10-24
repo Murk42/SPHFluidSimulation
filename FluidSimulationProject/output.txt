@@ -1,6 +1,0 @@
-Running system implementation "GPU"
-Started profiling profile named "Small simulation".
-   Number of dynamic particles: 32768
-   Number of static particles: 540002
-184467392699342235ns
-184467392849760375ns

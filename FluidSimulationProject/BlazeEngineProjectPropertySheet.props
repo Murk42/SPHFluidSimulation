@@ -20,11 +20,11 @@
       <AdditionalDependencies>BlazeEngineCore-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngine-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineGraphics-static-$(PlatformTarget)-$(Configuration).lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
-    </PostBuildEvent>
-    <PreLinkEvent>
       <Command>
       </Command>
+    </PostBuildEvent>
+    <PreLinkEvent>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

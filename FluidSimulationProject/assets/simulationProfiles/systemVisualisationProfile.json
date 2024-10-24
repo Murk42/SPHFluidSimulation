@@ -1,0 +1,39 @@
+{
+  "dynamicParticleGenerationParameters": {
+    "generatorType": "FilledBoxParticleGenerator",
+    "spawnVolumeSize": [ 8, 8, 8 ],
+    "spawnVolumeOffset": [ -4.0, -4.0, -4.0 ],
+    "particlesPerUnit": 8,
+    "randomOffsetIntensity": 0.0
+  },
+  "staticParticleGenerationParameters": {
+    "generatorType": "BoxShellParticleGenerator",
+    "spawnVolumeSize": [ 20, 20, 20 ],
+    "spawnVolumeOffset": [ -10, -10, -10 ],
+    "particleDistance": 0.15,
+    "randomOffsetIntensity": 0.04
+  },
+  "particleBehaviourParameters": {
+    "particleMass": 1.0,
+    "gasConstant": 200,
+    "elasticity": 0.5,
+    "viscosity": 0.3,
+    "gravity": [ 0, -9.81, 0 ],
+    "restDensity": 7.0,
+    "maxInteractionDistance": 1.0
+  },
+  "particleBoundParameters": {
+    "bounded": false
+  },
+  "bufferCount": 2,
+  "hashesPerDynamicParticle": 2,
+  "hashesPerStaticParticle": 2,
+  "implementationSpecifics": {
+    "OpenCL": {
+      "reorderStepCount": 100
+    },
+    "CPU": {
+
+    }
+  }    
+}

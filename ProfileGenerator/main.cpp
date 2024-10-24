@@ -79,7 +79,7 @@ CLIENT_API void Setup()
 		JSON out;
 		out.push_back({ { "profiles", profiles } });
 
-		WriteJSON("../FluidSimulationProject/simulationProfiles/systemProfilingProfiles.json", out);
+		WriteJSON("../FluidSimulationProject/assets/simulationProfiles/systemProfilingProfiles.json", out);
 	}
 	catch (const std::exception& ex)
 	{
