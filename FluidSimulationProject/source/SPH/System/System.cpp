@@ -46,6 +46,8 @@ namespace SPH
 
     void SystemInitParameters::ParseJSON(const JSON& json)
     {
+		implementationSpecifics.Clear();
+
 		try {			
 			dynamicParticleGenerationParameters.generator = CreateGenerator<DynamicParticle>(json["dynamicParticleGenerationParameters"]);
 			staticParticleGenerationParameters.generator = CreateGenerator<StaticParticle>(json["staticParticleGenerationParameters"]);
@@ -78,18 +80,19 @@ namespace SPH
 				
 			bufferCount = json["bufferCount"];
 			hashesPerDynamicParticle = json["hashesPerDynamicParticle"];
-			hashesPerStaticParticle = json["hashesPerStaticParticle"];
-						
+			hashesPerStaticParticle = json["hashesPerStaticParticle"];			
+
 			if (json.contains("implementationSpecifics"))
 			{
 				auto& implementationSpecificsJSON = json["implementationSpecifics"];
 				for (auto it = implementationSpecificsJSON.begin(); it != implementationSpecificsJSON.end(); ++it)
-				{
+				{					
 					auto& specifics = implementationSpecifics.Insert(ConvertString(it.key())).iterator->value;					
 					auto& specificsJSON = it.value();
 
 					for (auto it = specificsJSON.begin(); it != specificsJSON.end(); ++it)
 					{
+						
 						if (it.value().is_string())
 							specifics.Insert<String>(String(it.key().c_str(), it.key().size()), ConvertString(it.value()));
 						else if (it.value().is_number_float())
@@ -195,5 +198,41 @@ namespace SPH
 		CreateStaticParticlesBuffers(staticParticles, initParams.hashesPerStaticParticle, initParams.particleBehaviourParameters.maxInteractionDistance);
 		CreateDynamicParticlesBuffers(bufferSet, initParams.hashesPerDynamicParticle, initParams.particleBehaviourParameters.maxInteractionDistance);
 		InitializeInternal(initParams);
+	}
+	SystemProfilingData::SystemProfilingData() :
+		timePerStep_s(0)
+	{
+	}
+	SystemProfilingData::SystemProfilingData(const SystemProfilingData& other) :
+		timePerStep_s(other.timePerStep_s)
+	{
+		for (auto it = other.implementationSpecific.FirstIterator(); it != other.implementationSpecific.BehindIterator(); ++it)
+			if (const float* ptr = it.GetValue<float>())
+			{
+				String string = *it.GetKey();
+				float f = *ptr;
+				implementationSpecific.Insert<float>(std::move(string), std::move(f));
+			}
+	}
+	SystemProfilingData::SystemProfilingData(SystemProfilingData&& other) noexcept : 
+		timePerStep_s(other.timePerStep_s), implementationSpecific(std::move(other.implementationSpecific)) 
+	{
+	}
+	SystemProfilingData& SystemProfilingData::operator=(const SystemProfilingData& other) noexcept
+	{
+		for (auto it = other.implementationSpecific.FirstIterator(); it != other.implementationSpecific.BehindIterator(); ++it)
+			if (const float* ptr = it.GetValue<float>())
+			{
+				String string = *it.GetKey();
+				float f = *ptr;
+				implementationSpecific.Insert<float>(std::move(string), std::move(f));
+			}
+		return *this;
+	}
+	SystemProfilingData& SystemProfilingData::operator=(SystemProfilingData&& other) noexcept
+	{
+		timePerStep_s = other.timePerStep_s;
+		implementationSpecific = std::move(other.implementationSpecific);
+		return *this;
 	}
 }

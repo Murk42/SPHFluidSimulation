@@ -13,15 +13,14 @@ namespace SPH
 		RenderableCPUParticleBufferSet();
 
 		void Initialize(uintMem dynamicParticleBufferCount, ArrayView<DynamicParticle> dynamicParticles) override;
+		void Clear();
 		void Advance() override;
 		
 		CPUParticleReadBufferHandle& GetReadBufferHandle() override;
 		CPUParticleWriteBufferHandle& GetWriteBufferHandle() override;
 		ParticleRenderBufferHandle& GetRenderBufferHandle() override;
 
-		uintMem GetDynamicParticleCount() override;
-
-		void ReorderParticles() override;
+		uintMem GetDynamicParticleCount() override;		
 	private:
 		class Buffer : 
 			public CPUParticleReadBufferHandle,
@@ -29,35 +28,37 @@ namespace SPH
 			public ParticleRenderBufferHandle
 		{
 			Graphics::OpenGLWrapper::VertexArray dynamicParticleVertexArray;
-			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesBuffer;
+			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleBuffer;
 			DynamicParticle* dynamicParticleMap;						
-			bool writeFinished;
-			uint readCounter;
+
+			CPUSync readSync;
+			CPUSync writeSync;	
+
 			std::mutex stateMutex;
 			std::condition_variable stateCV;
-			Graphics::OpenGLWrapper::Fence readFinishedFence;
-		public:
-			Buffer(const DynamicParticle* dynamicParticlesPtr, uintMem dynamicParticlesCount);			
+						
+			Graphics::OpenGLWrapper::Fence renderingFinishedFence;			
 
-			void StartRead() override;
-			void StartWrite() override;
-			void FinishRead() override;
-			void FinishWrite() override;
+			uintMem dynamicParticleCount;
+		public:
+			Buffer();			
+
+			void Initialize(const DynamicParticle* dynamicParticlePtr, uintMem dynamicParticleCount);
+
+			CPUSync& GetReadSync() override;
+			CPUSync& GetWriteSync() override;
 			void StartRender() override;
 			void FinishRender() override;
+			void WaitRender() override;
 
 			const DynamicParticle* GetReadBuffer() override { return dynamicParticleMap; }
 			DynamicParticle* GetWriteBuffer() override { return dynamicParticleMap; }
 
-			Graphics::OpenGLWrapper::VertexArray& GetVertexArray() override { return dynamicParticleVertexArray; }
-		
-			void Swap(Buffer&& buffer);
+			Graphics::OpenGLWrapper::VertexArray& GetVertexArray() override { return dynamicParticleVertexArray; }			
 		};
 
 		Array<Buffer> buffers;
 		uintMem currentBuffer;
-
-		Buffer intermediateBuffer;		
 
 		uintMem dynamicParticleCount;
 	};

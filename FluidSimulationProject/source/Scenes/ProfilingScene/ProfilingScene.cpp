@@ -26,13 +26,11 @@ ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl::CommandQueue& clQue
 
 	SetupEvents();
 }
-
 ProfilingScene::~ProfilingScene()
 {
 	renderingSystem.SetScreen(nullptr);	
 
 }
-
 void ProfilingScene::Update()
 {	
 	renderingSystem.Render();	
@@ -41,17 +39,16 @@ void ProfilingScene::Update()
 	{		
 		SPHSystems[systemIndex].system.Update(profiles[profileIndex].simulationStepTime, profiles[profileIndex].stepsPerUpdate);
 		
-		auto profilingData = SPHSystems[systemIndex].system.GetProfilingData();
+		auto& profilingData = SPHSystems[systemIndex].system.GetProfilingData();
 		++currentUpdate;		
-		
-		WriteToOutputFile(StringParsing::Convert(profilingData.timePerStep_s) + "s\n");
 
+		SPHSystems[systemIndex].profilingData.AddBack(SPHSystems[systemIndex].system.GetProfilingData());
+					
 		uiScreen.SetProfilingPercent((float)currentUpdate / (profiles[profileIndex].simulationDuration / profiles[profileIndex].simulationStepTime / profiles[profileIndex].stepsPerUpdate));		
 
 		UpdateProfilingState();
 	}
 }
-
 void ProfilingScene::LoadProfiles()
 {
 	File jsonFile{ "assets/simulationProfiles/systemProfilingProfiles.json", FileAccessPermission::Read };
@@ -84,7 +81,6 @@ void ProfilingScene::LoadProfiles()
 		profiles.Clear();
 	}
 }
-
 void ProfilingScene::SetupEvents()
 {	
 	startProfilingButtonPressedEventHandler.SetFunction([&](auto event) {
@@ -92,15 +88,6 @@ void ProfilingScene::SetupEvents()
 		});
 	uiScreen.starProfilingButton.pressedEventDispatcher.AddHandler(startProfilingButtonPressedEventHandler);
 }
-
-void ProfilingScene::WriteToOutputFile(StringView s)
-{
-	if (outputFile.IsOpen())
-	{		
-		outputFile.Write(s.Ptr(), s.Count());
-	}
-}
-
 void ProfilingScene::StartProfiling()
 {
 	LoadProfiles();
@@ -122,27 +109,12 @@ void ProfilingScene::StartProfiling()
 
 	if (!profiles.Empty())
 	{
-		outputFile.Open(profiles[profileIndex].outputFilePath, FileAccessPermission::Write, { .openOption = FileOpenOptions::OpenAlways });
-
-
-		if (!SPHSystems.Empty())		
-			SPHSystems[systemIndex].system.Initialize(profiles[profileIndex].systemInitParameters, SPHSystems[systemIndex].particleBufferSet);
-
-		String outputString = 
-			"Started profiling profile named \"" + profiles[profileIndex].name + "\".\n"
-			"   Number of dynamic particles: " + StringParsing::Convert(SPHSystems[systemIndex].system.GetDynamicParticleCount()) + "\n" +
-			"   Number of static particles: " + StringParsing::Convert(SPHSystems[systemIndex].system.GetStaticParticleCount()) + "\n";
-		uiScreen.LogProfiling(outputString);
-		WriteToOutputFile(outputString);
-
+		NewProfileStarted();
 		if (!SPHSystems.Empty())
-		{
-			uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\"\n");
-			WriteToOutputFile("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\"\n");
-		}
+			NewSystemStarted();
 	}
-}
 
+}
 void ProfilingScene::UpdateProfilingState()
 {	
 	if (!profiling)
@@ -156,50 +128,135 @@ void ProfilingScene::UpdateProfilingState()
 
 	if (currentUpdate >= profiles[profileIndex].simulationDuration / profiles[profileIndex].simulationStepTime / profiles[profileIndex].stepsPerUpdate)
 	{		
-		currentUpdate = 0;
+		SystemFinished();
 
-		SPHSystems[systemIndex].system.Clear();
+		uiScreen.SetProfilingPercent(0);
 
-		++systemIndex;
-
-		if (systemIndex >= SPHSystems.Count())
+		currentUpdate = 0;				
+		
+		if (systemIndex + 1 >= SPHSystems.Count())
 		{
-			uiScreen.LogProfiling("Finished profiling profile named \"" + profiles[profileIndex].name + "\"\n");
-			WriteToOutputFile("Finished profiling profile named \"" + profiles[profileIndex].name + "\"\n");
-
-			systemIndex = 0;
-			++profileIndex;
-
-			if (profileIndex >= profiles.Count())			
-				StopProfiling();
+			ProfileFinished();			
+			
+			if (profileIndex + 1 >= profiles.Count())			
+				StopProfiling();			
 			else
 			{
-				outputFile.Open(profiles[profileIndex].outputFilePath, FileAccessPermission::Write, { .openOption = FileOpenOptions::OpenAlways });
-				SPHSystems[systemIndex].system.Initialize(profiles[profileIndex].systemInitParameters, SPHSystems[systemIndex].particleBufferSet);
+				SPHSystems[systemIndex].system.Clear();
+				SPHSystems[systemIndex].particleBufferSet.Clear();
 
-				String outputString =
-					"Started profiling profile named \"" + profiles[profileIndex].name + "\".\n"
-					"   Number of dynamic particles: " + StringParsing::Convert(SPHSystems[systemIndex].system.GetDynamicParticleCount()) + "\n" +
-					"   Number of static particles: " + StringParsing::Convert(SPHSystems[systemIndex].system.GetStaticParticleCount()) + "\n";
-				uiScreen.LogProfiling(outputString);
-				WriteToOutputFile(outputString);
-				uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\"\n");
-				WriteToOutputFile("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\"\n");
+				systemIndex = 0;
+
+				++profileIndex;
+				NewProfileStarted();
+				NewSystemStarted();
 			}
 		}		
 		else
 		{
-			uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\"\n");
-			WriteToOutputFile("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\"\n");
-			SPHSystems[systemIndex].system.Initialize(profiles[profileIndex].systemInitParameters, SPHSystems[systemIndex].particleBufferSet);
+			SPHSystems[systemIndex].system.Clear();
+			SPHSystems[systemIndex].particleBufferSet.Clear();
+
+			++systemIndex;
+			NewSystemStarted();
+		}
+	}
+}
+void ProfilingScene::StopProfiling()
+{	
+	for (auto& system : SPHSystems)
+	{
+		system.system.Clear();
+		system.particleBufferSet.Clear();
+		system.profilingData.Clear();
+	}
+
+	profiling = false;		
+	uiScreen.ProfilingStopped();
+}
+void ProfilingScene::NewProfileStarted()
+{		
+	uiScreen.LogProfiling("Started profiling profile named \"" + profiles[profileIndex].name + "\".\n");
+}
+void ProfilingScene::NewSystemStarted()
+{
+	SPHSystems[systemIndex].system.Initialize(profiles[profileIndex].systemInitParameters, SPHSystems[systemIndex].particleBufferSet);
+	uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\". "
+		"With " + StringParsing::Convert(SPHSystems[systemIndex].system.GetDynamicParticleCount()) + " dynamic and "
+		+ StringParsing::Convert(SPHSystems[systemIndex].system.GetStaticParticleCount()) + " static particles\n");	
+}
+void ProfilingScene::ProfileFinished()
+{
+	auto& file = profiles[profileIndex].outputFile;
+	file.Open(profiles[profileIndex].outputFilePath, FileAccessPermission::Write);
+
+	uiScreen.LogProfiling("Finished profiling profile named \"" + profiles[profileIndex].name + "\"\n");	
+
+	String output;
+
+	if (SPHSystems.Empty())
+		return;
+
+	output +=
+		"Started profiling profile named \"" + profiles[profileIndex].name + "\".\n"
+		"   Number of dynamic particles: " + StringParsing::Convert(SPHSystems[systemIndex].system.GetDynamicParticleCount()) + "\n"
+		"   Number of static particles:  " + StringParsing::Convert(SPHSystems[systemIndex].system.GetStaticParticleCount()) + "\n"
+		"   Simulation duration:         " + StringParsing::Convert(profiles[profileIndex].simulationDuration) + "s\n"
+		"   Simulation step time:        " + StringParsing::Convert(profiles[profileIndex].simulationStepTime) + "s\n"
+		"   Steps per update:            " + StringParsing::Convert(profiles[profileIndex].stepsPerUpdate) + "\n"		
+		"\n";
+
+	for (auto& system : SPHSystems)
+		output += String(system.system.SystemImplementationName()).Resize(14) + " ";
+
+	output += "\n";
+
+	for (uintMem i = 0; i < SPHSystems[systemIndex].profilingData.Count(); ++i)
+	{
+		for (auto& system : SPHSystems)
+		{
+			auto& profilingData = system.profilingData[i];			
+						
+			char buffer[256];
+			sprintf_s(buffer, "%12.3fms \0", profilingData.timePerStep_s * 1000);
+			output += StringView(buffer, strlen(buffer));
+		}
+
+		output += "\n";
+	}
+
+	output += "\n";
+	for (auto& system : SPHSystems)
+	{	
+		if (!system.profilingData.Empty() && system.profilingData.First().implementationSpecific.Empty())
+			continue;
+
+		output += system.system.SystemImplementationName() + " specific measurements\n";
+		
+		for (auto it = system.profilingData.First().implementationSpecific.FirstIterator(); it != system.profilingData.First().implementationSpecific.BehindIterator(); ++it)
+			output += String(*it.GetKey()).Resize(29) + " ";
+
+		output += "\n";
+
+		for (auto& profilingData : system.profilingData)					
+		{
+			for (auto it = profilingData.implementationSpecific.FirstIterator(); it != profilingData.implementationSpecific.BehindIterator(); ++it)			
+				if (const float* value = it.GetValue<float>())
+				{
+					char buffer[256];
+					sprintf_s(buffer, "%27.3fms \0", *value * 1000);
+					output += StringView(buffer, strlen(buffer));
+				}			
+
+			output += "\n";
 		}
 
 	}
-}
 
-void ProfilingScene::StopProfiling()
-{
-	profiling = false;
-	outputFile.Close();
-	uiScreen.ProfilingStopped();
+	file.Write(output.Ptr(), output.Count());
+
+	profiles[profileIndex].outputFile.Close();
+}
+void ProfilingScene::SystemFinished()
+{	
 }

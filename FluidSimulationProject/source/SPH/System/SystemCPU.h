@@ -70,7 +70,7 @@ namespace SPH
 		StringView SystemImplementationName() override { return "CPU"; };
 
 		void EnableProfiling(bool enable) override;
-		SystemProfilingData GetProfilingData() override;
+		const SystemProfilingData& GetProfilingData() override;
 		float GetSimulationTime() override { return simulationTime; }
 	private:									
 		ThreadContext threadContext;				
@@ -89,11 +89,14 @@ namespace SPH
 		CPUParticleBufferSet* particleBufferSet;
 		
 		ParticleSimulationParameters simulationParameters;		
+
+		float reorderElapsedTime;
+		float reorderTimeInterval;
 		
 		Stopwatch executionStopwatch;
 		float simulationTime;
-		double lastTimePerStep_s;
 		bool profiling;
+		SystemProfilingData systemProfilingData;
 
 		void CreateStaticParticlesBuffers(Array<StaticParticle>& staticParticles, uintMem hashesPerStaticParticle, float maxInteractionDistance) override;
 		void CreateDynamicParticlesBuffers(ParticleBufferSet& particleBufferSet, uintMem hashesPerDynamicParticle, float maxInteractionDistance) override;
@@ -102,23 +105,27 @@ namespace SPH
 		struct CalculateHashAndParticleMapTask
 		{
 			uintMem particleCount;
-			CPUParticleWriteBufferHandle& particleWriteBufferHandle;			
+			DynamicParticle* ouputParticles;
+			CPUSync& outputSync;
 			ParticleSimulationParameters& simulationParameters;
 			std::atomic_uint32_t* hashMap;
 			uint32* particleMap;
 		};
 		struct SimulateParticlesTimeStepTask
 		{
-			CPUParticleReadBufferHandle& particleReadBufferHandle;
-			CPUParticleWriteBufferHandle& particleWriteBufferHandle;
+			const DynamicParticle* inputParticles;
+			CPUSync& inputSync;
+			DynamicParticle* outputParticles;
+			CPUSync& outputSync;
+			DynamicParticle* orderedParticles;
+			CPUSync* orderedSync;
 			
 			std::atomic_uint32_t* dynamicParticleReadHashMapBuffer;
 			std::atomic_uint32_t* dynamicParticleWriteHashMapBuffer;
 			uint32* particleMap;
 			StaticParticle* staticParticles;
 			uint32* staticParticleHashMap;
-			ParticleSimulationParameters& simulationParameters;		
-			bool reorderParticles;
+			ParticleSimulationParameters& simulationParameters;					
 
 			float dt;
 		};

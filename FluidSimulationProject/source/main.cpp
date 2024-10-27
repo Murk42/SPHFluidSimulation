@@ -24,7 +24,7 @@ CLIENT_API void Setup()
 	//Setup processing pools	
 	OpenCLContext clContext{ renderingSystem.GetGraphicsContext() };
 	cl_int ret;
-	cl::CommandQueue clQueue = cl::CommandQueue(clContext.context, clContext.device, cl::QueueProperties::Profiling, &ret);
+	cl::CommandQueue clQueue = cl::CommandQueue(clContext.context, clContext.device, cl::QueueProperties::Profiling | cl::QueueProperties::OutOfOrder, &ret);
 	CL_CHECK();
 
 	ThreadPool threadPool;

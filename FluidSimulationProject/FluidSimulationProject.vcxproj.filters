@@ -69,6 +69,12 @@
     <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\pch.h">
@@ -155,6 +161,12 @@
     <ClInclude Include="source\SPH\ParticleBufferSet\CPUParticleBufferSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props">
@@ -167,26 +179,9 @@
     <None Include="assets\kernels\partialSum.cl" />
     <None Include="assets\simulationProfiles\systemProfilingProfiles.json" />
     <None Include="assets\simulationProfiles\systemVisualisationProfile.json" />
+    <None Include="assets\simulationProfiles\waveProfile.json" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="outputs\output100000p.txt" />
-    <Text Include="outputs\output1000p.txt" />
-    <Text Include="outputs\output2000p.txt" />
-    <Text Include="outputs\output3000p.txt" />
-    <Text Include="outputs\output4000p.txt" />
-    <Text Include="outputs\output5000p.txt" />
-    <Text Include="outputs\output6000p.txt" />
-    <Text Include="outputs\output7000p.txt" />
-    <Text Include="outputs\output8000p.txt" />
-    <Text Include="outputs\output9000p.txt" />
-    <Text Include="outputs\output10000p.txt" />
-    <Text Include="outputs\output20000p.txt" />
-    <Text Include="outputs\output30000p.txt" />
-    <Text Include="outputs\output40000p.txt" />
-    <Text Include="outputs\output50000p.txt" />
-    <Text Include="outputs\output60000p.txt" />
-    <Text Include="outputs\output70000p.txt" />
-    <Text Include="outputs\output80000p.txt" />
-    <Text Include="outputs\output90000p.txt" />
+    <Text Include="outputs\log.txt" />
   </ItemGroup>
 </Project>

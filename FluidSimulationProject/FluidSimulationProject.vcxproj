@@ -165,6 +165,8 @@
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp" />
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp" />
     <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.cpp" />
     <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSet.cpp" />
     <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.cpp" />
     <ClCompile Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.cpp" />
@@ -195,6 +197,8 @@
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h" />
     <ClInclude Include="source\SPH\ParticleBufferSet\CPUParticleBufferSet.h" />
     <ClInclude Include="source\SPH\ParticleBufferSet\GPUParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.h" />
+    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.h" />
     <ClInclude Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.h" />
     <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSet.h" />
     <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.h" />
@@ -214,6 +218,7 @@
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\simulationProfiles\waveProfile.json" />
     <None Include="BlazeEngineProjectPropertySheet.props" />
     <None Include="assets\kernels\SPH.cl" />
     <None Include="assets\kernels\partialSum.cl" />
@@ -224,25 +229,7 @@
     <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="outputs\output100000p.txt" />
-    <Text Include="outputs\output10000p.txt" />
-    <Text Include="outputs\output1000p.txt" />
-    <Text Include="outputs\output20000p.txt" />
-    <Text Include="outputs\output2000p.txt" />
-    <Text Include="outputs\output30000p.txt" />
-    <Text Include="outputs\output3000p.txt" />
-    <Text Include="outputs\output40000p.txt" />
-    <Text Include="outputs\output4000p.txt" />
-    <Text Include="outputs\output50000p.txt" />
-    <Text Include="outputs\output5000p.txt" />
-    <Text Include="outputs\output60000p.txt" />
-    <Text Include="outputs\output6000p.txt" />
-    <Text Include="outputs\output70000p.txt" />
-    <Text Include="outputs\output7000p.txt" />
-    <Text Include="outputs\output80000p.txt" />
-    <Text Include="outputs\output8000p.txt" />
-    <Text Include="outputs\output90000p.txt" />
-    <Text Include="outputs\output9000p.txt" />
+    <Text Include="outputs\log.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

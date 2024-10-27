@@ -12,7 +12,7 @@ namespace SPH
 	{
 	public:
 		virtual GPUParticleReadBufferHandle& GetReadBufferHandle() = 0;
-		virtual GPUParticleWriteBufferHandle& GetWriteBufferHandle() = 0;
+		virtual GPUParticleWriteBufferHandle& GetWriteBufferHandle() = 0;		
 	};
 
 	class GPUParticleReadBufferHandle
@@ -27,7 +27,7 @@ namespace SPH
 	{
 	public:
 		virtual void StartWrite() = 0;
-		virtual void FinishWrite() = 0;
+		virtual void FinishWrite(bool prepareForRendering) = 0;
 		virtual cl::Buffer& GetWriteBuffer() = 0;
 	};	
 }

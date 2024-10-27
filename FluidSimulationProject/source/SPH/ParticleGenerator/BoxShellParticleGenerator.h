@@ -100,6 +100,6 @@ namespace SPH
 
 		Random::SetSeed(100);
 		for (uint i = 0; i < staticParticleCount; ++i)
-			particles[i].position += parameters.spawnVolumeOffset + Vec3f(Random::Float(), Random::Float(), Random::Float()) * parameters.randomOffsetIntensity;
+			particles[i].position += parameters.spawnVolumeOffset + Vec3f(Random::Float(), Random::Float(), Random::Float()) * parameters.randomOffsetIntensity * parameters.particleDistance;
 	}
 }

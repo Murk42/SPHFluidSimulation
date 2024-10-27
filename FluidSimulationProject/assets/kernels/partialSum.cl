@@ -59,8 +59,8 @@ void kernel scanOnComputeGroups(local uint* temp, global uint* array, uint scale
 
 void kernel addToComputeGroupArrays(global uint* arrays, uint scale)
 {	
-	uint index = (get_group_id(0) + 1) * scale * (get_local_size(0) + 1);
-	uint inc = arrays[index - 1];
-	
-	arrays[index + scale * get_local_id(0)] += inc;
+	uint index = (get_group_id(0) + 1) * (get_local_size(0) + 1);
+	uint inc = arrays[index * scale - 1];
+		
+	arrays[(index + get_local_id(0) + 1) * scale - 1] += inc;
 }

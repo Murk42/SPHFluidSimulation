@@ -23,7 +23,7 @@ namespace SPH
 		StringView SystemImplementationName() override { return "GPU"; };		
 
 		void EnableProfiling(bool enable) override { this->profiling = enable; }
-		SystemProfilingData GetProfilingData() override { return { lastTimePerStep_s }; }
+		const SystemProfilingData& GetProfilingData() override { return systemProfilingData; }
 		float GetSimulationTime() override { return simulationTime; }
 	private:
 		OpenCLContext& clContext;
@@ -51,6 +51,7 @@ namespace SPH
 		uintMem computeParticleMapKernelPreferredGroupSize;
 		uintMem updateParticlesPressureKernelPreferredGroupSize;
 		uintMem updateParticlesDynamicsKernelPreferredGroupSize;				
+		bool nonUniformWorkGroupSizeSupported;
 				
 		cl::Buffer dynamicParticleWriteHashMapBuffer;		
 		cl::Buffer dynamicParticleReadHashMapBuffer;
@@ -68,12 +69,26 @@ namespace SPH
 
 		uintMem hashMapBufferGroupSize;
 
-		uintMem stepCount;
-		uint64 reorderStepCount;
+		float reorderElapsedTime;
+		float reorderTimeInterval;
 
 		bool profiling;		
+		bool detailedProfiling;
+		SystemProfilingData systemProfilingData;
 		float simulationTime;
-		double lastTimePerStep_s;
+		bool openCLChoosesGroupSize;
+		bool useMaxGroupSize;
+
+		cl_event computeParticleHashesWaitEvents[2];
+
+		cl::Event computeParticleHashesFinishedEvent;
+		cl::Event clearHashMapFinishedEvent;
+		cl::Event updateParticlePressureFinishedEvent;
+		cl::Event updateParticleDynamicsFinishedEvent;
+		cl::Event groupPrefixSumFinishedEvent;
+		cl::Event groupSumFinishedEvent;
+		cl::Event computeParticleMapFinishedEvent;
+		
 
 #ifdef DEBUG_BUFFERS_GPU
 		float debugMaxInteractionDistance;
@@ -86,16 +101,18 @@ namespace SPH
 		void CreateDynamicParticlesBuffers(ParticleBufferSet& particleBufferSet, uintMem hashesPerDynamicParticle, float maxInteractionDistance) override;
 		void InitializeInternal(const SystemInitParameters& initParams) override;
 
-		void EnqueueComputeParticleHashesKernel(cl::Buffer& particles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, cl_event* finishedEvent);
-		void EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer, cl_event* finishedEvent);
+		void EnqueueComputeParticleHashesKernel(cl::Buffer& particles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, ArrayView<cl_event> waitEvents);
+		void EnqueueClearHashMap();
 		void EnqueueUpdateParticlesPressureKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer);
 		void EnqueueUpdateParticlesDynamicsKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, float deltaTime);
-		void EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, uintMem offset);		
+		void EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, cl::Event& waitEvent);
+		void EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer);
 
 #ifdef DEBUG_BUFFERS_GPU
-		void DebugParticles(GPUParticleBufferSet& bufferSet);
-		void DebugPrePrefixSumHashes(GPUParticleBufferSet& bufferSet, cl::Buffer& hashMapBuffer);
-		void DebugHashes(GPUParticleBufferSet& bufferSet, cl::Buffer& hashMapBuffer);
+		void DebugParticles(cl::Buffer& particles);
+		void DebugPrePrefixSumHashes(cl::Buffer& particles, cl::Buffer& hashMapBuffer);
+		void DebugInterPrefixSumHashes(cl::Buffer* particles, cl::Buffer& hashMapBuffer, uintMem layerCount = 0);		
+		void DebugHashes(cl::Buffer& particles, cl::Buffer& hashMapBuffer);
 #endif
 
 		friend struct RenderableGPUParticleBufferSetWithGLInterop;

@@ -70,7 +70,14 @@ namespace SPH
 	{
 		double timePerStep_s;
 
-		
+		VirtualMap<String> implementationSpecific;
+
+		SystemProfilingData();
+		SystemProfilingData(const SystemProfilingData& other);
+		SystemProfilingData(SystemProfilingData&& other) noexcept;
+
+		SystemProfilingData& operator=(const SystemProfilingData& other) noexcept;
+		SystemProfilingData& operator=(SystemProfilingData&& other) noexcept;
 	};
 
 	class System
@@ -94,7 +101,7 @@ namespace SPH
 		virtual uintMem GetStaticParticleCount() const = 0;
 
 		virtual void EnableProfiling(bool enable) = 0;
-		virtual SystemProfilingData GetProfilingData() = 0;
+		virtual const SystemProfilingData& GetProfilingData() = 0;
 		virtual float GetSimulationTime() = 0;
 
 		inline ParticleBufferSet* GetParticleBufferSet() { return particleBufferSet; }
@@ -110,6 +117,8 @@ namespace SPH
 		static void DebugParticles(ArrayView<T> particles, float maxInteractionDistance, uintMem hashMapSize);
 		template<typename T, typename H> requires ParticleWithHash<T>
 		static void DebugPrePrefixSumHashes(ArrayView<T> particles, Array<H> hashMap);
+		template<typename T, typename H> requires ParticleWithHash<T>
+		static void DebugInterPrefixSumHashes(Array<T> particles, Array<H> hashMap, uintMem groupSize, uintMem layerCount = 0);		
 		template<ParticleWithHash T, typename H>
 		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap);
 		template<typename T, typename H, typename F> requires std::invocable<F, const T&>
@@ -214,6 +223,30 @@ namespace SPH
 			if (hashMap[i] != 0)
 			{
 				Debug::Logger::LogDebug("Client", "Pre prefix sum hash not valid");
+				__debugbreak();
+			}
+	}
+	template<typename T, typename H> requires ParticleWithHash<T>
+	inline void System::DebugInterPrefixSumHashes(Array<T> particles, Array<H> hashMap, uintMem groupSize, uintMem layerCount)
+	{						
+		uintMem startArraySize = layerCount == 0 ? groupSize : (hashMap.Count() - 1) / std::pow(groupSize, layerCount - 1);
+		for (uintMem arraySize = startArraySize; arraySize <= hashMap.Count() - 1; arraySize *= groupSize)
+		{
+			uintMem stepSize = (hashMap.Count() - 1) / arraySize;			
+			for (uintMem groupI = 0; groupI < arraySize / groupSize; ++groupI)
+			{
+				for (uintMem i = groupSize - 1; i > 0; --i)
+					hashMap[(i + 1 + groupI * groupSize) * stepSize - 1] -= hashMap[(i + groupI * groupSize) * stepSize - 1];
+			}
+		}
+
+		for (auto& particle : particles)
+			--hashMap[particle.hash];
+
+		for (uintMem i = 0; i < hashMap.Count() - 1; ++i)
+			if (hashMap[i] != 0)
+			{
+				Debug::Logger::LogDebug("Client", "Invalid sum");
 				__debugbreak();
 			}
 	}

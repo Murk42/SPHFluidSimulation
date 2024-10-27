@@ -7,8 +7,8 @@
 
 #include "ProfilingUI.h"
 
-#include "SPH/ParticleBufferSet/RenderableCPUParticleBufferSet.h"
-#include "SPH/ParticleBufferSet/RenderableGPUParticleBufferSet.h"
+#include "SPH/ParticleBufferSet/OfflineCPUParticleBufferSet.h"
+#include "SPH/ParticleBufferSet/OfflineGPUParticleBufferSet.h"
 #include "SPH/System/SystemCPU.h"
 #include "SPH/System/SystemGPU.h"
 
@@ -28,11 +28,14 @@ private:
 		float simulationStepTime;
 		uint stepsPerUpdate;
 		Path outputFilePath;
+		File outputFile;
 	};
 	struct SPHSystemData
 	{
 		SPH::System& system;
-		SPH::ParticleBufferSet& particleBufferSet;
+		SPH::ParticleBufferSet& particleBufferSet;		
+
+		Array<SPH::SystemProfilingData> profilingData;
 	};
 
 	OpenCLContext& clContext;
@@ -41,9 +44,9 @@ private:
 
 	ThreadPool& threadPool;
 
-	SPH::RenderableGPUParticleBufferSet GPUParticleBufferSet;
+	SPH::OfflineGPUParticleBufferSet GPUParticleBufferSet;
 	SPH::SystemGPU SPHSystemGPU;
-	SPH::RenderableCPUParticleBufferSet CPUParticleBufferSet;
+	SPH::OfflineCPUParticleBufferSet CPUParticleBufferSet;
 	SPH::SystemCPU SPHSystemCPU;
 
 	Array<SPHSystemData> SPHSystems;	
@@ -58,16 +61,18 @@ private:
 	bool profiling = false;
 	uintMem profileIndex = 0;
 	uintMem systemIndex = 0;
-	uintMem currentUpdate = 0;
-	File outputFile;	
+	uintMem currentUpdate = 0;		
 
 	void LoadProfiles();
 
 	void SetupEvents();
 
-	void WriteToOutputFile(StringView s);
-
 	void StartProfiling();
 	void UpdateProfilingState();
 	void StopProfiling();	
+
+	void NewProfileStarted();
+	void NewSystemStarted();
+	void ProfileFinished();
+	void SystemFinished();
 };

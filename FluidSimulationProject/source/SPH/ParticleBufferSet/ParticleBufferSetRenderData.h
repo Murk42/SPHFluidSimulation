@@ -15,6 +15,7 @@ namespace SPH
 	public:
 		virtual void StartRender() = 0;
 		virtual void FinishRender() = 0;		
+		virtual void WaitRender() = 0;
 		virtual Graphics::OpenGLWrapper::VertexArray& GetVertexArray() = 0;
 	};
 }

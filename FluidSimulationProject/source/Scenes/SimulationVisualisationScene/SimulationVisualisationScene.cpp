@@ -18,9 +18,13 @@ SimulationVisualisationScene::SimulationVisualisationScene(OpenCLContext& clCont
 	SPHSystems.AddBack(SPHSystemData{ SPHSystemGPU, GPUParticleBufferSet });
 	SPHSystems.AddBack(SPHSystemData{ SPHSystemCPU, CPUParticleBufferSet });
 
+	for (auto& SPHSystem : SPHSystems)
+		SPHSystem.system.EnableProfiling(true);
+
 	SetSystemIndex(0);
 	LoadSystemInitParameters();
 	SPHSystems[currentSPHSystemIndex].system.Initialize(systemInitParameters, SPHSystems[currentSPHSystemIndex].particleBufferSet);
+	uiScreen.SetParticleCount(SPHSystems[currentSPHSystemIndex].system.GetDynamicParticleCount());
 
 	renderingSystem.SetScreen(&uiScreen);	
 	renderingSystem.SetSPHSystemRenderer(&SPHSystemRenderer);
@@ -54,6 +58,7 @@ void SimulationVisualisationScene::Update()
 		{
 			SetSystemIndex((currentSPHSystemIndex + 1) % SPHSystems.Count());									
 			SPHSystems[currentSPHSystemIndex].system.Initialize(systemInitParameters, SPHSystems[currentSPHSystemIndex].particleBufferSet);
+			uiScreen.SetParticleCount(SPHSystems[currentSPHSystemIndex].system.GetDynamicParticleCount());
 			runSimulation = false;
 		}			
 
@@ -61,6 +66,7 @@ void SimulationVisualisationScene::Update()
 		{
 			LoadSystemInitParameters();
 			SPHSystems[currentSPHSystemIndex].system.Initialize(systemInitParameters, SPHSystems[currentSPHSystemIndex].particleBufferSet);
+			uiScreen.SetParticleCount(SPHSystems[currentSPHSystemIndex].system.GetDynamicParticleCount());
 		}
 
 		if (window.GetLastKeyState(Key::I).pressed)
@@ -92,9 +98,23 @@ void SimulationVisualisationScene::Update()
 		SPHSystems[currentSPHSystemIndex].system.Update(0.01f, simulationStepsPerUpdate);		
 	}	
 
+	auto& profilingData = SPHSystems[currentSPHSystemIndex].system.GetProfilingData();
+
 	String info;
-	info += "Simulation elapsed time: " + StringParsing::Convert(SPHSystems[currentSPHSystemIndex].system.GetSimulationTime()) + "s\n";
-	info += "Steps per update: " + StringParsing::Convert(simulationStepsPerUpdate) + "\n";
+	info +=
+		"Simulation elapsed time: " + StringParsing::Convert(SPHSystems[currentSPHSystemIndex].system.GetSimulationTime()) + "s\n"
+		"Steps per update: " + StringParsing::Convert(simulationStepsPerUpdate) + "\n"
+		"\n"
+		"Time per update: " + StringParsing::Convert(profilingData.timePerStep_s * 1000) + "ms\n";
+
+	for (auto it = profilingData.implementationSpecific.FirstIterator(); it != profilingData.implementationSpecific.BehindIterator(); ++it)
+	{
+		if (const float* value = it.GetValue<float>())
+			info += *it.GetKey() + ": " + StringParsing::Convert(*value * 1000) + "ms\n";
+	}
+
+	info += "\n";
+	
 
 	uiScreen.SetInfo(info);
 
@@ -128,6 +148,7 @@ void SimulationVisualisationScene::LoadSystemInitParameters()
 	jsonFileString.resize(jsonFile.GetSize());
 	jsonFile.Read(jsonFileString.data(), jsonFileString.size());
 	systemInitParameters.ParseJSON(JSON::parse(jsonFileString));
+	jsonFile.Close();
 }
 
 void SimulationVisualisationScene::SetupEvents()

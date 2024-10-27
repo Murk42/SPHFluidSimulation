@@ -5,20 +5,35 @@
 
 namespace SPH
 {	
+	void WaitFence(Graphics::OpenGLWrapper::Fence& fence);
+
 	RenderableGPUParticleBufferSet::RenderableGPUParticleBufferSet(OpenCLContext& clContext, cl::CommandQueue& queue) :
-		clContext(clContext), queue(queue), intermediateBuffer(clContext, queue)
+		clContext(clContext), queue(queue), currentBuffer(0), dynamicParticleCount(0)
 	{
 	}
 	void RenderableGPUParticleBufferSet::Initialize(uintMem dynamicParticleBufferCount, ArrayView<DynamicParticle> dynamicParticles)
 	{
 		dynamicParticleCount = dynamicParticles.Count();
 
-		buffers = Array<Buffer>(dynamicParticleBufferCount, [&](Buffer* ptr, uintMem i) {			
-			std::construct_at(ptr, clContext, queue, dynamicParticles.Ptr(), dynamicParticles.Count());
-			});
-		intermediateBuffer.Swap(Buffer(clContext, queue, nullptr, dynamicParticles.Count()));
+		if (dynamicParticleBufferCount < 3)
+		{
+			Debug::Logger::LogWarning("Client", "Buffer count must be at least 3. It is set to 3");
+			dynamicParticleBufferCount = 3;
+		}
+
+		buffers = Array<Buffer>(dynamicParticleBufferCount, clContext, queue);
+
+		buffers[0].Initialize(dynamicParticles.Ptr(), dynamicParticles.Count());
+		for (uintMem i = 1; i < buffers.Count(); ++i)
+			buffers[i].Initialize(nullptr, dynamicParticles.Count());		
 	
 		currentBuffer = dynamicParticleBufferCount - 1;
+	}
+	void RenderableGPUParticleBufferSet::Clear()
+	{
+		buffers.Clear();
+		currentBuffer = 0;
+		dynamicParticleCount = 0;
 	}
 	void RenderableGPUParticleBufferSet::Advance()
 	{
@@ -39,33 +54,30 @@ namespace SPH
 	uintMem RenderableGPUParticleBufferSet::GetDynamicParticleCount()
 	{
 		return dynamicParticleCount;
-	}
-
-	void RenderableGPUParticleBufferSet::ReorderParticles()
-	{
-	}		
+	}	
+	
 	RenderableGPUParticleBufferSet::Buffer::Buffer(OpenCLContext& clContext, cl::CommandQueue& queue) :
-		clContext(clContext), queue(queue), dynamicParticleBufferMap(nullptr), dynamicParticleCount(0)
-	{
+		clContext(clContext), queue(queue), dynamicParticleBufferMap(nullptr), dynamicParticleCount(0), dynamicParticleVertexArray(0), dynamicParticleBufferGL(0)
+	{		
 	}
-	RenderableGPUParticleBufferSet::Buffer::Buffer(OpenCLContext& clContext, cl::CommandQueue& queue, const DynamicParticle* dynamicParticlesPtr, uintMem dynamicParticlesCount) :
-		clContext(clContext), queue(queue), dynamicParticleBufferMap(nullptr), dynamicParticleCount(dynamicParticlesCount)
-	{
+	void RenderableGPUParticleBufferSet::Buffer::Initialize(const DynamicParticle* dynamicParticlesPtr, uintMem dynamicParticleCount)
+	{		
 		cl_int ret;
-		if (clContext.supportedCLGLInterop)
-		{
-			glNamedBufferStorage(dynamicParticleBufferGL.GetHandle(), sizeof(DynamicParticle) * dynamicParticlesCount, dynamicParticlesPtr, GL_DYNAMIC_STORAGE_BIT);
-			dynamicParticleBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, dynamicParticleBufferGL.GetHandle(), &ret);
-			CL_CHECK();
-		}
-		else
-		{
-			glNamedBufferStorage(dynamicParticleBufferGL.GetHandle(), sizeof(DynamicParticle) * dynamicParticlesCount, dynamicParticlesPtr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-			dynamicParticleBufferMap = glMapNamedBufferRange(dynamicParticleBufferGL.GetHandle(), 0, sizeof(DynamicParticle) * dynamicParticlesCount, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
-			dynamicParticleBufferCL = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(DynamicParticle) * dynamicParticlesCount, (void*)dynamicParticlesPtr, &ret);
-			CL_CHECK();
-		}
+		WaitFence(renderingFence);
+
+		if (writeFinishedEvent() != nullptr)
+			CL_CALL(writeFinishedEvent.wait());
+
+		if (copyFinishedEvent() != nullptr)
+			CL_CALL(writeFinishedEvent.wait());
+
+		if (readFinishedEvent() != nullptr)
+			CL_CALL(readFinishedEvent.wait());		
+
+		this->dynamicParticleCount = dynamicParticleCount;
+		dynamicParticleBufferGL = decltype(dynamicParticleBufferGL)();
+		dynamicParticleVertexArray = decltype(dynamicParticleVertexArray)();
 
 		dynamicParticleVertexArray.EnableVertexAttribute(0);
 		dynamicParticleVertexArray.SetVertexAttributeFormat(0, Graphics::OpenGLWrapper::VertexAttributeType::Float, 3, false, offsetof(DynamicParticle, position));
@@ -78,14 +90,32 @@ namespace SPH
 		dynamicParticleVertexArray.EnableVertexAttribute(2);
 		dynamicParticleVertexArray.SetVertexAttributeFormat(2, Graphics::OpenGLWrapper::VertexAttributeType::Float, 1, false, offsetof(DynamicParticle, pressure));
 		dynamicParticleVertexArray.SetVertexAttributeBuffer(2, &dynamicParticleBufferGL, sizeof(DynamicParticle), 0);
-		dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);		
-	}
+		dynamicParticleVertexArray.SetVertexAttributeDivisor(2, 1);
+		
+		if (clContext.supportedCLGLInterop)
+		{
+			glNamedBufferStorage(dynamicParticleBufferGL.GetHandle(), sizeof(DynamicParticle) * dynamicParticleCount, dynamicParticlesPtr, GL_DYNAMIC_STORAGE_BIT);
+			dynamicParticleBufferCL = cl::BufferGL(clContext.context, CL_MEM_READ_WRITE, dynamicParticleBufferGL.GetHandle(), &ret);
+			CL_CHECK();
+		}
+		else
+		{
+			glNamedBufferStorage(dynamicParticleBufferGL.GetHandle(), sizeof(DynamicParticle) * dynamicParticleCount, dynamicParticlesPtr, GL_DYNAMIC_STORAGE_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+			dynamicParticleBufferMap = glMapNamedBufferRange(dynamicParticleBufferGL.GetHandle(), 0, sizeof(DynamicParticle) * dynamicParticleCount, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+			
+			dynamicParticleBufferCL = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | (dynamicParticlesPtr != nullptr ? CL_MEM_COPY_HOST_PTR : 0), sizeof(DynamicParticle) * dynamicParticleCount, (void*)dynamicParticlesPtr, &ret);
+			CL_CHECK();
+		}
+	}	
 	void RenderableGPUParticleBufferSet::Buffer::StartRead()
 	{
 		cl_int ret;
 
 		if (writeFinishedEvent() != nullptr)
+		{
 			CL_CALL(writeFinishedEvent.wait());
+			writeFinishedEvent = cl::Event();
+		}
 
 		if (clContext.supportedCLGLInterop)
 		{
@@ -110,38 +140,32 @@ namespace SPH
 		}
 		else
 		{
-			CL_CALL(queue.enqueueBarrierWithWaitList(nullptr, &readFinishedEvent));
+			CL_CALL(queue.enqueueMarkerWithWaitList(nullptr, &readFinishedEvent));
 		}
 	}
 	void RenderableGPUParticleBufferSet::Buffer::StartWrite()
 	{
 		cl_int ret;
 
-		if (readFinishedEvent() != nullptr)
-			CL_CALL(readFinishedEvent.wait());
+		WaitFence(renderingFence);
 
-		auto fenceState = readFinishedFence.BlockClient(2);		
-	
-		switch (fenceState)
+		if (copyFinishedEvent() != nullptr)
 		{
-		case Blaze::Graphics::OpenGLWrapper::FenceReturnState::AlreadySignaled:
-		case Blaze::Graphics::OpenGLWrapper::FenceReturnState::ConditionSatisfied:						
-		case Blaze::Graphics::OpenGLWrapper::FenceReturnState::FenceNotSet:
-			break;
-		case Blaze::Graphics::OpenGLWrapper::FenceReturnState::TimeoutExpired:
-			Debug::Logger::LogWarning("Client", "System simulation fence timeout");
-			break;
-		case Blaze::Graphics::OpenGLWrapper::FenceReturnState::Error:
-			Debug::Logger::LogWarning("Client", "System simulation fence error");
-			break;			
-		default:
-			Debug::Logger::LogWarning("Client", "Invalid FenceReturnState enum value");
-			break;
-		}		
-		readFinishedFence = Graphics::OpenGLWrapper::Fence();
-		
+			CL_CALL(copyFinishedEvent.wait())
+			copyFinishedEvent = cl::Event();
+		}
+
 		if (writeFinishedEvent() != nullptr)
+		{
 			CL_CALL(writeFinishedEvent.wait());
+			writeFinishedEvent = cl::Event();
+		}
+
+		if (readFinishedEvent() != nullptr)
+		{
+			CL_CALL(readFinishedEvent.wait());
+			readFinishedEvent = cl::Event();
+		}			
 
 		if (clContext.supportedCLGLInterop)
 		{
@@ -150,9 +174,9 @@ namespace SPH
 			};
 
 			CL_CALL(clEnqueueAcquireGLObjects(queue(), _countof(acquireObjects), acquireObjects, 0, nullptr, nullptr));
-		}
+		}		
 	}
-	void RenderableGPUParticleBufferSet::Buffer::FinishWrite()
+	void RenderableGPUParticleBufferSet::Buffer::FinishWrite(bool prepareForRendering)
 	{
 		cl_int ret;
 
@@ -166,22 +190,45 @@ namespace SPH
 		}
 		else
 		{
-			CL_CALL(clEnqueueReadBuffer(queue(), dynamicParticleBufferCL(), CL_FALSE, 0, sizeof(DynamicParticle) * dynamicParticleCount, dynamicParticleBufferMap, 0, nullptr, &writeFinishedEvent()))
+			CL_CALL(queue.enqueueMarkerWithWaitList(nullptr, &writeFinishedEvent));
+
+			if (prepareForRendering)
+				CL_CALL(clEnqueueReadBuffer(queue(), dynamicParticleBufferCL(), CL_FALSE, 0, sizeof(DynamicParticle) * dynamicParticleCount, dynamicParticleBufferMap, 1, &writeFinishedEvent(), &copyFinishedEvent()))
 		}
 	}
 	void RenderableGPUParticleBufferSet::Buffer::StartRender()
 	{
-		StartRead();
+		cl_int ret;
+		
+		if (clContext.supportedCLGLInterop)
+		{
+			if (writeFinishedEvent() != nullptr)
+			{
+				CL_CALL(writeFinishedEvent.wait())
+				writeFinishedEvent = cl::Event();
+			}
+		}
+		else
+		{			
+			if (copyFinishedEvent() != nullptr)
+			{
+				CL_CALL(copyFinishedEvent.wait())
+				copyFinishedEvent = cl::Event();
+			}
+
+			glFlushMappedNamedBufferRange(dynamicParticleBufferGL.GetHandle(), 0, sizeof(DynamicParticle) * dynamicParticleCount);			
+			renderingFence.SetFence();
+		}
 	}
 	void RenderableGPUParticleBufferSet::Buffer::FinishRender()
-	{
-		FinishRead();
+	{	
+		if (clContext.supportedCLGLInterop)
+			renderingFence.SetFence();
+
+		dynamicParticleBufferGL.Invalidate();
 	}
-	void RenderableGPUParticleBufferSet::Buffer::Swap(Buffer&& other)
-	{
-		std::swap(dynamicParticleVertexArray, other.dynamicParticleVertexArray);		
-		std::swap(dynamicParticleBufferGL, other.dynamicParticleBufferGL);
-		std::swap(dynamicParticleBufferCL, other.dynamicParticleBufferCL);
-		std::swap(dynamicParticleBufferMap, other.dynamicParticleBufferMap);
-	}
+	void RenderableGPUParticleBufferSet::Buffer::WaitRender()
+	{		
+		WaitFence(renderingFence);
+	}	
 }

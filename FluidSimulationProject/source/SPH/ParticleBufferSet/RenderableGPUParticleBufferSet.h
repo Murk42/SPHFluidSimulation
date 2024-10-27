@@ -16,6 +16,7 @@ namespace SPH
 		RenderableGPUParticleBufferSet(OpenCLContext& clContext, cl::CommandQueue& queue);
 
 		void Initialize(uintMem dynamicParticleBufferCount, ArrayView<DynamicParticle> dynamicParticles) override;
+		void Clear() override;
 		void Advance() override;
 
 		GPUParticleReadBufferHandle& GetReadBufferHandle() override;
@@ -23,8 +24,6 @@ namespace SPH
 		ParticleRenderBufferHandle& GetRenderBufferHandle() override;
 
 		uintMem GetDynamicParticleCount() override;
-
-		void ReorderParticles() override;
 	private:
 		class Buffer : 
 			public GPUParticleReadBufferHandle,
@@ -39,28 +38,32 @@ namespace SPH
 			cl::Buffer dynamicParticleBufferCL;
 			void* dynamicParticleBufferMap;
 			
+			cl::Event readFinishedEvent;			
 			cl::Event writeFinishedEvent;
-			cl::Event readFinishedEvent;
-			Graphics::OpenGLWrapper::Fence readFinishedFence;
+			cl::Event copyFinishedEvent;
+			
+			//This fence is signaled when all particles are copied from the CL buffer to the GL buffer if there is no GL-CL interop. 
+			//If there is it is signaled when the rendering is finished.
+			Graphics::OpenGLWrapper::Fence renderingFence; 
 
 			uintMem dynamicParticleCount;
 
 		public:
 			Buffer(OpenCLContext& clContext, cl::CommandQueue& queue);
-			Buffer(OpenCLContext& clContext, cl::CommandQueue& queue, const DynamicParticle* dynamicParticlesPtr, uintMem dynamicParticlesCount);			
+
+			void Initialize(const DynamicParticle* dynamicParticlesPtr, uintMem dynamicParticleCount);
 
 			void StartRead() override;
 			void StartWrite() override;
 			void FinishRead() override;
-			void FinishWrite() override;
+			void FinishWrite(bool prepareForRendering) override;
 			void StartRender() override;
 			void FinishRender() override;
+			void WaitRender() override;
 
 			cl::Buffer& GetReadBuffer() override { return dynamicParticleBufferCL; }
 			cl::Buffer& GetWriteBuffer() override { return dynamicParticleBufferCL; }
 			Graphics::OpenGLWrapper::VertexArray& GetVertexArray() override { return dynamicParticleVertexArray; }			
-
-			void Swap(Buffer&& other);
 		};
 
 		OpenCLContext& clContext;
@@ -69,38 +72,6 @@ namespace SPH
 		Array<Buffer> buffers;
 		uintMem currentBuffer;
 
-		Buffer intermediateBuffer;			
-		
 		uintMem dynamicParticleCount;						
 	};
-	/*
-	class RenderableGPUParticleBufferSet :
-		public ParticleBufferSet,
-		public GPUParticleBufferSet,
-		public ParticleBufferSetRenderData
-	{
-	public:
-		RenderableGPUParticleBufferSet(OpenCLContext& clContext, cl::CommandQueue& queue);
-
-		void Initialize(ArrayView<DynamicParticle> dynamicParticles) override;
-
-		Graphics::OpenGLWrapper::GraphicsBuffer& GetDynamicParticleBufferGL() override { return dynamicParticleBufferGL; }
-		cl::Buffer& GetDynamicParticleBufferCL() override { return dynamicParticleBufferCL; }
-		
-		void StartSimulationRead() override;
-		void StartSimulationWrite() override;
-		void EndSimulationRead() override;
-		void EndSimulationWrite() override;
-	private:
-		OpenCLContext& clContext;
-
-		Graphics::OpenGLWrapper::GraphicsBuffer dynamicParticleBufferGL;
-		cl::Buffer dynamicParticleBufferCL;
-		void* dynamicParticleBufferMap;
-
-		uintMem dynamicParticleCount;		
-
-		static void RenderStart(void* userData);
-	};
-	*/
 }

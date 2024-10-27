@@ -145,8 +145,10 @@ namespace SPH
 
 		simulationParameters = { };
 
-		simulationTime = 0;
-		lastTimePerStep_s = 0;
+		reorderElapsedTime = 0.0f;
+		reorderTimeInterval = 2.0;
+
+		simulationTime = 0;		
 	}
 	void SystemCPU::Update(float deltaTime, uint simulationSteps)
 	{
@@ -154,23 +156,37 @@ namespace SPH
 		{
 			Debug::Logger::LogWarning("Client", "Updating a uninitialized SPHSystem");
 			return;
-		}
+		}		
 
 		if (profiling)
 			executionStopwatch.Reset();
 
 		for (uint i = 0; i < simulationSteps; ++i)
-		{
-			SimulateParticlesTimeStepTask task{				
-				.particleReadBufferHandle = particleBufferSet->GetReadBufferHandle(),
-				.particleWriteBufferHandle = particleBufferSet->GetWriteBufferHandle(),
+		{			
+			auto& inputParticleBufferHandle = particleBufferSet->GetReadBufferHandle();
+			auto& outputParticleBufferHandle = particleBufferSet->GetWriteBufferHandle();
+			CPUParticleWriteBufferHandle* orderedParticleBufferHandle = nullptr;
+			
+			if (reorderElapsedTime > reorderTimeInterval)
+			{
+				particleBufferSet->Advance();
+				orderedParticleBufferHandle = &particleBufferSet->GetWriteBufferHandle();
+				reorderElapsedTime -= reorderTimeInterval;
+			}
+
+			SimulateParticlesTimeStepTask task{
+				.inputParticles = inputParticleBufferHandle.GetReadBuffer(),
+				.inputSync = inputParticleBufferHandle.GetReadSync(),
+				.outputParticles = outputParticleBufferHandle.GetWriteBuffer(),
+				.outputSync = outputParticleBufferHandle.GetWriteSync(),
+				.orderedParticles = orderedParticleBufferHandle ? orderedParticleBufferHandle->GetWriteBuffer() : nullptr,
+				.orderedSync = orderedParticleBufferHandle ? &orderedParticleBufferHandle->GetWriteSync() : nullptr,
 				.dynamicParticleReadHashMapBuffer = dynamicParticleReadHashMapBuffer.Ptr(),
 				.dynamicParticleWriteHashMapBuffer = dynamicParticleWriteHashMapBuffer.Ptr(),
 				.particleMap = particleMap.Ptr(),
 				.staticParticles = staticParticles.Ptr(),
 				.staticParticleHashMap = staticParticleHashMap.Ptr(),
-				.simulationParameters = simulationParameters,
-				.reorderParticles = false,
+				.simulationParameters = simulationParameters,				
 				.dt = deltaTime,
 			};
 			threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem threadID, uintMem threadCount) {
@@ -181,14 +197,16 @@ namespace SPH
 
 			std::swap(dynamicParticleReadHashMapBuffer, dynamicParticleWriteHashMapBuffer);
 			
-			this->particleBufferSet->Advance();
+			particleBufferSet->Advance();
+
+			reorderElapsedTime += deltaTime;			
 		}
 
 		if (profiling)
 		{
 			threadContext.FinishTasks();
 
-			lastTimePerStep_s = executionStopwatch.GetTime() / simulationSteps;
+			systemProfilingData.timePerStep_s = executionStopwatch.GetTime() / simulationSteps;
 		}
 
 		simulationTime += deltaTime * simulationSteps;
@@ -197,11 +215,9 @@ namespace SPH
 	{
 		this->profiling = enable;
 	}
-	SystemProfilingData SystemCPU::GetProfilingData()
+	const SystemProfilingData& SystemCPU::GetProfilingData()
 	{ 
-		SystemProfilingData out;
-		out.timePerStep_s = lastTimePerStep_s;
-		return out;		
+		return systemProfilingData;
 	}	
 	void SystemCPU::CreateStaticParticlesBuffers(Array<StaticParticle>& inStaticParticles, uintMem hashesPerStaticParticle, float maxInteractionDistance)
 	{
@@ -238,9 +254,12 @@ namespace SPH
 
 		particleMap.Resize(dynamicParticleCount);
 
+		auto& outputParticleBufferHandle = particleBufferSet->GetWriteBufferHandle();
+
 		CalculateHashAndParticleMapTask task{
 			.particleCount = dynamicParticleCount,
-			.particleWriteBufferHandle = particleBufferSet->GetWriteBufferHandle(),
+			.ouputParticles = outputParticleBufferHandle.GetWriteBuffer(),
+			.outputSync = outputParticleBufferHandle.GetWriteSync(),
 			.simulationParameters = simulationParameters,
 			.hashMap = dynamicParticleReadHashMapBuffer.Ptr(),
 			.particleMap = particleMap.Ptr(),
@@ -255,6 +274,10 @@ namespace SPH
 	}
 	void SystemCPU::InitializeInternal(const SystemInitParameters& initParams)
 	{ 				
+		initParams.ParseImplementationSpecifics((StringView)"CPU",
+			SystemInitParameters::ImplementationSpecificsEntry{ "reorderTimeInterval", reorderTimeInterval }
+		);
+
 		simulationParameters.behaviour = initParams.particleBehaviourParameters;
 		simulationParameters.bounds = initParams.particleBoundParameters;
 		simulationParameters.dynamicParticleCount = dynamicParticleCount;
@@ -265,13 +288,8 @@ namespace SPH
 		simulationParameters.staticParticleHashMapSize = staticParticleHashMapSize;
 	}
 	void SystemCPU::CalculateHashAndParticleMap(TaskThreadContext& context, uintMem begin, uintMem end, CalculateHashAndParticleMapTask task)
-	{
-		if (begin == 0)
-		{
-			task.particleWriteBufferHandle.StartWrite();
-		}
-
-		auto particles = task.particleWriteBufferHandle.GetWriteBuffer();
+	{		
+		auto particles = task.ouputParticles;
 
 		context.SyncThreads();
 
@@ -324,7 +342,7 @@ namespace SPH
 				ArrayView<uint32>(task.particleMap, task.simulationParameters.dynamicParticleCount)
 			);
 #endif
-			task.particleWriteBufferHandle.FinishWrite();
+			task.outputSync.MarkEnd();
 		}
 	}
 	void SystemCPU::SimulateParticlesTimeStep(TaskThreadContext& context, uintMem begin, uintMem end, SimulateParticlesTimeStepTask task)
@@ -335,21 +353,15 @@ namespace SPH
 
 			for (uintMem i = hashBegin; i < hashEnd; ++i)
 				task.dynamicParticleWriteHashMapBuffer[i].store(0);
-		}
-
-		if (begin == 0)
-		{
-			task.particleReadBufferHandle.StartRead();
-			task.particleWriteBufferHandle.StartWrite();
-		}
+		}		
 
 		context.SyncThreads();
 		
 		for (uintMem i = begin; i < end; ++i)
 			UpdateParticlePressure(
 				i,
-				task.particleReadBufferHandle.GetReadBuffer(),
-				task.particleWriteBufferHandle.GetWriteBuffer(),
+				task.inputParticles,
+				task.outputParticles,
 				task.dynamicParticleReadHashMapBuffer,
 				task.particleMap,
 				task.staticParticles,
@@ -362,8 +374,8 @@ namespace SPH
 		for (uintMem i = begin; i < end; ++i)
 			UpdateParticleDynamics(
 				i,
-				task.particleReadBufferHandle.GetReadBuffer(),
-				task.particleWriteBufferHandle.GetWriteBuffer(),
+				task.inputParticles,
+				task.outputParticles,
 				task.dynamicParticleReadHashMapBuffer,
 				task.dynamicParticleWriteHashMapBuffer,
 				task.particleMap,
@@ -374,7 +386,7 @@ namespace SPH
 			);		
 
 
-		context.SyncThreads();		
+		context.SyncThreads();				
 
 		if (begin == 0)
 		{			
@@ -398,33 +410,36 @@ namespace SPH
 			std::atomic_uint32_t s;			
 #endif
 
-			task.particleReadBufferHandle.FinishRead();
+			task.inputSync.MarkEnd();
 					
 			uint32 valueSum = 0;
 			for (uintMem i = 0; i < task.simulationParameters.dynamicParticleHashMapSize; ++i)
 			{
 				valueSum += task.dynamicParticleWriteHashMapBuffer[i];
 				task.dynamicParticleWriteHashMapBuffer[i] = valueSum;
-			}
+			}			
 		}
 
-		context.SyncThreads();
+		context.SyncThreads();		
 
 		for (uintMem i = begin; i < end; ++i)
 			ComputeParticleMap(
 				i,
-				task.particleWriteBufferHandle.GetWriteBuffer(),
-				nullptr,
+				task.outputParticles,
+				task.orderedParticles,
 				task.dynamicParticleWriteHashMapBuffer,
 				task.particleMap,
-				0
+				task.orderedParticles != nullptr
 			);
 
 		context.SyncThreads();
 
 		if (begin == 0)
 		{
-			task.particleWriteBufferHandle.FinishWrite();			
+			task.outputSync.MarkEnd();			
+
+			if (task.orderedParticles != nullptr)
+				task.orderedSync->MarkEnd();
 
 #ifdef DEBUG_BUFFERS_CPU
 

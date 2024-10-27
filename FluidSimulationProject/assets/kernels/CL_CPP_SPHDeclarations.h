@@ -4,6 +4,9 @@
 #define Vec3i int3
 #define Vec3f float3
 #define HASH_TYPE uint
+#define uint32 uint
+#define uint64 unsigned long
+
 
 #define modf fract
 
@@ -159,10 +162,10 @@ struct ParticleSimulationParameters
 {
 	STRUCT ParticleBehaviourParameters behaviour;
 	STRUCT ParticleBoundParameters bounds;
-	uint dynamicParticleCount;
-	uint dynamicParticleHashMapSize;
-	uint staticParticleCount;
-	uint staticParticleHashMapSize;
+	uint64 dynamicParticleCount;
+	uint64 dynamicParticleHashMapSize;
+	uint64 staticParticleCount;
+	uint64 staticParticleHashMapSize;
 
 	float selfDensity;
 	float smoothingKernelConstant;

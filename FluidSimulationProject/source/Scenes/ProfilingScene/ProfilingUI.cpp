@@ -67,21 +67,23 @@ ProfilingUI::ProfilingUI()
 		.verticallyUnderfittedOption = UI::TextVerticallyUnderfittedOptions::ResizeToFit,
 		});
 
-	profilingLog.SetParent(&starProfilingButton);
+	profilingLog.SetParent(this);
 	profilingLog.SetTransform({
-		.pos = Vec2f(0, -5),
+		.pos = Vec2f(5, 5),
 		.parentPivot = Vec2f(0.0f, 0.0f),
-		.pivot = Vec2f(0.0f, 1.0f),		
+		.pivot = Vec2f(0.0f, 0.0f),		
+		.size = Vec2f(1000, 950),
 		});
+	profilingLog.SetCullingNode(&profilingLog);
 	profilingLog.SetFont(font);
 	profilingLog.SetFontHeight(12);
 	profilingLog.SetTextColor(0xffffffff);	
 	profilingLog.SetLayoutOptions({
 		.lineHorizontalAlign = UI::TextLineHorizontalAlign::Left,
-		.lineVerticalAlign = UI::TextLineVerticalAlign::Top,
-		.horizontallyUnderfittedOption = UI::TextHorizontallyUnderfittedOptions::ResizeToFit,
-		.verticallyUnderfittedOption = UI::TextVerticallyUnderfittedOptions::ResizeToFit,
-		});
+		.lineVerticalAlign = UI::TextLineVerticalAlign::Bottom,
+		.horizontallyUnderfittedOption = UI::TextHorizontallyUnderfittedOptions::Nothing,
+		.verticallyUnderfittedOption = UI::TextVerticallyUnderfittedOptions::Nothing,		
+		});	
 }
 
 ProfilingUI::~ProfilingUI()
