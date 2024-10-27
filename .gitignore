@@ -8,3 +8,5 @@ extern/
 vcpkg_installed/
 
 *.dll
+
+BlazeEngineProjectPropertySheet.props
