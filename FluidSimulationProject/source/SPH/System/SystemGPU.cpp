@@ -68,7 +68,6 @@ namespace SPH
 	}
 	void SystemGPU::Clear()
 	{
-		queue.finish();
 
 		dynamicParticleWriteHashMapBuffer = cl::Buffer();
 		dynamicParticleReadHashMapBuffer = cl::Buffer();
@@ -125,35 +124,42 @@ namespace SPH
 			for (auto it = systemProfilingData.implementationSpecific.FirstIterator(); it != systemProfilingData.implementationSpecific.BehindIterator(); ++it)
 				if (float* value = it.GetValue<float>())
 					*value = 0;
-
-		cl::Event startEvent;
-		if (profiling)
-		{
-			clEnqueueMarkerWithWaitList(queue(), 1, &computeParticleMapFinishedEvent(), &startEvent());
-			std::swap(startEvent(), computeParticleMapFinishedEvent());
-		}
+		
+		cl::Event updateStartEvent;
+		cl::Event updateEndEvent;
 
 		for (uint i = 0; i < simulationSteps; ++i)
 		{
 			auto& inputParticleBufferHandle = this->particleBufferSet->GetReadBufferHandle();
-			auto* outputParticleBufferHandle = &this->particleBufferSet->GetWriteBufferHandle();
+			auto* outputParticleBufferHandle = &this->particleBufferSet->GetWriteBufferHandle();			
 
-			EnqueueClearHashMap();
+			cl::Event readStartEvent, writeStartEvent;
+			inputParticleBufferHandle.StartRead(&readStartEvent());
+			outputParticleBufferHandle->StartWrite(&writeStartEvent());
 
-			EnqueueUpdateParticlesPressureKernel(inputParticleBufferHandle.GetReadBuffer(), outputParticleBufferHandle->GetWriteBuffer());			
+			cl::Event clearHashMapFinishedEvent;			
+			EnqueueClearHashMap({ &writeStartEvent(), 1 }, &clearHashMapFinishedEvent());
 
-			if (profiling && i == 0)
-				std::swap(startEvent(), computeParticleMapFinishedEvent());
+			cl::Event updatePressureFinishedEvent;
+			uintMem updateParticlesWaitEventCount = 0;
+			cl_event updateParticlesWaitEvents[2]{ };
+			if (readStartEvent() != nullptr) updateParticlesWaitEvents[updateParticlesWaitEventCount++] = readStartEvent();
+			if (writeStartEvent() != nullptr) updateParticlesWaitEvents[updateParticlesWaitEventCount++] = writeStartEvent();
+			EnqueueUpdateParticlesPressureKernel(inputParticleBufferHandle.GetReadBuffer(), outputParticleBufferHandle->GetWriteBuffer(), { updateParticlesWaitEvents, updateParticlesWaitEventCount }, &updatePressureFinishedEvent());
 
-			EnqueueUpdateParticlesDynamicsKernel(inputParticleBufferHandle.GetReadBuffer(), outputParticleBufferHandle->GetWriteBuffer(), deltaTime);
+			cl::Event updateDynamicsFinishedEvent;
+			EnqueueUpdateParticlesDynamicsKernel(inputParticleBufferHandle.GetReadBuffer(), outputParticleBufferHandle->GetWriteBuffer(), deltaTime, { &updatePressureFinishedEvent(), 1 }, &updateDynamicsFinishedEvent());
 
 #ifdef DEBUG_BUFFERS_GPU
 			DebugParticles(outputParticleBufferHandle->GetWriteBuffer());
 			DebugPrePrefixSumHashes(outputParticleBufferHandle->GetWriteBuffer(), dynamicParticleWriteHashMapBuffer);
 #endif
 
-			EnqueuePartialSumKernels(dynamicParticleWriteHashMapBuffer, dynamicParticleHashMapSize, hashMapBufferGroupSize, updateParticleDynamicsFinishedEvent);
-
+			cl_event partialSumWaitEvents[]{ clearHashMapFinishedEvent(), updateDynamicsFinishedEvent() };
+			cl::Event partialSumFinishedEvent;
+			EnqueuePartialSumKernels(dynamicParticleWriteHashMapBuffer, dynamicParticleHashMapSize, hashMapBufferGroupSize, partialSumWaitEvents, &partialSumFinishedEvent());
+						
+			cl::Event computeParticleMapFinishedEvent;
 			if (reorderElapsedTime > reorderTimeInterval)
 			{
 				reorderElapsedTime -= reorderTimeInterval;
@@ -161,24 +167,30 @@ namespace SPH
 				particleBufferSet->Advance();
 				auto* intermediateBuffer = &particleBufferSet->GetWriteBufferHandle();
 
-				intermediateBuffer->StartWrite();
+				cl::Event startIntermediateEvent;
+				intermediateBuffer->StartWrite(&startIntermediateEvent());
 
-				EnqueueComputeParticleMapKernel(outputParticleBufferHandle->GetWriteBuffer(), &intermediateBuffer->GetWriteBuffer(), dynamicParticleCount, dynamicParticleWriteHashMapBuffer, particleMapBuffer);
+				uintMem computeParticleMapWaitEventCount = 0;
+				cl_event computeParticleMapWaitEvents[2]{ }; 
+				if (startIntermediateEvent() != nullptr) computeParticleMapWaitEvents[updateParticlesWaitEventCount++] = startIntermediateEvent();
+				if (partialSumFinishedEvent() != nullptr) computeParticleMapWaitEvents[updateParticlesWaitEventCount++] = partialSumFinishedEvent();
+				EnqueueComputeParticleMapKernel(outputParticleBufferHandle->GetWriteBuffer(), &intermediateBuffer->GetWriteBuffer(), dynamicParticleCount, dynamicParticleWriteHashMapBuffer, particleMapBuffer, { computeParticleMapWaitEvents, computeParticleMapWaitEventCount }, &computeParticleMapFinishedEvent());
 
-				outputParticleBufferHandle->FinishWrite(false);
+				outputParticleBufferHandle->FinishWrite({ &computeParticleMapFinishedEvent(), 1 }, false);
 
 				std::swap(intermediateBuffer, outputParticleBufferHandle);
 			}
 			else
-				EnqueueComputeParticleMapKernel(outputParticleBufferHandle->GetWriteBuffer(), nullptr, dynamicParticleCount, dynamicParticleWriteHashMapBuffer, particleMapBuffer);
+				EnqueueComputeParticleMapKernel(outputParticleBufferHandle->GetWriteBuffer(), nullptr, dynamicParticleCount, dynamicParticleWriteHashMapBuffer, particleMapBuffer, { &partialSumFinishedEvent(), 1 }, &computeParticleMapFinishedEvent());
 
 
 #ifdef DEBUG_BUFFERS_GPU
 			DebugHashes(outputParticleBufferHandle->GetWriteBuffer(), dynamicParticleWriteHashMapBuffer);
 #endif			
-			inputParticleBufferHandle.FinishRead();
-			outputParticleBufferHandle->FinishWrite(i == simulationSteps - 1);
+			inputParticleBufferHandle.FinishRead({ &updateDynamicsFinishedEvent(), 1});
+			outputParticleBufferHandle->FinishWrite({ &computeParticleMapFinishedEvent(), 1 }, i == simulationSteps - 1);
 			this->particleBufferSet->Advance();
+
 
 			std::swap(dynamicParticleReadHashMapBuffer, dynamicParticleWriteHashMapBuffer);
 
@@ -186,17 +198,21 @@ namespace SPH
 
 			if (profiling && detailedProfiling)
 			{
-				InsertMeasurement("updateParticlePressure", updateParticlePressureFinishedEvent, updateParticlePressureFinishedEvent);
-				InsertMeasurement("updateParticleDynamics", updateParticleDynamicsFinishedEvent, updateParticleDynamicsFinishedEvent);
-				InsertMeasurement("groupPrefixSum", groupPrefixSumFinishedEvent, groupPrefixSumFinishedEvent);
-				InsertMeasurement("groupSum", groupSumFinishedEvent, groupSumFinishedEvent);
+				InsertMeasurement("updateParticlePressure", updatePressureFinishedEvent, updatePressureFinishedEvent);
+				InsertMeasurement("updateParticleDynamics", updateDynamicsFinishedEvent, updateDynamicsFinishedEvent);
+				InsertMeasurement("prefixSum", partialSumFinishedEvent, partialSumFinishedEvent);				
 				InsertMeasurement("computeParticleMap", computeParticleMapFinishedEvent, computeParticleMapFinishedEvent);
 			}
+
+			if (i == 0)
+				updateStartEvent = updatePressureFinishedEvent;
+			if (i == simulationSteps - 1)
+				updateEndEvent = computeParticleMapFinishedEvent;
 		}
 
 		if (profiling)
 		{
-			systemProfilingData.timePerStep_s = (double)Measure(startEvent, computeParticleMapFinishedEvent) / simulationSteps;
+			systemProfilingData.timePerStep_s = (double)Measure(updateStartEvent, updateEndEvent) / simulationSteps;
 		}
 
 		simulationTime += deltaTime * simulationSteps;
@@ -301,14 +317,7 @@ namespace SPH
 		dynamicParticleReadHashMapBuffer = cl::Buffer(clContext.context, CL_MEM_READ_WRITE, sizeof(uint32) * (dynamicParticleHashMapSize + 1), nullptr, &ret);
 		CL_CHECK();
 		particleMapBuffer = cl::Buffer(clContext.context, CL_MEM_READ_WRITE, sizeof(uint32) * dynamicParticleCount, nullptr, &ret);
-		CL_CHECK();		
-
-		uint32 pattern0 = 0;
-		uint32 patternCount = dynamicParticleCount;
-		CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleReadHashMapBuffer(), &pattern0, sizeof(uint32), 0, dynamicParticleHashMapSize * sizeof(uint32), 0, nullptr, &computeParticleHashesWaitEvents[0]));
-		CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleReadHashMapBuffer(), &patternCount, sizeof(uint32), dynamicParticleHashMapSize * sizeof(uint32), sizeof(uint32), 0, nullptr, &computeParticleHashesWaitEvents[1]));
-		CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleWriteHashMapBuffer(), &pattern0, sizeof(uint32), 0, dynamicParticleHashMapSize * sizeof(uint32), 0, nullptr, nullptr));
-		CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleWriteHashMapBuffer(), &patternCount, sizeof(uint32), dynamicParticleHashMapSize * sizeof(uint32), sizeof(uint32), 0, nullptr, nullptr));		
+		CL_CHECK();				
 	}
 	void SystemGPU::InitializeInternal(const SystemInitParameters& initParams)
 	{
@@ -364,27 +373,50 @@ namespace SPH
 		}
 
 		{
+			cl::Event clearHashMapFinishedEvents[4];
+
+			uint32 pattern0 = 0;
+			uint32 patternCount = dynamicParticleCount;
+			CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleReadHashMapBuffer(), &pattern0, sizeof(uint32), 0, dynamicParticleHashMapSize * sizeof(uint32), 0, nullptr, &clearHashMapFinishedEvents[0]()));
+			CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleReadHashMapBuffer(), &patternCount, sizeof(uint32), dynamicParticleHashMapSize * sizeof(uint32), sizeof(uint32), 0, nullptr, &clearHashMapFinishedEvents[1]()));
+			CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleWriteHashMapBuffer(), &pattern0, sizeof(uint32), 0, dynamicParticleHashMapSize * sizeof(uint32), 0, nullptr, &clearHashMapFinishedEvents[2]()));
+			CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleWriteHashMapBuffer(), &patternCount, sizeof(uint32), dynamicParticleHashMapSize * sizeof(uint32), sizeof(uint32), 0, nullptr, &clearHashMapFinishedEvents[3]()));
+
 			auto& particlesWriteBufferHandle = this->particleBufferSet->GetWriteBufferHandle();
-			EnqueueComputeParticleHashesKernel(particlesWriteBufferHandle.GetWriteBuffer(), dynamicParticleCount, dynamicParticleReadHashMapBuffer, dynamicParticleHashMapSize, initParams.particleBehaviourParameters.maxInteractionDistance, computeParticleHashesWaitEvents);
+			cl::Event startWriteEvent;
+			particlesWriteBufferHandle.StartWrite(&startWriteEvent());
+
+			cl::Event computeParticleHashesFinishedEvent;
+			uintMem computeParticleHashesWaitEventCount = 0;
+			cl_event computeParticleHashesWaitEvents[5]{};
+			if (clearHashMapFinishedEvents[0]() != nullptr) computeParticleHashesWaitEvents[computeParticleHashesWaitEventCount++] = clearHashMapFinishedEvents[0]();
+			if (clearHashMapFinishedEvents[1]() != nullptr) computeParticleHashesWaitEvents[computeParticleHashesWaitEventCount++] = clearHashMapFinishedEvents[1]();
+			if (clearHashMapFinishedEvents[2]() != nullptr) computeParticleHashesWaitEvents[computeParticleHashesWaitEventCount++] = clearHashMapFinishedEvents[2]();
+			if (clearHashMapFinishedEvents[3]() != nullptr) computeParticleHashesWaitEvents[computeParticleHashesWaitEventCount++] = clearHashMapFinishedEvents[3]();
+			if (computeParticleHashesFinishedEvent() != nullptr) computeParticleHashesWaitEvents[computeParticleHashesWaitEventCount++] = computeParticleHashesFinishedEvent();
+			EnqueueComputeParticleHashesKernel(particlesWriteBufferHandle.GetWriteBuffer(), dynamicParticleCount, dynamicParticleReadHashMapBuffer, dynamicParticleHashMapSize, initParams.particleBehaviourParameters.maxInteractionDistance, { computeParticleHashesWaitEvents , computeParticleHashesWaitEventCount }, &computeParticleHashesFinishedEvent());			
 
 #ifdef DEBUG_BUFFERS_GPU
 			DebugParticles(particlesWriteBufferHandle.GetWriteBuffer());
 			DebugPrePrefixSumHashes(particlesWriteBufferHandle.GetWriteBuffer(), dynamicParticleReadHashMapBuffer);
 #endif
 
-			EnqueuePartialSumKernels(dynamicParticleReadHashMapBuffer, dynamicParticleHashMapSize, hashMapBufferGroupSize, computeParticleHashesFinishedEvent);
+			cl::Event partialSumFinishedEvent;
+			EnqueuePartialSumKernels(dynamicParticleReadHashMapBuffer, dynamicParticleHashMapSize, hashMapBufferGroupSize, { &computeParticleHashesFinishedEvent(), 1}, &partialSumFinishedEvent());
 
-			EnqueueComputeParticleMapKernel(particlesWriteBufferHandle.GetWriteBuffer(), nullptr, dynamicParticleCount, dynamicParticleReadHashMapBuffer, particleMapBuffer);
+			cl::Event computeParticleMapFinishedEvent;
+			EnqueueComputeParticleMapKernel(particlesWriteBufferHandle.GetWriteBuffer(), nullptr, dynamicParticleCount, dynamicParticleReadHashMapBuffer, particleMapBuffer, { &partialSumFinishedEvent() , 1}, &computeParticleMapFinishedEvent());
 
 #ifdef DEBUG_BUFFERS_GPU				
 			DebugHashes(particlesWriteBufferHandle.GetWriteBuffer(), dynamicParticleReadHashMapBuffer);
 #endif		
 
-			particlesWriteBufferHandle.FinishWrite(true);
-			this->particleBufferSet->Advance();
+
+			particlesWriteBufferHandle.FinishWrite({ &computeParticleMapFinishedEvent(), 1 }, true);
+			this->particleBufferSet->Advance();			
 		}
 	}
-	void SystemGPU::EnqueueComputeParticleHashesKernel(cl::Buffer& particles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, ArrayView<cl_event> waitEvents)
+	void SystemGPU::EnqueueComputeParticleHashesKernel(cl::Buffer& particles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
 		cl_int ret;
 
@@ -396,15 +428,15 @@ namespace SPH
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = computeParticleHashesKernelPreferredGroupSize;
-		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleHashesKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, waitEvents.Count(), waitEvents.Ptr(), &computeParticleHashesFinishedEvent()));
+		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleHashesKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, waitEvents.Count(), waitEvents.Ptr(), finishedEvent));
 	}
-	void SystemGPU::EnqueueClearHashMap()
+	void SystemGPU::EnqueueClearHashMap(ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
 		cl_int ret;
 		byte* pattern = 0;
-		CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleWriteHashMapBuffer(), &pattern, sizeof(byte), 0, sizeof(uint32) * dynamicParticleHashMapSize, 1, &computeParticleMapFinishedEvent(), &clearHashMapFinishedEvent()));
+		CL_CALL(clEnqueueFillBuffer(queue(), dynamicParticleWriteHashMapBuffer(), &pattern, sizeof(byte), 0, sizeof(uint32) * dynamicParticleHashMapSize, waitEvents.Count(), waitEvents.Ptr(), finishedEvent));
 	}
-	void SystemGPU::EnqueueUpdateParticlesPressureKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer)
+	void SystemGPU::EnqueueUpdateParticlesPressureKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
 		cl_int ret;
 
@@ -420,9 +452,9 @@ namespace SPH
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = updateParticlesPressureKernelPreferredGroupSize;
-		CL_CALL(clEnqueueNDRangeKernel(queue(), updateParticlesPressureKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, 1, &computeParticleHashesFinishedEvent(), &updateParticlePressureFinishedEvent()));
+		CL_CALL(clEnqueueNDRangeKernel(queue(), updateParticlesPressureKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, waitEvents.Count(), waitEvents.Ptr(), finishedEvent));
 	}
-	void SystemGPU::EnqueueUpdateParticlesDynamicsKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, float deltaTime)
+	void SystemGPU::EnqueueUpdateParticlesDynamicsKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, float deltaTime, ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
 		bool moveParticles = false;
 
@@ -441,13 +473,14 @@ namespace SPH
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = updateParticlesDynamicsKernelPreferredGroupSize;
-		CL_CALL(clEnqueueNDRangeKernel(queue(), updateParticlesDynamicsKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, 1, &updateParticlePressureFinishedEvent(), &updateParticleDynamicsFinishedEvent()));
+		CL_CALL(clEnqueueNDRangeKernel(queue(), updateParticlesDynamicsKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, waitEvents.Count(), waitEvents.Ptr(), finishedEvent));
 	}
-	void SystemGPU::EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, cl::Event& waitEvent)
+	void SystemGPU::EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
 		cl_int ret;
 
-		cl_event tempEvent = nullptr;
+		cl::Event waitEvent;
+		cl::Event signalEvent;
 
 		for (uintMem size = elementCount, layerI = 0; size != 1; size /= groupSize, ++layerI)
 		{
@@ -458,9 +491,10 @@ namespace SPH
 			size_t globalWorkOffset = 0;
 			size_t globalWorkSize = size / 2;
 			size_t localWorkSize = groupSize / 2;
-			CL_CALL(clEnqueueNDRangeKernel(queue(), scanOnComputeGroupsKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 1, (size == elementCount ? &waitEvent() : &groupPrefixSumFinishedEvent()), &tempEvent));
+			CL_CALL(clEnqueueNDRangeKernel(queue(), scanOnComputeGroupsKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, size == elementCount ? waitEvents.Count() : 1, size == elementCount ? waitEvents.Ptr() : &waitEvent(), &signalEvent()));
 
-			std::swap(groupPrefixSumFinishedEvent(), tempEvent);
+			std::swap(signalEvent(), waitEvent());
+			signalEvent = cl::Event();
 
 #if defined (DEBUG_BUFFERS_GPU) && 0
 			DebugInterPrefixSumHashes(nullptr, buffer, layerI + 1);
@@ -481,17 +515,19 @@ namespace SPH
 			size_t globalWorkOffset = 0;
 			size_t globalWorkSize = (topArraySize - 1) * (groupSize - 1);
 			size_t localWorkSize = groupSize - 1;
-			CL_CALL(clEnqueueNDRangeKernel(queue(), addToComputeGroupArraysKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 1, (topArraySize == groupSize ? &groupPrefixSumFinishedEvent() : &groupSumFinishedEvent()), &tempEvent));
+			CL_CALL(clEnqueueNDRangeKernel(queue(), addToComputeGroupArraysKernel(), 1, &globalWorkOffset, &globalWorkSize, &localWorkSize, 1, &waitEvent(), &signalEvent()));
 
-			std::swap(groupSumFinishedEvent(), tempEvent);
+			std::swap(signalEvent(), waitEvent());
+			signalEvent = cl::Event();			
 
 			//CL_CALL(queue.finish());
 			//CL_CALL(queue.enqueueReadBuffer(buffer, CL_TRUE, 0, sizeof(uint32) * (dynamicParticleHashMapSize + 1), debugHashMapArray.Ptr(), nullptr, nullptr));
 			//__debugbreak();
 		}
 
+		*finishedEvent = waitEvent();		
 	}
-	void SystemGPU::EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer)
+	void SystemGPU::EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer, ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
 		cl_int ret;
 
@@ -507,7 +543,7 @@ namespace SPH
 		size_t globalWorkOffset = 0;
 		size_t globalWorkSize = dynamicParticleCount;
 		size_t localWorkSize = computeParticleMapKernelPreferredGroupSize;;
-		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleMapKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, 1, &groupSumFinishedEvent(), &computeParticleMapFinishedEvent()));
+		CL_CALL(clEnqueueNDRangeKernel(queue(), computeParticleMapKernel(), 1, &globalWorkOffset, &globalWorkSize, openCLChoosesGroupSize ? nullptr : &localWorkSize, waitEvents.Count(), waitEvents.Ptr(), finishedEvent));
 	}
 #ifdef DEBUG_BUFFERS_GPU
 	void SystemGPU::DebugParticles(cl::Buffer& particles)

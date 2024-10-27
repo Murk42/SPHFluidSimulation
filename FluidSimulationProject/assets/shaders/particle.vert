@@ -63,7 +63,7 @@ void main()
 	else
 		color = vec4(1, 0, 0, 1);
 	
-	color.a *= (1 - smoothstep(FADE_START, FADE_END, dist));
+	color.a *= (1 - smoothstep(float(FADE_START), FADE_END, dist));
 
 	f_color = color;
 	f_center = center;

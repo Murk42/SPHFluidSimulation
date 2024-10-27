@@ -73,48 +73,40 @@ namespace SPH
 		dynamicParticleBufferCL = cl::Buffer(clContext.context, CL_MEM_READ_WRITE | (dynamicParticlesPtr != nullptr ? CL_MEM_COPY_HOST_PTR : 0), sizeof(DynamicParticle) * dynamicParticleCount, (void*)dynamicParticlesPtr, &ret);
 		CL_CHECK();		
 	}
-	void OfflineGPUParticleBufferSet::Buffer::StartRead()
+	void OfflineGPUParticleBufferSet::Buffer::StartRead(cl_event* finishedEvent)
 	{
 		cl_int ret;
-
+				
 		if (writeFinishedEvent() != nullptr)
-		{
-			CL_CALL(writeFinishedEvent.wait());
-			writeFinishedEvent = cl::Event();
-		}		
+			CL_CALL(clEnqueueMarkerWithWaitList(queue(), 1, &writeFinishedEvent(), finishedEvent));		
 	}
-	void OfflineGPUParticleBufferSet::Buffer::FinishRead()
+	void OfflineGPUParticleBufferSet::Buffer::FinishRead(ArrayView<cl_event> waitEvents)
 	{
 		cl_int ret;
 		
-		CL_CALL(queue.enqueueMarkerWithWaitList(nullptr, &readFinishedEvent));		
+		readFinishedEvent = cl::Event();
+		if (!waitEvents.Empty())
+			CL_CALL(clEnqueueMarkerWithWaitList(queue(), waitEvents.Count(), waitEvents.Ptr(), &readFinishedEvent()));
 	}
-	void OfflineGPUParticleBufferSet::Buffer::StartWrite()
+	void OfflineGPUParticleBufferSet::Buffer::StartWrite(cl_event* finishedEvent)
 	{
-		cl_int ret;	
+		cl_int ret;			
 
-		if (copyFinishedEvent() != nullptr)
-		{
-			CL_CALL(copyFinishedEvent.wait())
-				copyFinishedEvent = cl::Event();
-		}
+		uintMem count = 0;
+		cl_event waitEvents[3]{ };
+		if (copyFinishedEvent()) waitEvents[count++] = copyFinishedEvent();
+		if (writeFinishedEvent()) waitEvents[count++] = writeFinishedEvent();
+		if (readFinishedEvent()) waitEvents[count++] = readFinishedEvent();
 
-		if (writeFinishedEvent() != nullptr)
-		{
-			CL_CALL(writeFinishedEvent.wait());
-			writeFinishedEvent = cl::Event();
-		}
-
-		if (readFinishedEvent() != nullptr)
-		{
-			CL_CALL(readFinishedEvent.wait());
-			readFinishedEvent = cl::Event();
-		}		
+		if (count != 0)
+			CL_CALL(clEnqueueMarkerWithWaitList(queue(), count, count == 0 ? nullptr : waitEvents, finishedEvent));
 	}
-	void OfflineGPUParticleBufferSet::Buffer::FinishWrite(bool prepareForRendering)
+	void OfflineGPUParticleBufferSet::Buffer::FinishWrite(ArrayView<cl_event> waitEvents, bool prepareForRendering)
 	{
 		cl_int ret;
-		
-		CL_CALL(queue.enqueueMarkerWithWaitList(nullptr, &writeFinishedEvent));			
+
+		writeFinishedEvent = cl::Event();
+		if (!waitEvents.Empty())
+			CL_CALL(clEnqueueMarkerWithWaitList(queue(), waitEvents.Count(), waitEvents.Ptr(), &writeFinishedEvent()));
 	}	
 }

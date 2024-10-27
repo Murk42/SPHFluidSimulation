@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <BlazeDir>D:\Programming\Projects\BlazeEngine\</BlazeDir>
+    <BlazeDir>C:\Users\filip\source\repos\BlazeEngine\</BlazeDir>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>$(ProjectDir)build\$(Configuration)\$(PlatformTarget)\</OutDir>
@@ -20,11 +20,11 @@
       <AdditionalDependencies>BlazeEngineCore-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngine-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineGraphics-static-$(PlatformTarget)-$(Configuration).lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
     </PostBuildEvent>
     <PreLinkEvent>
-      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
+      <Command>
+      </Command>
     </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

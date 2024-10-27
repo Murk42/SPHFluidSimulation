@@ -18,16 +18,16 @@ namespace SPH
 	class GPUParticleReadBufferHandle
 	{
 	public:
-		virtual void StartRead() = 0;
-		virtual void FinishRead() = 0;
+		virtual void StartRead(cl_event* finishedEvent) = 0;
+		virtual void FinishRead(ArrayView<cl_event> waitEvents) = 0;
 
 		virtual cl::Buffer& GetReadBuffer() = 0;
 	};
 	class GPUParticleWriteBufferHandle
 	{
 	public:
-		virtual void StartWrite() = 0;
-		virtual void FinishWrite(bool prepareForRendering) = 0;
+		virtual void StartWrite(cl_event* finishedEvent) = 0;
+		virtual void FinishWrite(ArrayView<cl_event> waitEvents, bool prepareForRendering) = 0;
 		virtual cl::Buffer& GetWriteBuffer() = 0;
 	};	
 }

@@ -77,18 +77,7 @@ namespace SPH
 		SystemProfilingData systemProfilingData;
 		float simulationTime;
 		bool openCLChoosesGroupSize;
-		bool useMaxGroupSize;
-
-		cl_event computeParticleHashesWaitEvents[2];
-
-		cl::Event computeParticleHashesFinishedEvent;
-		cl::Event clearHashMapFinishedEvent;
-		cl::Event updateParticlePressureFinishedEvent;
-		cl::Event updateParticleDynamicsFinishedEvent;
-		cl::Event groupPrefixSumFinishedEvent;
-		cl::Event groupSumFinishedEvent;
-		cl::Event computeParticleMapFinishedEvent;
-		
+		bool useMaxGroupSize;				
 
 #ifdef DEBUG_BUFFERS_GPU
 		float debugMaxInteractionDistance;
@@ -101,12 +90,12 @@ namespace SPH
 		void CreateDynamicParticlesBuffers(ParticleBufferSet& particleBufferSet, uintMem hashesPerDynamicParticle, float maxInteractionDistance) override;
 		void InitializeInternal(const SystemInitParameters& initParams) override;
 
-		void EnqueueComputeParticleHashesKernel(cl::Buffer& particles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, ArrayView<cl_event> waitEvents);
-		void EnqueueClearHashMap();
-		void EnqueueUpdateParticlesPressureKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer);
-		void EnqueueUpdateParticlesDynamicsKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, float deltaTime);
-		void EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, cl::Event& waitEvent);
-		void EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer);
+		void EnqueueComputeParticleHashesKernel(cl::Buffer& particles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, uintMem dynamicParticleHashMapSize, float maxInteractionDistance, ArrayView<cl_event> waitEvents, cl_event* finishedEvent);
+		void EnqueueClearHashMap(ArrayView<cl_event> waitEvents, cl_event* finishedEvent);
+		void EnqueueUpdateParticlesPressureKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, ArrayView<cl_event> waitEvents, cl_event* finishedEvent);
+		void EnqueueUpdateParticlesDynamicsKernel(const cl::Buffer& particleReadBuffer, cl::Buffer& particleWriteBuffer, float deltaTime, ArrayView<cl_event> waitEvents, cl_event* finishedEvent);
+		void EnqueuePartialSumKernels(cl::Buffer& buffer, uintMem elementCount, uintMem groupSize, ArrayView<cl_event> waitEvents, cl_event* finishedEvent);
+		void EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer, ArrayView<cl_event> waitEvents, cl_event* finishedEvent);
 
 #ifdef DEBUG_BUFFERS_GPU
 		void DebugParticles(cl::Buffer& particles);

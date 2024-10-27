@@ -53,10 +53,10 @@ namespace SPH
 
 			void Initialize(const DynamicParticle* dynamicParticlesPtr, uintMem dynamicParticleCount);
 
-			void StartRead() override;
-			void StartWrite() override;
-			void FinishRead() override;
-			void FinishWrite(bool prepareForRendering) override;
+			void StartRead(cl_event* finishedEvent) override;
+			void FinishRead(ArrayView<cl_event> waitEvents) override;
+			void StartWrite(cl_event* finishedEvent) override;
+			void FinishWrite(ArrayView<cl_event> waitEvents,bool prepareForRendering) override;
 			void StartRender() override;
 			void FinishRender() override;
 			void WaitRender() override;
