@@ -9,4 +9,4 @@ vcpkg_installed/
 
 *.dll
 
-BlazeEngineProjectPropertySheet.props
+FluidSimulation/BlazeEngineProjectPropertySheet.props
