@@ -525,7 +525,8 @@ namespace SPH
 			//__debugbreak();
 		}
 
-		*finishedEvent = waitEvent();		
+		*finishedEvent = waitEvent();
+		waitEvent() = nullptr;
 	}
 	void SystemGPU::EnqueueComputeParticleMapKernel(cl::Buffer& particles, cl::Buffer* orderedParticles, uintMem dynamicParticleCount, cl::Buffer& dynamicParticleWriteHashMapBuffer, cl::Buffer& particleMapBuffer, ArrayView<cl_event> waitEvents, cl_event* finishedEvent)
 	{
