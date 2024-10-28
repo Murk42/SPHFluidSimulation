@@ -218,6 +218,7 @@
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\simulationProfiles\increasingBoxSizeProfiles.json" />
     <None Include="assets\simulationProfiles\waveProfile.json" />
     <None Include="BlazeEngineProjectPropertySheet.props" />
     <None Include="assets\kernels\SPH.cl" />

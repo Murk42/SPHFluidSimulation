@@ -256,6 +256,9 @@ void ProfilingScene::ProfileFinished()
 	file.Write(output.Ptr(), output.Count());
 
 	profiles[profileIndex].outputFile.Close();
+
+	for (auto& SPHSystem : SPHSystems)
+		SPHSystem.profilingData.Clear();
 }
 void ProfilingScene::SystemFinished()
 {	

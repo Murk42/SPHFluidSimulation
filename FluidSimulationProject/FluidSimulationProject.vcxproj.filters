@@ -180,6 +180,7 @@
     <None Include="assets\simulationProfiles\systemProfilingProfiles.json" />
     <None Include="assets\simulationProfiles\systemVisualisationProfile.json" />
     <None Include="assets\simulationProfiles\waveProfile.json" />
+    <None Include="assets\simulationProfiles\increasingBoxSizeProfiles.json" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="outputs\log.txt" />

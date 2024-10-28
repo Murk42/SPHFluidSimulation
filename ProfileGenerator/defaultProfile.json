@@ -1,24 +1,24 @@
 {
   "profileName": "Profile",
   "outputFilePath": "output.txt",
-  "simulationDuration": 10,
+  "simulationDuration": 20,
   "simulationStepTime": 0.01,
   "stepsPerUpdate": 100,
 
   "systemParameters": {
     "dynamicParticleGenerationParameters": {
       "generatorType": "FilledBoxParticleGenerator",
-      "spawnVolumeSize": [ 19, 18, 19 ],
-      "spawnVolumeOffset": [ -9.5, -9.0, -9.5 ],
+      "spawnVolumeSize": [ 58, 58, 58 ],
+      "spawnVolumeOffset": [ -29, 0, -29 ],
       "particlesPerUnit": 8,
       "randomOffsetIntensity": 0.5
     },
     "staticParticleGenerationParameters": {
       "generatorType": "BoxShellParticleGenerator",
-      "spawnVolumeSize": [ 40, 40, 40 ],
-      "spawnVolumeOffset": [ -20, -10, -20 ],
-      "particleDistance": 0.1,
-      "randomOffsetIntensity": 0.8
+      "spawnVolumeSize": [ 60, 60, 60 ],
+      "spawnVolumeOffset": [ -30, -1, -30 ],
+      "particleDistance": 0.10,
+      "randomOffsetIntensity": 0.5
     },
     "particleBehaviourParameters": {
       "particleMass": 1.0,
@@ -32,16 +32,18 @@
     "particleBoundParameters": {
       "bounded": false
     },
-    "bufferCount": 5,
-    "hashesPerDynamicParticle": 1,
+    "bufferCount": 3,
+    "hashesPerDynamicParticle": 2,
     "hashesPerStaticParticle": 2,
     "implementationSpecifics": {
       "OpenCL": {
-        "reorderTimeInterval": 0.0,
-        "detailedProfiling": true
+        "reorderTimeInterval": 0.5,
+        "detailedProfiling": false,
+        "openCLChoosesGroupSize": true,
+        "useMaxGroupSize": false
       },
       "CPU": {
-        "reorderTimeInterval": 1.0
+        "reorderTimeInterval": 0.5
       }
     }
   }

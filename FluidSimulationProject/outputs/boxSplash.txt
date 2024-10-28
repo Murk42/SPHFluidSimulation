@@ -1,0 +1,21 @@
+Started profiling profile named "boxSplash".
+   Number of dynamic particles: 63504
+   Number of static particles:  283026
+   Simulation duration:         5s
+   Simulation step time:        0.01s
+   Steps per update:            100
+
+GPU            CPU            
+       1.235ms       10.412ms 
+       1.171ms       11.407ms 
+       1.231ms       12.845ms 
+       1.261ms       14.889ms 
+       1.289ms       14.594ms 
+
+GPU specific measurements
+updateParticleDynamics        updateParticlePressure        computeParticleMap            prefixSum                     
+                      0.552ms                       0.519ms                       0.013ms                       0.011ms 
+                      0.532ms                       0.477ms                       0.014ms                       0.006ms 
+                      0.542ms                       0.531ms                       0.012ms                       0.009ms 
+                      0.587ms                       0.518ms                       0.017ms                       0.007ms 
+                      0.591ms                       0.541ms                       0.018ms                       0.006ms 

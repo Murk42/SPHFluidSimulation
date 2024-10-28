@@ -138,7 +138,7 @@ namespace SPH
 			outputParticleBufferHandle->StartWrite(&writeStartEvent());
 
 			cl::Event clearHashMapFinishedEvent;			
-			EnqueueClearHashMap({ &writeStartEvent(), 1 }, &clearHashMapFinishedEvent());
+			EnqueueClearHashMap( { writeStartEvent() != nullptr ? &writeStartEvent() : nullptr, (uintMem)(writeStartEvent() != nullptr ? 1 : 0)}, &clearHashMapFinishedEvent());
 
 			cl::Event updatePressureFinishedEvent;
 			uintMem updateParticlesWaitEventCount = 0;
@@ -172,8 +172,8 @@ namespace SPH
 
 				uintMem computeParticleMapWaitEventCount = 0;
 				cl_event computeParticleMapWaitEvents[2]{ }; 
-				if (startIntermediateEvent() != nullptr) computeParticleMapWaitEvents[updateParticlesWaitEventCount++] = startIntermediateEvent();
-				if (partialSumFinishedEvent() != nullptr) computeParticleMapWaitEvents[updateParticlesWaitEventCount++] = partialSumFinishedEvent();
+				if (startIntermediateEvent() != nullptr) computeParticleMapWaitEvents[computeParticleMapWaitEventCount++] = startIntermediateEvent();
+				if (partialSumFinishedEvent() != nullptr) computeParticleMapWaitEvents[computeParticleMapWaitEventCount++] = partialSumFinishedEvent();
 				EnqueueComputeParticleMapKernel(outputParticleBufferHandle->GetWriteBuffer(), &intermediateBuffer->GetWriteBuffer(), dynamicParticleCount, dynamicParticleWriteHashMapBuffer, particleMapBuffer, { computeParticleMapWaitEvents, computeParticleMapWaitEventCount }, &computeParticleMapFinishedEvent());
 
 				outputParticleBufferHandle->FinishWrite({ &computeParticleMapFinishedEvent(), 1 }, false);
