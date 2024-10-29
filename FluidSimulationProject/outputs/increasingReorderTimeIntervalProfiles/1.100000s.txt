@@ -1,0 +1,19 @@
+Started profiling profile named "1.100000".
+   Number of dynamic particles: 98496
+   Number of static particles:  5120002
+   Simulation duration:         10s
+   Simulation step time:        0.01s
+   Steps per update:            100
+
+GPU            CPU            
+      11.926ms       34.894ms 
+       9.506ms       55.655ms 
+      11.105ms       54.650ms 
+      12.009ms       48.307ms 
+      11.893ms       53.042ms 
+      11.953ms       46.892ms 
+      11.862ms       50.126ms 
+      12.060ms       47.969ms 
+      12.077ms       51.895ms 
+      11.064ms       50.064ms 
+
