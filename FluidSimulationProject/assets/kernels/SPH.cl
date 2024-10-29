@@ -12,6 +12,14 @@ void kernel computeParticleHashes(global struct DynamicParticle* particles, vola
 	atomic_inc(hashMap + particleHash);			
 }
 
+void kernel increaseHashMap(global struct DynamicParticle* particles, volatile global uint* hashMap)
+{
+	float particleHash_FLOAT = particles[get_global_id(0)].velocityAndHash.w;
+	uint particleHash = *(uint*)&particleHash_FLOAT;	
+	
+	atomic_inc(hashMap + particleHash);	
+}
+
 void kernel computeParticleMap(
 	global const struct DynamicParticle* particles, 
 	global struct DynamicParticle* orderedParticles, 
@@ -27,12 +35,6 @@ void kernel computeParticleMap(
 		particleMap,
 		reorderParticles
 	);	
-}
-
-void kernel reorderParticles(global const struct DynamicParticle* inArray, global struct DynamicParticle* outArray, global uint* hashMap, global uint* map)
-{
-	outArray[get_global_id(0)] = inArray[map[get_global_id(0)]];
-	map[get_global_id(0)] = get_global_id(0);	
 }
 
 void kernel updateParticlesPressure(
@@ -58,8 +60,7 @@ void kernel updateParticlesPressure(
 void kernel updateParticlesDynamics(
 	global const struct DynamicParticle* inParticles, 
 	global struct DynamicParticle* outParticles, 
-	global const uint* hashMap, 
-	global uint* newHashMap, 
+	global const uint* hashMap, 	
 	global const uint* particleMap, 
 	global const struct StaticParticle* staticParticles,
 	global const uint* staticParticlesHashMap,
@@ -70,8 +71,7 @@ void kernel updateParticlesDynamics(
 		get_global_id(0),
 		inParticles,
 		outParticles,
-		hashMap,
-		newHashMap,
+		hashMap,		
 		particleMap,
 		staticParticles,
 		staticParticlesHashMap,

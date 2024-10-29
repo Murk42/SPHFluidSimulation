@@ -4,7 +4,6 @@
 //#define SPH_DEBUG
 //#define SPATIAL_HASHING_DEBUG
 
-
 #include "BlazeEngineCore/BlazeEngineCore.h"
 
 #include "BlazeEngine/BlazeEngine.h"

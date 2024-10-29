@@ -17,7 +17,7 @@ void UpdateParticlePressure(
 	GLOBAL STRUCT DynamicParticle* outParticles,
 	GLOBAL const HASH_TYPE* hashMap,
 	GLOBAL const uint* particleMap,
-	GLOBAL STRUCT StaticParticle* staticParticles,
+	GLOBAL const STRUCT StaticParticle* staticParticles,
 	GLOBAL const uint* staticParticleHashMap,
 	GLOBAL STRUCT ParticleSimulationParameters* parameters
 );
@@ -26,8 +26,7 @@ void UpdateParticleDynamics(
 	uint threadID,
 	GLOBAL const STRUCT DynamicParticle* inParticles,
 	GLOBAL STRUCT DynamicParticle* outParticles,
-	GLOBAL const HASH_TYPE* hashMap,
-	GLOBAL HASH_TYPE* newHashMap,
+	GLOBAL const HASH_TYPE* hashMap,	
 	GLOBAL const uint* particleMap,
 	GLOBAL const STRUCT StaticParticle* staticParticles,
 	GLOBAL const uint* staticParticlesHashMap,

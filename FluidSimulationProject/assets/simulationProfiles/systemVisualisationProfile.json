@@ -36,7 +36,8 @@
       "useMaxGroupSize": false
     },
     "CPU": {
-      "reorderTimeInterval": 0.1
+      "reorderTimeInterval": 0.0,
+      "parallelPartialSum": false      
     }
   }
 }

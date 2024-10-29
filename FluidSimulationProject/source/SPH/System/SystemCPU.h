@@ -35,6 +35,8 @@ namespace SPH
 
 		void FinishTasks();		
 		void EnqueueTask(TaskFunction function);
+
+		uintMem ThreadCount() const { return threadPool.ThreadCount(); }
 	private:
 		TaskThreadContext taskThreadContext;
 		ThreadPool& threadPool;
@@ -80,9 +82,9 @@ namespace SPH
 		uintMem staticParticleCount;		
 		uintMem staticParticleHashMapSize;		 
 		
-		Array<std::atomic_uint32_t> dynamicParticleReadHashMapBuffer;
-		Array<std::atomic_uint32_t> dynamicParticleWriteHashMapBuffer;
+		Array<std::atomic_uint32_t> dynamicParticleHashMapBuffer;		
 		Array<uint32> particleMap;
+
 		Array<StaticParticle> staticParticles;
 		Array<uint32> staticParticleHashMap;
 
@@ -96,6 +98,9 @@ namespace SPH
 		Stopwatch executionStopwatch;
 		float simulationTime;
 		bool profiling;
+
+		bool parallelPartialSum;
+
 		SystemProfilingData systemProfilingData;
 
 		void CreateStaticParticlesBuffers(Array<StaticParticle>& staticParticles, uintMem hashesPerStaticParticle, float maxInteractionDistance) override;
@@ -105,7 +110,7 @@ namespace SPH
 		struct CalculateHashAndParticleMapTask
 		{
 			uintMem particleCount;
-			DynamicParticle* ouputParticles;
+			DynamicParticle* outputParticles;
 			CPUSync& outputSync;
 			ParticleSimulationParameters& simulationParameters;
 			std::atomic_uint32_t* hashMap;
@@ -119,18 +124,22 @@ namespace SPH
 			CPUSync& outputSync;
 			DynamicParticle* orderedParticles;
 			CPUSync* orderedSync;
-			
-			std::atomic_uint32_t* dynamicParticleReadHashMapBuffer;
-			std::atomic_uint32_t* dynamicParticleWriteHashMapBuffer;
+						
+			std::atomic_uint32_t* dynamicParticleHashMapBuffer;
 			uint32* particleMap;
-			StaticParticle* staticParticles;
+
+			//this is nullptr when parallelPartialSum is false
+			std::atomic_uint32_t* hashMapGroupSums;			
+
+			const StaticParticle* staticParticles;
 			uint32* staticParticleHashMap;
+
 			ParticleSimulationParameters& simulationParameters;					
 
 			float dt;
 		};
 				
-		static void CalculateHashAndParticleMap(TaskThreadContext& context, uintMem begin, uintMem end, CalculateHashAndParticleMapTask task);
-		static void SimulateParticlesTimeStep(TaskThreadContext& context, uintMem begin, uintMem end, SimulateParticlesTimeStepTask task);
+		static void CalculateHashAndParticleMap(TaskThreadContext& context, uintMem threadID, uintMem threadCount, CalculateHashAndParticleMapTask task);
+		static void SimulateParticlesTimeStep(TaskThreadContext& context, uintMem threadID, uintMem threadCount, SimulateParticlesTimeStepTask task);
 	};		
 }

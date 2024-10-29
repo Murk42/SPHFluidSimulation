@@ -116,7 +116,7 @@ void UpdateParticlePressure(
 	GLOBAL STRUCT DynamicParticle* outParticles,
 	GLOBAL const HASH_TYPE* hashMap,
 	GLOBAL const uint* particleMap,
-	GLOBAL STRUCT StaticParticle* staticParticles,
+	GLOBAL const STRUCT StaticParticle* staticParticles,
 	GLOBAL const uint* staticParticlesHashMap,
 	GLOBAL STRUCT ParticleSimulationParameters* parameters
 ) {
@@ -249,8 +249,7 @@ void UpdateParticleDynamics(
 	uint threadID,
 	GLOBAL const STRUCT DynamicParticle* inParticles,
 	GLOBAL STRUCT DynamicParticle* outParticles,
-	GLOBAL const HASH_TYPE* hashMap,
-	GLOBAL HASH_TYPE* newHashMap,
+	GLOBAL const HASH_TYPE* hashMap,	
 	GLOBAL const uint* particleMap,
 	GLOBAL const STRUCT StaticParticle* staticParticles,
 	GLOBAL const uint* staticParticlesHashMap,
@@ -410,9 +409,7 @@ void UpdateParticleDynamics(
 		}
 	}
 	cell = GetCell(particlePosition, parameters->behaviour.maxInteractionDistance);
-	particleHash = GetHash(cell) % parameters->dynamicParticleHashMapSize;
-
-	atomic_inc(newHashMap + particleHash);
+	particleHash = GetHash(cell) % parameters->dynamicParticleHashMapSize;	
 
 #ifdef CL_COMPILER
 	outParticlePtr->positionAndPressure.xyz = particlePosition;

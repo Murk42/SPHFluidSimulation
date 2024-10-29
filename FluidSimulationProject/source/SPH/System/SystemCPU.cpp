@@ -137,9 +137,9 @@ namespace SPH
 		staticParticleCount = 0;
 		staticParticleHashMapSize = 0;
 		
-		dynamicParticleReadHashMapBuffer.Clear();
-		dynamicParticleWriteHashMapBuffer.Clear();
+		dynamicParticleHashMapBuffer.Clear();		
 		particleMap.Clear();
+
 		staticParticles.Clear();
 		staticParticleHashMap.Clear();		
 
@@ -147,6 +147,8 @@ namespace SPH
 
 		reorderElapsedTime = 0.0f;
 		reorderTimeInterval = 2.0;
+
+		parallelPartialSum = false;
 
 		simulationTime = 0;		
 	}
@@ -181,21 +183,17 @@ namespace SPH
 				.outputSync = outputParticleBufferHandle.GetWriteSync(),
 				.orderedParticles = orderedParticleBufferHandle ? orderedParticleBufferHandle->GetWriteBuffer() : nullptr,
 				.orderedSync = orderedParticleBufferHandle ? &orderedParticleBufferHandle->GetWriteSync() : nullptr,
-				.dynamicParticleReadHashMapBuffer = dynamicParticleReadHashMapBuffer.Ptr(),
-				.dynamicParticleWriteHashMapBuffer = dynamicParticleWriteHashMapBuffer.Ptr(),
+				.dynamicParticleHashMapBuffer = dynamicParticleHashMapBuffer.Ptr(),				
 				.particleMap = particleMap.Ptr(),
+				.hashMapGroupSums = parallelPartialSum ? new std::atomic_uint32_t[threadContext.ThreadCount()] : nullptr,
 				.staticParticles = staticParticles.Ptr(),
 				.staticParticleHashMap = staticParticleHashMap.Ptr(),
 				.simulationParameters = simulationParameters,				
 				.dt = deltaTime,
 			};
-			threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem threadID, uintMem threadCount) {
-				uintMem begin = task.simulationParameters.dynamicParticleCount * threadID / threadCount;
-				uintMem end = task.simulationParameters.dynamicParticleCount * (threadID + 1) / threadCount;
-				SimulateParticlesTimeStep(context, begin, end, task);
-				});
-
-			std::swap(dynamicParticleReadHashMapBuffer, dynamicParticleWriteHashMapBuffer);
+			threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem threadID, uintMem threadCount) {				
+				SimulateParticlesTimeStep(context, threadID, threadCount, task);
+				});			
 			
 			particleBufferSet->Advance();
 
@@ -243,14 +241,10 @@ namespace SPH
 		dynamicParticleCount = particleBufferSet->GetDynamicParticleCount();
 		dynamicParticleHashMapSize = hashesPerDynamicParticle * dynamicParticleCount;		
 
-		dynamicParticleReadHashMapBuffer = Array<std::atomic_uint32_t>(dynamicParticleHashMapSize + 1);
-		dynamicParticleWriteHashMapBuffer = Array<std::atomic_uint32_t>(dynamicParticleHashMapSize + 1);
+		dynamicParticleHashMapBuffer = Array<std::atomic_uint32_t>(dynamicParticleHashMapSize + 1);		
 		for (uintMem i = 0; i < dynamicParticleHashMapSize - 1; ++i)
-			dynamicParticleReadHashMapBuffer[i].store(0);		
-		dynamicParticleReadHashMapBuffer.Last() = dynamicParticleCount;
-		for (uintMem i = 0; i < dynamicParticleHashMapSize - 1; ++i)
-			dynamicParticleWriteHashMapBuffer[i].store(0);		
-		dynamicParticleWriteHashMapBuffer.Last() = dynamicParticleCount;
+			dynamicParticleHashMapBuffer[i].store(0);		
+		dynamicParticleHashMapBuffer.Last() = dynamicParticleCount;		
 
 		particleMap.Resize(dynamicParticleCount);
 
@@ -258,16 +252,14 @@ namespace SPH
 
 		CalculateHashAndParticleMapTask task{
 			.particleCount = dynamicParticleCount,
-			.ouputParticles = outputParticleBufferHandle.GetWriteBuffer(),
+			.outputParticles = outputParticleBufferHandle.GetWriteBuffer(),
 			.outputSync = outputParticleBufferHandle.GetWriteSync(),
 			.simulationParameters = simulationParameters,
-			.hashMap = dynamicParticleReadHashMapBuffer.Ptr(),
+			.hashMap = dynamicParticleHashMapBuffer.Ptr(),
 			.particleMap = particleMap.Ptr(),
 		};
-		threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem threadID, uintMem threadCount) {			
-			uintMem begin = task.particleCount * threadID / threadCount;
-			uintMem end = task.particleCount * (threadID + 1) / threadCount;
-			CalculateHashAndParticleMap(context, begin, end, task);
+		threadContext.EnqueueTask([task](TaskThreadContext& context, uintMem threadID, uintMem threadCount) {						
+			CalculateHashAndParticleMap(context, threadID, threadCount, task);
 			});
 
 		particleBufferSet->Advance();
@@ -275,7 +267,8 @@ namespace SPH
 	void SystemCPU::InitializeInternal(const SystemInitParameters& initParams)
 	{ 				
 		initParams.ParseImplementationSpecifics((StringView)"CPU",
-			SystemInitParameters::ImplementationSpecificsEntry{ "reorderTimeInterval", reorderTimeInterval }
+			SystemInitParameters::ImplementationSpecificsEntry{ "reorderTimeInterval", reorderTimeInterval },
+			SystemInitParameters::ImplementationSpecificsEntry{ "parallelPartialSum", parallelPartialSum }
 		);
 
 		simulationParameters.behaviour = initParams.particleBehaviourParameters;
@@ -287,9 +280,12 @@ namespace SPH
 		simulationParameters.staticParticleCount = staticParticleCount;
 		simulationParameters.staticParticleHashMapSize = staticParticleHashMapSize;
 	}
-	void SystemCPU::CalculateHashAndParticleMap(TaskThreadContext& context, uintMem begin, uintMem end, CalculateHashAndParticleMapTask task)
+	void SystemCPU::CalculateHashAndParticleMap(TaskThreadContext& context, uintMem threadID, uintMem threadCount, CalculateHashAndParticleMapTask task)
 	{		
-		auto particles = task.ouputParticles;
+		uintMem begin = task.particleCount * threadID / threadCount;
+		uintMem end = task.particleCount * (threadID + 1) / threadCount;
+
+		auto particles = task.outputParticles;
 
 		context.SyncThreads();
 
@@ -314,7 +310,7 @@ namespace SPH
 				hashMap[i] = task.hashMap[i].load();
 
 			DebugPrePrefixSumHashes(
-				ArrayView<DynamicParticle>(task.particles, task.simulationParameters.dynamicParticleCount),
+				ArrayView<DynamicParticle>(task.outputParticles, task.simulationParameters.dynamicParticleCount),
 				std::move(hashMap)
 			);
 #endif
@@ -337,7 +333,7 @@ namespace SPH
 		{
 #ifdef DEBUG_BUFFERS_CPU
 			DebugHashAndParticleMap(
-				ArrayView<DynamicParticle>(task.particles, task.simulationParameters.dynamicParticleCount),
+				ArrayView<DynamicParticle>(task.outputParticles, task.simulationParameters.dynamicParticleCount),
 				ArrayView<std::atomic_uint32_t>(task.hashMap, task.simulationParameters.dynamicParticleHashMapSize + 1),
 				ArrayView<uint32>(task.particleMap, task.simulationParameters.dynamicParticleCount)
 			);
@@ -345,24 +341,19 @@ namespace SPH
 			task.outputSync.MarkEnd();
 		}
 	}
-	void SystemCPU::SimulateParticlesTimeStep(TaskThreadContext& context, uintMem begin, uintMem end, SimulateParticlesTimeStepTask task)
+	void SystemCPU::SimulateParticlesTimeStep(TaskThreadContext& context, uintMem threadID, uintMem threadCount, SimulateParticlesTimeStepTask task)
 	{		
-		{			
-			uintMem hashBegin = task.simulationParameters.dynamicParticleHashMapSize * begin / task.simulationParameters.dynamicParticleCount;
-			uintMem hashEnd = task.simulationParameters.dynamicParticleHashMapSize * end / task.simulationParameters.dynamicParticleCount;
-
-			for (uintMem i = hashBegin; i < hashEnd; ++i)
-				task.dynamicParticleWriteHashMapBuffer[i].store(0);
-		}		
-
-		context.SyncThreads();
+		uintMem begin = task.simulationParameters.dynamicParticleCount * threadID / threadCount;
+		uintMem end = task.simulationParameters.dynamicParticleCount * (threadID + 1) / threadCount;
+		uintMem hashBegin = task.simulationParameters.dynamicParticleHashMapSize * threadID / threadCount;
+		uintMem hashEnd = task.simulationParameters.dynamicParticleHashMapSize * (threadID + 1) / threadCount;				
 		
 		for (uintMem i = begin; i < end; ++i)
 			UpdateParticlePressure(
 				i,
 				task.inputParticles,
 				task.outputParticles,
-				task.dynamicParticleReadHashMapBuffer,
+				task.dynamicParticleHashMapBuffer,
 				task.particleMap,
 				task.staticParticles,
 				task.staticParticleHashMap,
@@ -376,25 +367,39 @@ namespace SPH
 				i,
 				task.inputParticles,
 				task.outputParticles,
-				task.dynamicParticleReadHashMapBuffer,
-				task.dynamicParticleWriteHashMapBuffer,
+				task.dynamicParticleHashMapBuffer,			
 				task.particleMap,
 				task.staticParticles,
 				task.staticParticleHashMap,
 				task.dt,
 				&task.simulationParameters
-			);		
-
+			);				
 
 		context.SyncThreads();				
+		
+		for (uintMem i = hashBegin; i < hashEnd; ++i)
+			task.dynamicParticleHashMapBuffer[i].store(0);
 
-		if (begin == 0)
+		if (task.hashMapGroupSums != nullptr)
+			task.hashMapGroupSums[threadID] = 0;
+
+		context.SyncThreads();
+		
+		for (uintMem i = begin; i < end; ++i)
+			++task.dynamicParticleHashMapBuffer[task.outputParticles[i].hash];
+
+		context.SyncThreads();
+
+		if (threadID == 0)
 		{			
+
+			task.inputSync.MarkEnd();
+
 
 #ifdef DEBUG_BUFFERS_CPU
 			DebugParticles(
-				ArrayView<DynamicParticle>(task.particlesWriteBuffer, task.simulationParameters.dynamicParticleCount),
-				task.simulationParameters.behaviour.maxInteractionDistance, 
+				ArrayView<DynamicParticle>(task.outputParticles, task.simulationParameters.dynamicParticleCount),
+				task.simulationParameters.behaviour.maxInteractionDistance,
 				task.simulationParameters.dynamicParticleHashMapSize
 			);
 
@@ -402,32 +407,60 @@ namespace SPH
 			hashMap.Resize(task.simulationParameters.dynamicParticleHashMapSize + 1);
 			for (uintMem i = 0; i < task.simulationParameters.dynamicParticleHashMapSize + 1; ++i)
 				hashMap[i] = task.dynamicParticleWriteHashMapBuffer[i].load();
-			
+
 			DebugPrePrefixSumHashes(
-				ArrayView<DynamicParticle>(task.particlesWriteBuffer, task.simulationParameters.dynamicParticleCount),
+				ArrayView<DynamicParticle>(task.outputParticles, task.simulationParameters.dynamicParticleCount),
 				std::move(hashMap)
 			);
-			std::atomic_uint32_t s;			
-#endif
+		}
 
-			task.inputSync.MarkEnd();
-					
-			uint32 valueSum = 0;
-			for (uintMem i = 0; i < task.simulationParameters.dynamicParticleHashMapSize; ++i)
+		context.SyncThreads();
+
+		if (threadID == 0)
+		{
+#endif
+			
+			if (task.hashMapGroupSums == nullptr)
 			{
-				valueSum += task.dynamicParticleWriteHashMapBuffer[i];
-				task.dynamicParticleWriteHashMapBuffer[i] = valueSum;
-			}			
+				uint32 valueSum = 0;
+				for (uintMem i = 0; i < task.simulationParameters.dynamicParticleHashMapSize; ++i)
+				{
+					valueSum += task.dynamicParticleHashMapBuffer[i];
+					task.dynamicParticleHashMapBuffer[i] = valueSum;
+				}
+			}
+		}
+				
+		if (task.hashMapGroupSums != nullptr)
+		{
+			uint32 valueSum = 0;
+			for (uintMem i = hashBegin; i < hashEnd; ++i)
+			{
+				valueSum += task.dynamicParticleHashMapBuffer[i];
+				task.dynamicParticleHashMapBuffer[i] = valueSum;
+			}
+			
+			for (uintMem i = threadID; i < threadCount - 1; ++i)
+				task.hashMapGroupSums[i] += valueSum;
+			
+			context.SyncThreads();
+			
+			if (threadID != 0)
+			{
+				uintMem addition = task.hashMapGroupSums[threadID - 1];
+				for (uintMem i = hashBegin; i < hashEnd; ++i)
+					task.dynamicParticleHashMapBuffer[i] += addition;
+			}
 		}
 
 		context.SyncThreads();		
-
+		
 		for (uintMem i = begin; i < end; ++i)
 			ComputeParticleMap(
 				i,
 				task.outputParticles,
 				task.orderedParticles,
-				task.dynamicParticleWriteHashMapBuffer,
+				task.dynamicParticleHashMapBuffer,
 				task.particleMap,
 				task.orderedParticles != nullptr
 			);
@@ -435,7 +468,10 @@ namespace SPH
 		context.SyncThreads();
 
 		if (begin == 0)
-		{
+		{			
+			if (task.hashMapGroupSums != nullptr)
+				delete[] task.hashMapGroupSums;
+
 			task.outputSync.MarkEnd();			
 
 			if (task.orderedParticles != nullptr)
@@ -444,7 +480,7 @@ namespace SPH
 #ifdef DEBUG_BUFFERS_CPU
 
 			DebugHashAndParticleMap(
-				ArrayView<DynamicParticle>(task.writeParticleBufferSet.GetDynamicParticleBuffer(), task.simulationParameters.dynamicParticleCount),
+				ArrayView<DynamicParticle>(task.orderedParticles ? task.orderedParticles : task.outputParticles, task.simulationParameters.dynamicParticleCount),
 				ArrayView<std::atomic_uint32_t>(task.dynamicParticleWriteHashMapBuffer, task.simulationParameters.dynamicParticleHashMapSize + 1),
 				ArrayView<uint32>(task.particleMap, task.simulationParameters.dynamicParticleCount)
 			);
