@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <strstream>
+#include <array>
 #include "json.hpp"
 using namespace Blaze;
 
@@ -51,27 +52,18 @@ JSON SetupParticleTest()
 
 	JSON defaultProfile = ReadJSON("defaultProfile.json");
 
+	float sizes[]{ 60, 120, 240 };
 	for (uintMem i = 0; i < 3; ++i)
-	{
-		for (uintMem j = 1; j <= (i == 2 ? 10 : 9); ++j)
-		{
-			uintMem particleCount = j * pow(10, i) * 1000;
+	{		
+		JSON profile = defaultProfile;		
 
-			JSON profile = defaultProfile;
+		profile["outputFilePath"] = "outputs/" + (std::string)"increasingStaticParticleCount" + std::to_string(i) + ".txt";
+		profile["profileName"] = "increasingStaticParticleCount" + std::to_string(i);
 
-			float side = pow((float)particleCount / 8.0f, 1.0f / 3.0f);
-			float offset = -side / 2;
+		profile["systemParameters"]["staticParticleGenerationParameters"]["spawnVolumeOffset"] = std::array<float, 3>({ -sizes[i] / 2, -1, -sizes[i] / 2 });
+		profile["systemParameters"]["staticParticleGenerationParameters"]["spawnVolumeSize"] = std::array<float, 3>({ sizes[i], sizes[i], sizes[i] });
 
-			profile["outputFilePath"] = "outputs/increasingBoxSize/" + std::to_string(particleCount) + "p.txt";
-			profile["profileName"] = std::to_string(particleCount);
-
-			profile["systemParameters"]["dynamicParticleGenerationParameters"]["spawnVolumeSize"] = std::array<float, 3>({ side, side, side });
-			profile["systemParameters"]["dynamicParticleGenerationParameters"]["spawnVolumeOffset"] = std::array<float, 3>({ offset, 0, offset });
-			profile["systemParameters"]["staticParticleGenerationParameters"]["spawnVolumeSize"] = std::array<float, 3>({ 60, 60, 60 });
-			profile["systemParameters"]["staticParticleGenerationParameters"]["spawnVolumeOffset"] = std::array<float, 3>({ -30, -1, -30 });
-
-			profiles.push_back(profile);
-		}
+		profiles.push_back(profile);
 	}
 
 	return profiles;
@@ -87,7 +79,7 @@ CLIENT_API void Setup()
 		JSON out;
 		out.push_back({ { "profiles", profiles } });
 
-		WriteJSON("../FluidSimulationProject/assets/simulationProfiles/increasingBoxSizeProfiles.json", out);
+		WriteJSON("../FluidSimulationProject/assets/simulationProfiles/increasingStaticParticleCountProfiles.json", out);
 	}
 	catch (const std::exception& ex)
 	{

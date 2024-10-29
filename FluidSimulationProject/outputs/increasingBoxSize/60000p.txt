@@ -6,5 +6,5 @@ Started profiling profile named "60000".
    Steps per update:            1000
 
 GPU            CPU            
-       2.833ms       16.721ms 
+       2.743ms       16.863ms 
 

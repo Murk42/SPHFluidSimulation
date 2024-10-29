@@ -6,45 +6,67 @@
   "stepsPerUpdate": 100,
 
   "systemParameters": {
+    "bufferCount": 3,
     "dynamicParticleGenerationParameters": {
       "generatorType": "FilledBoxParticleGenerator",
-      "spawnVolumeSize": [ 58, 58, 58 ],
-      "spawnVolumeOffset": [ -29, 0, -29 ],
       "particlesPerUnit": 8,
-      "randomOffsetIntensity": 0.5
+      "randomOffsetIntensity": 0.5,
+      "spawnVolumeOffset": [
+        -15,
+          0,
+        -15
+      ],
+      "spawnVolumeSize": [
+        30,
+        30,
+        30
+      ]
     },
-    "staticParticleGenerationParameters": {
-      "generatorType": "BoxShellParticleGenerator",
-      "spawnVolumeSize": [ 60, 60, 60 ],
-      "spawnVolumeOffset": [ -30, -1, -30 ],
-      "particleDistance": 0.10,
-      "randomOffsetIntensity": 0.5
+    "hashesPerDynamicParticle": 2,
+    "hashesPerStaticParticle": 2,
+    "implementationSpecifics": {
+      "CPU": {
+        "parallelPartialSum": true,
+        "reorderTimeInterval": 0.5
+      },
+      "OpenCL": {
+        "detailedProfiling": false,
+        "openCLChoosesGroupSize": true,
+        "reorderTimeInterval": 0.5,
+        "useMaxGroupSize": false
+      }
     },
     "particleBehaviourParameters": {
-      "particleMass": 1.0,
-      "gasConstant": 200,
       "elasticity": 0.5,
-      "viscosity": 0.3,
-      "gravity": [ 0, -9.81, 0 ],
+      "gasConstant": 200,
+      "gravity": [
+        0,
+        -9.81,
+        0
+      ],
+      "maxInteractionDistance": 1.0,
+      "particleMass": 1.0,
       "restDensity": 7.0,
-      "maxInteractionDistance": 1.0
+      "viscosity": 0.3
     },
     "particleBoundParameters": {
       "bounded": false
     },
-    "bufferCount": 3,
-    "hashesPerDynamicParticle": 2,
-    "hashesPerStaticParticle": 2,
-    "implementationSpecifics": {
-      "OpenCL": {
-        "reorderTimeInterval": 0.5,
-        "detailedProfiling": false,
-        "openCLChoosesGroupSize": true,
-        "useMaxGroupSize": false
-      },
-      "CPU": {
-        "reorderTimeInterval": 0.5
-      }
+    "staticParticleGenerationParameters": {
+      "generatorType": "BoxShellParticleGenerator",
+      "particleDistance": 0.1,
+      "randomOffsetIntensity": 0.5,
+      "spawnVolumeOffset": [
+        -30.0,
+        -1.0,
+        -30.0
+      ],
+      "spawnVolumeSize": [
+        60.0,
+        60.0,
+        60.0
+      ]
     }
   }
+
 }

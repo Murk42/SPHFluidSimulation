@@ -57,16 +57,16 @@ namespace SPH
 
 			renderBufferHandle.StartRender();
 			graphicsContext.SelectVertexArray(&renderBufferHandle.GetVertexArray());
-			shaderProgram.SetUniform(2, 0.05f);
+			shaderProgram.SetUniform(2, 0.10f);
 			shaderProgram.SetUniform(3, dynamicParticleColor);
 			graphicsContext.RenderInstancedPrimitiveArray(Graphics::OpenGLWrapper::PrimitiveType::TriangleStrip, 0, 4, 0, renderCache.system->GetDynamicParticleCount());
 
 			renderBufferHandle.FinishRender();			
 		}
 		
-		graphicsContext.SelectVertexArray(&renderCache.staticParticleVertexArray);
-		shaderProgram.SetUniform(2, 0.03f);
-		shaderProgram.SetUniform(3, staticParticleColor);
-		graphicsContext.RenderInstancedPrimitiveArray(Graphics::OpenGLWrapper::PrimitiveType::TriangleStrip, 0, 4, 0, renderCache.system->GetStaticParticleCount());				
+		//graphicsContext.SelectVertexArray(&renderCache.staticParticleVertexArray);
+		//shaderProgram.SetUniform(2, 0.03f);
+		//shaderProgram.SetUniform(3, staticParticleColor);
+		//graphicsContext.RenderInstancedPrimitiveArray(Graphics::OpenGLWrapper::PrimitiveType::TriangleStrip, 0, 4, 0, renderCache.system->GetStaticParticleCount());				
 	}	
 }

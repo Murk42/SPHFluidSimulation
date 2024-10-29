@@ -181,6 +181,9 @@
     <None Include="assets\simulationProfiles\systemVisualisationProfile.json" />
     <None Include="assets\simulationProfiles\waveProfile.json" />
     <None Include="assets\simulationProfiles\increasingBoxSizeProfiles.json" />
+    <None Include="assets\simulationProfiles\increasingReorderTimeIntervalProfiles.json" />
+    <None Include="assets\simulationProfiles\waveDetailedProfilingProfile.json" />
+    <None Include="assets\simulationProfiles\waveIncreasingParticleReorderTimeIntervalDetailedProfilingProfiles.json" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="outputs\log.txt" />
