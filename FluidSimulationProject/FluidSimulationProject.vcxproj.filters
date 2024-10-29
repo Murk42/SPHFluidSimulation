@@ -184,8 +184,11 @@
     <None Include="assets\simulationProfiles\increasingReorderTimeIntervalProfiles.json" />
     <None Include="assets\simulationProfiles\waveDetailedProfilingProfile.json" />
     <None Include="assets\simulationProfiles\waveIncreasingParticleReorderTimeIntervalDetailedProfilingProfiles.json" />
+    <None Include="assets\simulationProfiles\increasingStaticParticleCountProfiles.json" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="outputs\log.txt" />
+    <Text Include="outputs\waveZ-curveHash.txt" />
+    <Text Include="outputs\waveRandomHash.txt" />
   </ItemGroup>
 </Project>

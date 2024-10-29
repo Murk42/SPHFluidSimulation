@@ -1,0 +1,29 @@
+Started profiling profile named "waveZ-curveHash".
+   Number of dynamic particles: 51376
+   Number of static particles:  283026
+   Simulation duration:         20s
+   Simulation step time:        0.01s
+   Steps per update:            100
+
+GPU            CPU            
+       1.176ms        8.500ms 
+       1.147ms       10.006ms 
+       1.112ms        8.763ms 
+       1.145ms        9.150ms 
+       1.092ms        8.352ms 
+       1.148ms        8.852ms 
+       1.128ms        9.813ms 
+       1.090ms       12.313ms 
+       1.078ms       12.156ms 
+       1.079ms       12.507ms 
+       1.045ms       12.719ms 
+       1.030ms       12.200ms 
+       1.005ms       12.821ms 
+       1.009ms       12.374ms 
+       1.048ms       12.540ms 
+       1.046ms       11.921ms 
+       1.038ms       12.531ms 
+       1.013ms       12.098ms 
+       1.020ms       12.488ms 
+       1.016ms       12.226ms 
+
