@@ -1,8 +1,8 @@
 {
   "profiles": [
     {
-      "profileName": "waveZ-curveHash",
-      "outputFilePath": "outputs/waveZ-curveHash.txt",
+      "profileName": "wave",
+      "outputFilePath": "outputs/wave-ACER.txt",
       "simulationDuration": 20,
       "simulationStepTime": 0.01,
       "stepsPerUpdate": 100,

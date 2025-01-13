@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "SimVisUI.h"
 
-SimVisUI::SimVisUI()
+SimVisUI::SimVisUI(WindowBase* window)
+	: Screen(window)
 {
 	Graphics::FontAtlasesData::AddToFont(font, { 12, 20, 28}, CharacterSet::ASCIICharacterSet());
 

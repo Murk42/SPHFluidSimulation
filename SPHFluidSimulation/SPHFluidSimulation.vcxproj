@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{9e7f4cb1-5578-4f20-babd-580160dc87e5}</ProjectGuid>
+    <RootNamespace>SPHFluidSimulation</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="BlazeEngineProjectPropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="BlazeEngineProjectPropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="BlazeEngineProjectPropertySheet.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="BlazeEngineProjectPropertySheet.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>BLAZE_STATIC;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PreBuildEvent>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+    </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>BLAZE_STATIC;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PreBuildEvent>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+    </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>BLAZE_STATIC;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PreBuildEvent>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+    </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>BLAZE_STATIC;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <PreBuildEvent>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+    </PreBuildEvent>
+    <Lib>
+      <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="source\OpenCLDebug.cpp" />
+    <ClCompile Include="source\SPH\kernels\kernels.cpp" />
+    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\CPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\GPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\OfflineCPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\OpenCLResourceLock.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\ParticleBufferManagerRenderData.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferManager\ResourceLock.cpp" />
+    <ClCompile Include="source\SPH\ParticleSetBlueprint\BoxShellParticleSetBlueprint.cpp" />
+    <ClCompile Include="source\SPH\ParticleSetBlueprint\FilledBoxParticleSetBlueprint.cpp" />
+    <ClCompile Include="source\SPH\ParticleSetBlueprint\ParticleSetBlueprint.cpp" />
+    <ClCompile Include="source\SPH\SPHFunctions.cpp" />
+    <ClCompile Include="source\SPH\Scene\Scene.cpp" />
+    <ClCompile Include="source\SPH\System\System.cpp" />
+    <ClCompile Include="source\SPH\System\SystemCPU.cpp" />
+    <ClCompile Include="source\SPH\System\SystemGPU.cpp" />
+    <ClCompile Include="source\ThreadPool.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\SPH\Graphics\SystemRenderer.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\CPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\GPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\OfflineCPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\OpenCLResourceLock.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\ParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\ParticleBufferManagerRenderData.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\ResourceLock.h" />
+    <ClInclude Include="include\SPH\ParticleSetBlueprint\BoxShellParticleSetBlueprint.h" />
+    <ClInclude Include="include\SPH\ParticleSetBlueprint\FilledBoxParticleSetBlueprint.h" />
+    <ClInclude Include="include\SPH\ParticleSetBlueprint\ParticleSetBlueprint.h" />
+    <ClInclude Include="include\SPH\SPHFunctions.h" />
+    <ClInclude Include="include\SPH\Scene\Scene.h" />
+    <ClInclude Include="include\SPH\System\System.h" />
+    <ClInclude Include="include\SPH\System\SystemCPU.h" />
+    <ClInclude Include="include\SPH\System\SystemGPU.h" />
+    <ClInclude Include="source\json.hpp" />
+    <ClInclude Include="source\JSONParsing.h" />
+    <ClInclude Include="include\SPH\kernels\CL_CPP_SPHDeclarations.h" />
+    <ClInclude Include="source\SPH\kernels\CL_CPP_SPHFunctions.h" />
+    <ClInclude Include="source\OpenCLDebug.h" />
+    <ClInclude Include="source\SPH\kernels\kernels.h" />
+    <ClInclude Include="source\pch.h" />
+    <ClInclude Include="include\ThreadPool.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="BlazeEngineProjectPropertySheet.props" />
+    <None Include="source\SPH\kernels\partialSum.cl" />
+    <None Include="source\SPH\kernels\SPH.cl" />
+    <None Include="include\SPH\shaders\particle.frag" />
+    <None Include="include\SPH\shaders\particle.vert" />
+    <None Include="vcpkg.json" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

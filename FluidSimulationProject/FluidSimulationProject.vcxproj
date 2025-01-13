@@ -87,13 +87,15 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(SolutionDir)SPHFluidSimulation/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SPHFluidSimulation/build/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SPHFluidSimulation.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -105,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)src/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(SolutionDir)SPHFluidSimulation/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -113,8 +115,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SPHFluidSimulation/build/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SPHFluidSimulation.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -124,18 +128,17 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(SolutionDir)SPHFluidSimulation/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SPHFluidSimulation/build/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SPHFluidSimulation.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />
-    <PostBuildEvent>
-      <Command>xcopy /s /e /i /r /f /y /d $(ProjectDir)assets $(OutDir)</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -145,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)source/;$(SolutionDir)SPHFluidSimulation/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -153,8 +156,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineCore\build\Debug\x64\;$(BlazeDir)BlazeEngine\build\Debug\x64\;$(BlazeDir)BlazeEngineGraphics\build\Debug\x64\;;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)SPHFluidSimulation/build/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SPHFluidSimulation.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -164,17 +169,6 @@
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingScene.cpp" />
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp" />
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp" />
-    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSet.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.cpp" />
-    <ClCompile Include="source\SPH\SPHFunctions.cpp" />
-    <ClCompile Include="source\SPH\System\System.cpp" />
-    <ClCompile Include="source\SPH\System\SystemCPU.cpp" />
-    <ClCompile Include="source\SPH\System\SystemGPU.cpp" />
     <ClCompile Include="source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -182,7 +176,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\RenderingSystem.cpp" />
-    <ClCompile Include="source\ThreadPool.cpp" />
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimVisUI.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -190,31 +183,11 @@
     <ClInclude Include="source\JSONParsing.h" />
     <ClInclude Include="source\OpenCLContext.h" />
     <ClInclude Include="source\pch.h" />
-    <ClInclude Include="assets\kernels\CL_CPP_SPHFunctions.h" />
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingScene.h" />
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h" />
     <ClInclude Include="source\Scenes\Scene.h" />
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\CPUParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\GPUParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.h" />
-    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.h" />
-    <ClInclude Include="source\SPH\ParticleGenerator\BoxShellParticleGenerator.h" />
-    <ClInclude Include="source\SPH\ParticleGenerator\FileModelShellGenerator.h" />
-    <ClInclude Include="source\SPH\ParticleGenerator\FilledBoxParticleGenerator.h" />
-    <ClInclude Include="source\SPH\ParticleGenerator\ParticleGenerator.h" />
-    <ClInclude Include="assets\kernels\CL_CPP_SPHDeclarations.h" />
-    <ClInclude Include="source\SPH\SPHFunctions.h" />
-    <ClInclude Include="source\SPH\System\System.h" />
-    <ClInclude Include="source\SPH\System\SystemCPU.h" />
-    <ClInclude Include="source\SPH\System\SystemGPU.h" />
-    <ClInclude Include="source\SPH\Graphics\SystemRenderer.h" />
     <ClInclude Include="source\RenderingSystem.h" />
-    <ClInclude Include="source\ThreadPool.h" />
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h" />
   </ItemGroup>
   <ItemGroup>
@@ -224,9 +197,8 @@
     <None Include="assets\simulationProfiles\waveDetailedProfilingProfile.json" />
     <None Include="assets\simulationProfiles\waveIncreasingParticleReorderTimeIntervalDetailedProfilingProfiles.json" />
     <None Include="assets\simulationProfiles\waveProfile.json" />
+    <None Include="assets\simulationScenes\scene.json" />
     <None Include="BlazeEngineProjectPropertySheet.props" />
-    <None Include="assets\kernels\SPH.cl" />
-    <None Include="assets\kernels\partialSum.cl" />
     <None Include="assets\shaders\particle.frag" />
     <None Include="assets\shaders\particle.vert" />
     <None Include="assets\simulationProfiles\systemProfilingProfiles.json" />

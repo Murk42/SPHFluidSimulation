@@ -8,7 +8,6 @@
 
 #include "BlazeEngine/BlazeEngine.h"
 #include "BlazeEngineGraphics/BlazeEngineGraphics.h"
-#include "CL/opencl.hpp"
 
 #include "json.hpp"
 using JSON = nlohmann::json;

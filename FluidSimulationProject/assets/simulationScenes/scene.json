@@ -1,0 +1,36 @@
+{
+	"particleSetBlueprints": [
+		{
+			"layerName": "dynamic",
+			"particleSetBlueprintType": "FilledBox",
+			"properties": {
+				"spawnVolumeSize": [ 4, 4, 4 ],
+				"spawnVolumeOffset": [ -2, -2, -2 ],
+				"particlesPerUnit": 20,
+				"randomOffsetIntensity": 0.5
+			}
+		},
+		{
+			"layerName": "static",
+			"particleSetBlueprintType": "BoxShell",
+			"properties": {
+				"spawnVolumeSize": [ 10, 10, 10 ],
+				"spawnVolumeOffset": [ -5, -5, -5 ],
+				"particleDistance": 1,
+				"randomOffsetIntensity": 0.05
+			}
+		}
+	],
+	"particleBehaviourParameters": {
+		"particleMass": 1.0,
+		"gasConstant": 200,
+		"elasticity": 0.5,
+		"viscosity": 0.3,
+		"gravity": [ 0, -9.81, 0 ],
+		"restDensity": 7.0,
+		"maxInteractionDistance": 1.0
+	},
+	"otherParameters": {
+
+	}
+}

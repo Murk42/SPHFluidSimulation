@@ -15,14 +15,14 @@
 class ProfilingScene : public Scene
 {
 public:
-	ProfilingScene(OpenCLContext& CLContext, cl::CommandQueue& clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem);
+	ProfilingScene(OpenCLContext& CLContext, cl_command_queue clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem);
 	~ProfilingScene();
 
 	void Update() override;
 private:
 	struct Profile 
 	{
-		SPH::SystemInitParameters systemInitParameters;
+		SPH::SystemParameters systemInitParameters;
 		String name;
 		float simulationDuration;
 		float simulationStepTime;

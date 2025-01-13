@@ -22,10 +22,8 @@ CLIENT_API void Setup()
 	renderingSystem.SetProjection(Mat4f::PerspectiveMatrix(120 * Math::PI / 180, (float)window.GetSize().x / window.GetSize().y, 0.1, 1000));
 
 	//Setup processing pools	
-	OpenCLContext clContext{ renderingSystem.GetGraphicsContext() };
-	cl_int ret;
-	cl::CommandQueue clQueue = cl::CommandQueue(clContext.context, clContext.device, cl::QueueProperties::Profiling | cl::QueueProperties::OutOfOrder, &ret);
-	CL_CHECK();
+	OpenCLContext clContext{ renderingSystem.GetGraphicsContext() };	
+	cl_command_queue clQueue = clContext.GetCommandQueue(true, true);	
 
 	ThreadPool threadPool;
 	threadPool.AllocateThreads(std::thread::hardware_concurrency());

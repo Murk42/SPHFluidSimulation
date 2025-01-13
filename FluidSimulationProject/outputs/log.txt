@@ -1,10 +1,6 @@
-[01/01/70 23:02:18] [INFO] [Blaze Engine Graphics] Successfully initialized glew 2.2.0
-[01/01/70 23:02:18] [WARNING] [Blaze Engine Graphics] Asked for 16-bit depth buffer, got no depth buffer
-[01/01/70 23:02:18] [INFO] [Blaze Engine Graphics] Created OpenGL context 4.5 core profile
-[01/01/70 23:02:18] [WARNING] [OpenCL] clGetGLContextInfoKHR returned "CL_INVALID_PLATFORM" on platform "NVIDIA CUDA". Skipping platform
-[01/01/70 23:02:18] [WARNING] [OpenCL] clGetGLContextInfoKHR returned "CL_INVALID_PLATFORM" on platform "Intel(R) OpenCL Graphics". Skipping platform
-[01/01/70 23:02:18] [WARNING] [Client] No processor with OpenCL-OpenGL interop found that supports the required extensions
-[01/01/70 23:02:18] [INFO] [Client] The computer might not support OpenCL-OpenGL interop. Looking for suitable processor without OpenCL-OpenGL interop but which support the required extensions. Note OpenCL-OpenGL interop is not required but it should speed up the application.
-[01/01/70 23:02:18] [INFO] [Client] Successfully initialized OpenCL C 1.2  device name NVIDIA GeForce RTX 4070 Ti SUPER
-[01/01/70 23:02:18] [INFO] [Client] GL_ARB_cl_event extension supported. The application implementation could be made better to use this extension. This is just informative
-[01/01/70 23:02:18] [INFO] [Client] GL_ARB_cl_event extension supported. The application implementation could be made better to use this extension. This is just informative
+[01/01/70 09:46:27] [INFO] [Blaze Engine Graphics] Successfully initialized glew 2.2.0
+[01/01/70 09:46:27] [WARNING] [Blaze Engine Graphics] Asked for 16-bit depth buffer, got no depth buffer
+[01/01/70 09:46:27] [INFO] [Blaze Engine Graphics] Created OpenGL context 4.5 core profile
+[01/01/70 09:46:27] [INFO] [Client] Found a suitable processor with OpenCL-OpenGL interop
+[01/01/70 09:46:27] [INFO] [Client] Successfully initialized OpenCL C 2.0  device name gfx902
+[01/01/70 09:46:27] [INFO] [Client] GL_ARB_cl_event extension not supported. Even if it was supported it isn't implemented in the application. This is just informative

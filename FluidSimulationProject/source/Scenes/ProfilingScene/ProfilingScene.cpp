@@ -5,10 +5,11 @@
 #include "SPH/System/SystemCPU.h"
 #include "SPH/System/SystemGPU.h"
 
-ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl::CommandQueue& clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem) :
+ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl_command_queue clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem) :
 	clContext(clContext), renderingSystem(renderingSystem), threadPool(threadPool), window(renderingSystem.GetWindow()),
-	SPHSystemGPU(clContext, clQueue, renderingSystem.GetGraphicsContext()), SPHSystemCPU(threadPool),
-	GPUParticleBufferSet(clContext, clQueue)
+	SPHSystemGPU(clContext.context, clContext.device, clQueue, renderingSystem.GetGraphicsContext()), SPHSystemCPU(threadPool),
+	GPUParticleBufferSet(clContext.context, clQueue),
+	uiScreen(&window)
 {		
 	threadPool.AllocateThreads(std::thread::hardware_concurrency());
 
@@ -51,35 +52,36 @@ void ProfilingScene::Update()
 }
 void ProfilingScene::LoadProfiles()
 {
-	File jsonFile{ "assets/simulationProfiles/systemProfilingProfiles.json", FileAccessPermission::Read };
-	std::string jsonFileString;
-	jsonFileString.resize(jsonFile.GetSize());
-	jsonFile.Read(jsonFileString.data(), jsonFileString.size());
-
-	try 
-	{
-		JSON fileJSON = nlohmann::json::parse(jsonFileString);	
-
-		auto& profilesJSON = fileJSON["profiles"];
-		profiles.ReserveExactly(profilesJSON.size());
-		for (auto& profileJSON : profilesJSON)
-		{
-			auto& profile = *profiles.AddBack();
-
-			profile.name = ConvertString(profileJSON["profileName"]);
-			profile.outputFilePath = (Path)ConvertString(profileJSON["outputFilePath"]);
-			profile.simulationDuration = profileJSON["simulationDuration"];
-			profile.simulationStepTime = profileJSON["simulationStepTime"];
-			profile.stepsPerUpdate = profileJSON["stepsPerUpdate"];
-
-			profile.systemInitParameters.ParseJSON(profileJSON["systemParameters"]);
-		}
-	}
-	catch (const std::exception& exc)
-	{
-		Debug::Logger::LogWarning("Client", "Failed to parse profiling parameters file with message: \n" + StringView(exc.what(), strlen(exc.what())));
-		profiles.Clear();
-	}
+	//File jsonFile{ "assets/simulationProfiles/systemProfilingProfiles.json", FileAccessPermission::Read };
+	//std::string jsonFileString;
+	//jsonFileString.resize(jsonFile.GetSize());
+	//jsonFile.Read(jsonFileString.data(), jsonFileString.size());
+	//
+	//try 
+	//{
+	//	JSON fileJSON = nlohmann::json::parse(jsonFileString);	
+	//
+	//	auto& profilesJSON = fileJSON["profiles"];
+	//	profiles.ReserveExactly(profilesJSON.size());
+	//	for (auto& profileJSON : profilesJSON)
+	//	{
+	//		auto& profile = *profiles.AddBack();
+	//
+	//		profile.name = ConvertString(profileJSON["profileName"]);
+	//		profile.outputFilePath = (Path)ConvertString(profileJSON["outputFilePath"]);
+	//		profile.simulationDuration = profileJSON["simulationDuration"];
+	//		profile.simulationStepTime = profileJSON["simulationStepTime"];
+	//		profile.stepsPerUpdate = profileJSON["stepsPerUpdate"];
+	//
+	//		auto sp = (std::string)profileJSON["systemParameters"];
+	//		profile.systemInitParameters.ParseJSON(StringView(sp.data(), sp.size()));
+	//	}
+	//}
+	//catch (const std::exception& exc)
+	//{
+	//	Debug::Logger::LogWarning("Client", "Failed to parse profiling parameters file with message: \n" + StringView(exc.what(), strlen(exc.what())));
+	//	profiles.Clear();
+	//}
 }
 void ProfilingScene::SetupEvents()
 {	
@@ -180,10 +182,10 @@ void ProfilingScene::NewProfileStarted()
 }
 void ProfilingScene::NewSystemStarted()
 {
-	SPHSystems[systemIndex].system.Initialize(profiles[profileIndex].systemInitParameters, SPHSystems[systemIndex].particleBufferSet);
-	uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\". "
-		"With " + StringParsing::Convert(SPHSystems[systemIndex].system.GetDynamicParticleCount()) + " dynamic and "
-		+ StringParsing::Convert(SPHSystems[systemIndex].system.GetStaticParticleCount()) + " static particles\n");	
+	//SPHSystems[systemIndex].system.Initialize(profiles[profileIndex].systemInitParameters, SPHSystems[systemIndex].particleBufferSet, );
+	//uiScreen.LogProfiling("Running system implementation \"" + SPHSystems[systemIndex].system.SystemImplementationName() + "\". "
+	//	"With " + StringParsing::Convert(SPHSystems[systemIndex].system.GetDynamicParticleCount()) + " dynamic and "
+	//	+ StringParsing::Convert(SPHSystems[systemIndex].system.GetStaticParticleCount()) + " static particles\n");	
 }
 void ProfilingScene::ProfileFinished()
 {

@@ -8,11 +8,12 @@
 #include "SPH/ParticleBufferSet/RenderableGPUParticleBufferSet.h"
 #include "SPH/System/SystemCPU.h"
 #include "SPH/System/SystemGPU.h"
+#include "SPH/Scene/Scene.h"
 
 class SimulationVisualisationScene : public Scene
 {
 public:
-	SimulationVisualisationScene(OpenCLContext& clContext, cl::CommandQueue& clQueue, ThreadPool& threadPoo, RenderingSystem& renderingSystem);
+	SimulationVisualisationScene(OpenCLContext& clContext, cl_command_queue clQueue, ThreadPool& threadPoo, RenderingSystem& renderingSystem);
 	~SimulationVisualisationScene();
 
 	void Update() override;
@@ -24,13 +25,13 @@ private:
 	};
 
 	OpenCLContext& clContext;	
-	cl::CommandQueue& clQueue;
+	cl_command_queue clQueue;
 	RenderingSystem& renderingSystem;
 	Window& window;
 
 	ThreadPool& threadPool;
 
-	SPH::SystemInitParameters systemInitParameters;
+	SPH::Scene simulationScene;	
 
 	SPH::RenderableGPUParticleBufferSet GPUParticleBufferSet;
 	SPH::SystemGPU SPHSystemGPU;
@@ -53,6 +54,9 @@ private:
 
 	bool runSimulation = false;
 	uint simulationStepsPerUpdate = 1;
+
+	Vec3f imagingCameraPos;
+	Vec2f imagingCameraAngles;
 
 	LambdaEventHandler<Input::Events::MouseScroll> mouseScrollEventHandler;	
 

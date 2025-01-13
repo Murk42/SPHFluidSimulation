@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "ProfilingUI.h"
 
-ProfilingUI::ProfilingUI()
+ProfilingUI::ProfilingUI(WindowBase* window) :
+	Screen(window)
 {
 	Graphics::FontAtlasesData::AddToFont(font, { 12, 20, 28 }, CharacterSet::ASCIICharacterSet());
 

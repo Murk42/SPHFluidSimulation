@@ -51,7 +51,7 @@ public:
 	TextButton starProfilingButton;
 	LambdaEventHandler<TextButton::PressedEvent> startStopProfilingButtonPressedEventHandler;	
 
-	ProfilingUI();
+	ProfilingUI(WindowBase* window);
 	~ProfilingUI();
 
 	void ProfilingStopped();

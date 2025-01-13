@@ -27,24 +27,6 @@
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimVisUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\ThreadPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\System\SystemGPU.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\OpenCLContext.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\System\System.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\SPHFunctions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\System\SystemCPU.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -54,25 +36,7 @@
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferSet\ParticleBufferSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.cpp">
+    <ClCompile Include="source\OpenCLContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,49 +47,7 @@
     <ClInclude Include="source\RenderingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\SPH\Graphics\SystemRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\ThreadPool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\System\SystemGPU.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OpenCLContext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\System\System.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleGenerator\BoxShellParticleGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleGenerator\FileModelShellGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleGenerator\FilledBoxParticleGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleGenerator\ParticleGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\SPHFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="assets\kernels\CL_CPP_SPHFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\System\SystemCPU.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="assets\kernels\CL_CPP_SPHDeclarations.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h">
@@ -140,31 +62,13 @@
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\OpenCLContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="source\JSONParsing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\ParticleBufferSetRenderData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableCPUParticleBufferSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\RenderableGPUParticleBufferSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\GPUParticleBufferSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\CPUParticleBufferSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineGPUParticleBufferSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\ParticleBufferSet\OfflineCPUParticleBufferSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -175,8 +79,6 @@
     <None Include="assets\shaders\particle.frag" />
     <None Include="assets\shaders\particle.vert" />
     <None Include="vcpkg.json" />
-    <None Include="assets\kernels\SPH.cl" />
-    <None Include="assets\kernels\partialSum.cl" />
     <None Include="assets\simulationProfiles\systemProfilingProfiles.json" />
     <None Include="assets\simulationProfiles\systemVisualisationProfile.json" />
     <None Include="assets\simulationProfiles\waveProfile.json" />
@@ -185,6 +87,7 @@
     <None Include="assets\simulationProfiles\waveDetailedProfilingProfile.json" />
     <None Include="assets\simulationProfiles\waveIncreasingParticleReorderTimeIntervalDetailedProfilingProfiles.json" />
     <None Include="assets\simulationProfiles\increasingStaticParticleCountProfiles.json" />
+    <None Include="assets\simulationScenes\scene.json" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="outputs\log.txt" />

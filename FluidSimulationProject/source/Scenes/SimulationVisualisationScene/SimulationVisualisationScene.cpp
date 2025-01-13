@@ -1,12 +1,10 @@
 #include "pch.h"
 #include "Scenes/SimulationVisualisationScene/SimulationVisualisationScene.h"
 
-#include "SPH/ParticleGenerator/FilledBoxParticleGenerator.h"
-#include "SPH/ParticleGenerator/BoxShellParticleGenerator.h"
-
-SimulationVisualisationScene::SimulationVisualisationScene(OpenCLContext& clContext, cl::CommandQueue& clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem) :
+SimulationVisualisationScene::SimulationVisualisationScene(OpenCLContext& clContext, cl_command_queue clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem) :
 	clContext(clContext), clQueue(clQueue), threadPool(threadPool), renderingSystem(renderingSystem), window(renderingSystem.GetWindow()), SPHSystemRenderer(renderingSystem.GetGraphicsContext()), currentSPHSystemIndex(0),
-	SPHSystemGPU(clContext, clQueue, renderingSystem.GetGraphicsContext()), SPHSystemCPU(threadPool), GPUParticleBufferSet(clContext, clQueue)
+	SPHSystemGPU(clContext.context, clContext.device, clQueue, renderingSystem.GetGraphicsContext()), SPHSystemCPU(threadPool), GPUParticleBufferSet(clContext.context, clContext.device, clQueue),
+	uiScreen(&window)
 {		
 	//Setup UI	
 	uiScreen.SetWindow(&window);	
@@ -23,14 +21,14 @@ SimulationVisualisationScene::SimulationVisualisationScene(OpenCLContext& clCont
 
 	SetSystemIndex(0);
 	LoadSystemInitParameters();
-	SPHSystems[currentSPHSystemIndex].system.Initialize(systemInitParameters, SPHSystems[currentSPHSystemIndex].particleBufferSet);
+	simulationScene.InitializeSystem(SPHSystems[currentSPHSystemIndex].system, SPHSystems[currentSPHSystemIndex].particleBufferSet);	
+
 	uiScreen.SetParticleCount(SPHSystems[currentSPHSystemIndex].system.GetDynamicParticleCount());
 
 	renderingSystem.SetScreen(&uiScreen);	
 	renderingSystem.SetSPHSystemRenderer(&SPHSystemRenderer);
 	renderingSystem.SetSPHSystemRenderingCache(&SPHSystemRenderCache);	
 }
-
 
 SimulationVisualisationScene::~SimulationVisualisationScene()
 {
@@ -57,7 +55,7 @@ void SimulationVisualisationScene::Update()
 		if (window.GetLastKeyState(Key::T).pressed)
 		{
 			SetSystemIndex((currentSPHSystemIndex + 1) % SPHSystems.Count());									
-			SPHSystems[currentSPHSystemIndex].system.Initialize(systemInitParameters, SPHSystems[currentSPHSystemIndex].particleBufferSet);
+			simulationScene.InitializeSystem(SPHSystems[currentSPHSystemIndex].system, SPHSystems[currentSPHSystemIndex].particleBufferSet);
 			uiScreen.SetParticleCount(SPHSystems[currentSPHSystemIndex].system.GetDynamicParticleCount());
 			runSimulation = false;
 		}			
@@ -65,28 +63,36 @@ void SimulationVisualisationScene::Update()
 		if (window.GetLastKeyState(Key::R).pressed)
 		{
 			LoadSystemInitParameters();
-			SPHSystems[currentSPHSystemIndex].system.Initialize(systemInitParameters, SPHSystems[currentSPHSystemIndex].particleBufferSet);
+			simulationScene.InitializeSystem(SPHSystems[currentSPHSystemIndex].system, SPHSystems[currentSPHSystemIndex].particleBufferSet);
 			uiScreen.SetParticleCount(SPHSystems[currentSPHSystemIndex].system.GetDynamicParticleCount());
 		}
 
 		if (window.GetLastKeyState(Key::I).pressed)
 		{
-			imagingMode = !imagingMode;
-			if (imagingMode)
+			if (window.GetLastKeyState(Key::LShift).down)
 			{
-				renderingSystem.SetCustomClearColor(0xffffffff);
-				SPHSystemRenderer.SetDynamicParticleColor(0x000000ff);
-				SPHSystemRenderer.SetStaticParticleColor(0xff0000ff);
-				renderingSystem.SetScreen(nullptr);
-				cameraPos = Vec3f(0, 3, 10);
-				cameraAngles = Vec2f(Math::PI / 7, 0);
+				imagingCameraPos = cameraPos;
+				imagingCameraAngles = cameraAngles;
 			}
 			else
 			{
-				renderingSystem.DisableCustomClearColor();
-				SPHSystemRenderer.SetDynamicParticleColor(0xffffffff);
-				SPHSystemRenderer.SetStaticParticleColor(0xff0000ff);
-				renderingSystem.SetScreen(&uiScreen);
+				imagingMode = !imagingMode;
+				if (imagingMode)
+				{
+					renderingSystem.SetCustomClearColor(0xffffffff);
+					SPHSystemRenderer.SetDynamicParticleColor(0x000000ff);
+					SPHSystemRenderer.SetStaticParticleColor(0xff0000ff);
+					renderingSystem.SetScreen(nullptr);
+					cameraPos = imagingCameraPos;
+					cameraAngles = imagingCameraAngles;					
+				}
+				else
+				{
+					renderingSystem.DisableCustomClearColor();
+					SPHSystemRenderer.SetDynamicParticleColor(0xffffffff);
+					SPHSystemRenderer.SetStaticParticleColor(0xff0000ff);
+					renderingSystem.SetScreen(&uiScreen);
+				}
 			}
 		}
 	}
@@ -95,8 +101,8 @@ void SimulationVisualisationScene::Update()
 
 	if ((runSimulation || window.GetLastKeyState(Key::Right).pressed && (UIInputManager.GetSelectedNode() == &uiScreen.cameraMouseFocusNode || UIInputManager.GetSelectedNode() == nullptr)))
 	{
-		SPHSystems[currentSPHSystemIndex].system.Update(0.01f, simulationStepsPerUpdate);		
-	}	
+		SPHSystems[currentSPHSystemIndex].system.Update(std::min(dt, 0.01666f), simulationStepsPerUpdate);		
+	}		
 
 	auto& profilingData = SPHSystems[currentSPHSystemIndex].system.GetProfilingData();
 
@@ -142,13 +148,8 @@ void SimulationVisualisationScene::SetSystemIndex(uintMem index)
 }
 
 void SimulationVisualisationScene::LoadSystemInitParameters()
-{
-	File jsonFile{ "assets/simulationProfiles/systemVisualisationProfile.json", FileAccessPermission::Read };
-	std::string jsonFileString;
-	jsonFileString.resize(jsonFile.GetSize());
-	jsonFile.Read(jsonFileString.data(), jsonFileString.size());
-	systemInitParameters.ParseJSON(JSON::parse(jsonFileString));
-	jsonFile.Close();
+{	
+	simulationScene.LoadScene("assets/simulationScenes/scene.json");	
 }
 
 void SimulationVisualisationScene::SetupEvents()

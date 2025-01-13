@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <BlazeDir>C:\Users\filip\source\repos\BlazeEngine\</BlazeDir>
+    <BlazeDir>D:\Programming\Projects\BlazeEngine\</BlazeDir>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>$(ProjectDir)build\$(Configuration)\$(PlatformTarget)\</OutDir>
@@ -13,7 +13,7 @@
       <AdditionalIncludeDirectories>$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BLAZE_STATIC;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngine\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineCore\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineGraphics\build\$(Configuration)\$(PlatformTarget)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

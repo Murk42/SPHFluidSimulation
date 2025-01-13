@@ -46,7 +46,7 @@ public:
 	UI::Text infoText;	
 	bool cameraHasMouseFocus;
 
-	SimVisUI();
+	SimVisUI(WindowBase* window);
 
 	void SetFPS(uintMem FPS);
 	void SetParticleCount(uintMem particleCount);
