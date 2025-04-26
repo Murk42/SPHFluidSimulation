@@ -15,8 +15,7 @@ void PrintKernelInfo(cl_kernel kernel, cl_device_id device, WriteStream& stream)
 template<uintMem MaxEvents>
 struct EventWaitArray
 {
-	cl_event events[MaxEvents];
-	uintMem count;
+public:
 
 	EventWaitArray() : events{ }, count(0) {}
 	EventWaitArray(const std::initializer_list<cl_event>& events)
@@ -52,6 +51,18 @@ struct EventWaitArray
 		count = 0;
 	}
 
+	cl_event* Ptr()
+	{
+		if (count == 0)
+			return nullptr;
+
+		return events;
+	}
+	uintMem Count()
+	{
+		return count;
+	}
+
 	inline operator cl_event* ()
 	{
 		while (count != MaxEvents && events[count] != NULL)
@@ -68,6 +79,9 @@ struct EventWaitArray
 			++count;
 		return ArrayView<cl_event>(events, count);
 	}
+private:
+	cl_event events[MaxEvents];
+	uintMem count;
 };
 
 struct Measurement

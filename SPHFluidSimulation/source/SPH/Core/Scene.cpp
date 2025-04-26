@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SPH/Scene/Scene.h"
+#include "SPH/Core/Scene.h"
 #include "JSONParsing.h"
 #include "SPH/ParticleSetBlueprint/BoxShellParticleSetBlueprint.h"
 #include "SPH/ParticleSetBlueprint/FilledBoxParticleSetBlueprint.h"

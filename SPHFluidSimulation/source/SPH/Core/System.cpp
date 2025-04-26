@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SPH/System/System.h"
+#include "SPH/Core/System.h"
 #include "SPH/kernels/SPHFunctions.h"
 
 namespace SPH

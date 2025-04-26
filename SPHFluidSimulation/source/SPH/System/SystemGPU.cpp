@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SPH/System/SystemGPU.h"
-#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
+#include "SPH/Core/ParticleBufferManager.h"
 #include "SPH/Kernels/Kernels.h"
 #include "OpenCLDebug.h"
 
@@ -72,7 +72,7 @@ namespace SPH
 		dynamicParticleHashMapSize(0), staticParticleHashMapSize(0), hashMapBufferGroupSize(0),
 		reorderElapsedTime(0.0f), reorderTimeInterval(FLT_MAX),
 		simulationTime(0)
-	{
+	{		
 		if (!CheckForExtensions(clDevice, { "cl_khr_global_int32_base_atomics" }))
 			Debug::Logger::LogError("Client", "Given OpenCL device doesn't support all needed extensions");
 

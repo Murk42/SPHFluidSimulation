@@ -1,6 +1,6 @@
 #pragma once
-#include "SPH/ParticleSetBlueprint/ParticleSetBlueprint.h"
-#include "SPH/System/System.h"
+#include "SPH/Core/ParticleSetBlueprint.h"
+#include "SPH/Core/System.h"
 
 namespace SPH
 {	

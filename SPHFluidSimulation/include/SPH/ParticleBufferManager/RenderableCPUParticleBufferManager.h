@@ -1,6 +1,6 @@
 #pragma once
-#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
-#include "SPH/ParticleBufferManager/ParticleBufferManagerRenderData.h"
+#include "SPH/Core/ParticleBufferManager.h"
+#include "SPH/Core/ParticleBufferManagerRenderData.h"
 #include "SPH/ParticleBufferManager/CPUResourceLock.h"
 
 namespace SPH

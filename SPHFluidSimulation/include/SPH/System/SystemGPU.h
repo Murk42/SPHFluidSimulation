@@ -1,5 +1,5 @@
 #pragma once
-#include "SPH/System/System.h"
+#include "SPH/Core/System.h"
 
 namespace SPH
 {	

@@ -27,7 +27,7 @@
     <ClCompile Include="source\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\System\System.cpp">
+    <ClCompile Include="source\SPH\Core\System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\SPH\System\SystemCPU.cpp">
@@ -42,10 +42,7 @@
     <ClCompile Include="source\OpenCLDebug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\Scene\Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleSetBlueprint\ParticleSetBlueprint.cpp">
+    <ClCompile Include="source\SPH\Core\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\SPH\ParticleSetBlueprint\FilledBoxParticleSetBlueprint.cpp">
@@ -57,7 +54,7 @@
     <ClCompile Include="source\SPH\ParticleBufferManager\OpenCLResourceLock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\ResourceLockGuard.cpp">
+    <ClCompile Include="source\SPH\Core\ResourceLockGuard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\SPH\ThreadParallelTaskManager.cpp">
@@ -101,10 +98,10 @@
     <ClInclude Include="include\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\ParticleBufferManager.h">
+    <ClInclude Include="include\SPH\Core\ParticleBufferManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\ParticleBufferManagerRenderData.h">
+    <ClInclude Include="include\SPH\Core\ParticleBufferManagerRenderData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.h">
@@ -119,10 +116,10 @@
     <ClInclude Include="include\SPH\ParticleSetBlueprint\FilledBoxParticleSetBlueprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\ParticleSetBlueprint\ParticleSetBlueprint.h">
+    <ClInclude Include="include\SPH\Core\ParticleSetBlueprint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\System\System.h">
+    <ClInclude Include="include\SPH\Core\System.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\System\SystemCPU.h">
@@ -140,13 +137,13 @@
     <ClInclude Include="source\OpenCLDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\Scene\Scene.h">
+    <ClInclude Include="include\SPH\Core\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\ParticleBufferManager\OpenCLResourceLock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\ResourceLockGuard.h">
+    <ClInclude Include="include\SPH\Core\ResourceLockGuard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\ThreadParallelTaskManager.h">
@@ -164,7 +161,7 @@
     <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderC++.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\System\Particles.h">
+    <ClInclude Include="include\SPH\Core\Particles.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\SPH\Graphics\Shaders\Shaders.h">

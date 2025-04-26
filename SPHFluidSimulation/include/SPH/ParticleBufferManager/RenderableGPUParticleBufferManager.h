@@ -1,6 +1,6 @@
 #pragma once
 #include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
-#include "SPH/ParticleBufferManager/ParticleBufferManagerRenderData.h"
+#include "SPH/Core/ParticleBufferManagerRenderData.h"
 
 namespace SPH
 {
@@ -121,6 +121,8 @@ namespace SPH
 		void PrepareStaticParticlesForRendering() override;
 
 		void FlushAllOperations() override;
+	protected:
+		virtual void AllocateBuffers(uintMem bufferSizeGL, uintMem bufferSizeCL, void* ptrGL, void* ptrCL, Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& bufferGL, cl_mem& bufferCL);
 	private:		
 		struct ParticlesBuffer
 		{			
@@ -130,8 +132,8 @@ namespace SPH
 
 			void SetBuffer(cl_mem buffer, bool copyRequiredForRendering);
 
-			ResourceLockGuard LockRead(cl_event* signalEvent);
-			ResourceLockGuard LockWrite(cl_event* signalEvent);
+			ResourceLockGuard LockRead(cl_event* signalEvent, bool acquireGLBuffers);
+			ResourceLockGuard LockWrite(cl_event* signalEvent, bool acquireGLBuffers);
 			ResourceLockGuard LockForRendering(Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& bufferGL, uintMem bufferSize);
 
 			void PrepareForRendering(Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& bufferGL, uintMem bufferSize);
@@ -160,67 +162,17 @@ namespace SPH
 		
 		void CleanDynamicParticlesBuffers();
 		void CleanStaticParticlesBuffer();		
-	};
+	};	
 
-	/*
 	class RenderableGPUParticleBufferManagerWithCLGLInterop :
-		public ParticleBufferManagerRenderData
-	{
+		public RenderableGPUParticleBufferManagerWithoutCLGLInterop
+	{	
 	public:
-		RenderableGPUParticleBufferManagerWithCLGLInterop(cl_context clContext, cl_device_id clDevice, cl_command_queue commandQueue);
-		~RenderableGPUParticleBufferManagerWithCLGLInterop();
-
-		void Clear() override;
-		void Advance() override;
-
-		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
-		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
-
-		uintMem GetDynamicParticleBufferCount() const override;
-		uintMem GetDynamicParticleCount() override;
-		uintMem GetStaticParticleCount() override;
-		Graphics::OpenGLWrapper::GraphicsBuffer* GetDynamicParticlesGraphicsBuffer(uintMem index, uintMem& stride, uintMem& bufferOffset) override;
-		Graphics::OpenGLWrapper::GraphicsBuffer* GetStaticParticlesGraphicsBuffer(uintMem& stride, uintMem& bufferOffset) override; \
-
 		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;
 		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
 		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
 		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;
-		ResourceLockGuard LockDynamicParticlesForRendering(void* signalEvent) override;
-		ResourceLockGuard LockStaticParticlesForRendering(void* signalEvent) override;
-
-		void PrepareDynamicParticlesForRendering() override;
-		void PrepareStaticParticlesForRendering() override;
 	private:
-		struct DynamicParticlesSubBuffer
-		{
-			cl_mem bufferView;
-			OpenCLLock lock;
-			Graphics::OpenGLWrapper::Fence renderingFence;
-		};
-
-		cl_context clContext;
-		cl_device_id clDevice;
-		cl_command_queue clCommandQueue;
-
-		Array<DynamicParticlesSubBuffer> buffers;
-		uintMem currentBuffer;
-
-		OpenCLLock staticParticlesLock;
-		Graphics::OpenGLWrapper::Fence staticParticlesRenderingFence;
-
-		cl_mem staticParticlesBufferCL;
-		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer staticParticlesBufferGL;
-		void* staticParticlesBufferMap;//Only used if CLGLInteropSupported is false
-		uintMem staticParticlesCount;
-
-		cl_mem dynamicParticlesBufferCL;
-		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticlesBufferGL;
-		void* dynamicParticlesBufferMap; //Only used if CLGLInteropSupported is false
-		uintMem dynamicParticlesCount;
-		
-		void CleanDynamicParticlesBuffers();
-		void CleanStaticParticlesBuffer();
+		void AllocateBuffers(uintMem bufferSizeGL, uintMem bufferSizeCL, void* ptrGL, void* ptrCL, Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& bufferGL, cl_mem& bufferCL) override;
 	};
-	*/
 }

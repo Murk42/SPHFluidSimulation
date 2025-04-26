@@ -1,6 +1,6 @@
 #pragma once
-#include "SPH/System/System.h"
-#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
+#include "SPH/Core/System.h"
+#include "SPH/Core/ParticleBufferManager.h"
 #include "SPH/ThreadParallelTaskManager.h"
 using namespace Blaze;
 

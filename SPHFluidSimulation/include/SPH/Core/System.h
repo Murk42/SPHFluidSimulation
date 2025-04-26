@@ -6,7 +6,7 @@
 #include "BlazeEngineCore/DataStructures/String.h"
 #include "BlazeEngineCore/DataStructures/StringView.h"
 
-#include "SPH/System/Particles.h"
+#include "SPH/Core/Particles.h"
 
 namespace SPH
 {

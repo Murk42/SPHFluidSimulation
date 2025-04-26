@@ -1,5 +1,5 @@
 #pragma once
-#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
+#include "SPH/Core/ParticleBufferManager.h"
 #include "SPH/ParticleBufferManager/CPUResourceLock.h"
 
 namespace SPH

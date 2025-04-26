@@ -8,7 +8,7 @@
 #include "SPH/ParticleBufferManager/RenderableGPUParticleBufferManager.h"
 #include "SPH/System/SystemCPU.h"
 #include "SPH/System/SystemGPU.h"
-#include "SPH/Scene/Scene.h"
+#include "SPH/Core/Scene.h"
 
 class SimulationVisualisationScene : 
 	public Scene,

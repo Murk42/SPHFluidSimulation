@@ -60,12 +60,13 @@ namespace SPH
 		//The OpenGL buffers aren't created so they need to be created
 		dynamicParticlesMemory = decltype(dynamicParticlesMemory)();
 
+		using namespace Graphics::OpenGLWrapper;
 		dynamicParticlesMemory.Allocate(nullptr, sizeof(DynamicParticle) * count * dynamicParticlesBuffers.Count(),
-			Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Read | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write,
-			Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentUncoherent
+			GraphicsBufferMapAccessFlags::Read | GraphicsBufferMapAccessFlags::Write,
+			GraphicsBufferMapType::PersistentUncoherent
 		);
 
-		DynamicParticle* ptr = (DynamicParticle*)dynamicParticlesMemory.MapBufferRange(0, sizeof(DynamicParticle) * count * dynamicParticlesBuffers.Count(), Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush);
+		DynamicParticle* ptr = (DynamicParticle*)dynamicParticlesMemory.MapBufferRange(0, sizeof(DynamicParticle) * count * dynamicParticlesBuffers.Count(), GraphicsBufferMapOptions::ExplicitFlush);
 		
 		//Copy the initial particles to the first buffer, intentionally not flushing because it will be done when 'preparing' for rendering
 		if (particles != nullptr)
@@ -89,11 +90,11 @@ namespace SPH
 		staticParticlesMemory = decltype(staticParticlesMemory)();
 
 		staticParticlesMemory.Allocate(particles, sizeof(StaticParticle) * count,
-			Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Read | Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapAccess::Write,
-			Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapType::PersistentUncoherent
+			Graphics::OpenGLWrapper::GraphicsBufferMapAccessFlags::Read | Graphics::OpenGLWrapper::GraphicsBufferMapAccessFlags::Write,
+			Graphics::OpenGLWrapper::GraphicsBufferMapType::PersistentUncoherent
 		);
 
-		void* ptr = (StaticParticle*)staticParticlesMemory.MapBufferRange(0, sizeof(StaticParticle) * count, Graphics::OpenGLWrapper::ImmutableGraphicsBufferMapOptions::ExplicitFlush);
+		void* ptr = (StaticParticle*)staticParticlesMemory.MapBufferRange(0, sizeof(StaticParticle) * count, Graphics::OpenGLWrapper::GraphicsBufferMapOptions::ExplicitFlush);
 
 		//The buffer is prepared for rendering because there isn't a need to flush the buffer. It's been initialized with the particles
 		staticParticlesBuffer.SetPointer(ptr, true);		

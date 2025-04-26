@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SPH/ParticleBufferManager/ResourceLockGuard.h"
+#include "SPH/Core/ResourceLockGuard.h"
 
 namespace SPH
 {
