@@ -1,138 +1,123 @@
 #pragma once
-#include "SPH/ParticleBufferManager/CPUParticleBufferManager.h"
-#include "SPH/ParticleBufferManager/ResourceLock.h"
+#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
 #include "SPH/ParticleBufferManager/ParticleBufferManagerRenderData.h"
+#include "SPH/ParticleBufferManager/CPUResourceLock.h"
 
 namespace SPH
-{	
-	/*
-	class RenderableCPUParticleBufferManager :		
-		public CPUParticleBufferManager,
-		public ParticleBufferManagerRenderData
-	{
-	public:					
-		RenderableCPUParticleBufferManager();
-		
-		void Clear();
-		void Advance() override;		
-
-		void ManagerDynamicParticles(ArrayView<DynamicParticle> dynamicParticles) override;
-		void ManagerStaticParticles(ArrayView<StaticParticle> staticParticles) override;
-		
-		CPUParticleReadBufferHandle& GetReadBufferHandle() override;
-		CPUParticleWriteBufferHandle& GetWriteBufferHandle() override;
-		CPUParticleWriteBufferHandle& GetReadWriteBufferHandle() override;
-		const StaticParticle* GetStaticParticles() override;
-		ParticleRenderBufferHandle& GetRenderBufferHandle() override;
-		Graphics::OpenGLWrapper::VertexArray& GetStaticParticleVertexArray() override;
-
-		uintMem GetDynamicParticleCount() override;		
-		uintMem GetStaticParticleCount() override;
-	private:
-		class Buffer : 
-			public CPUParticleReadBufferHandle,
-			public CPUParticleWriteBufferHandle,
-			public ParticleRenderBufferHandle
-		{
-			const RenderableCPUParticleBufferManager& bufferManager;
-
-			Graphics::OpenGLWrapper::VertexArray dynamicParticleVertexArray;
-			Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticleBuffer;
-			DynamicParticle* dynamicParticlesMap;						
-
-			CPUSync readSync;
-			CPUSync writeSync;	
-
-			std::mutex stateMutex;
-			std::condition_variable stateCV;
-						
-			Graphics::OpenGLWrapper::Fence renderingFinishedFence;						
-		public:
-			Buffer(const RenderableCPUParticleBufferManager& bufferManager);
-			~Buffer();
-
-			void Clear();
-			
-			void ManagerDynamicParticles(const DynamicParticle* particles);
-
-			CPUSync& GetReadSync() override;
-			CPUSync& GetWriteSync() override;
-			void StartRender() override;
-			void FinishRender() override;
-			void WaitRender() override;
-
-			const DynamicParticle* GetReadBuffer() override { return dynamicParticlesMap; }
-			DynamicParticle* GetWriteBuffer() override { return dynamicParticlesMap; }
-
-			Graphics::OpenGLWrapper::VertexArray& GetVertexArray() override { return dynamicParticleVertexArray; }			
-		};
-
-		Array<Buffer> buffers;
-		uintMem currentBuffer;
-
-		Graphics::OpenGLWrapper::VertexArray staticParticleVertexArray;
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer staticParticleBuffer;
-		StaticParticle* staticParticlesMap;
-
-		uintMem dynamicParticleCount;
-		uintMem staticParticleCount;
-	};
-	*/
-
+{
 	class RenderableCPUParticleBufferManager : 
-		public CPUParticleBufferManager,
 		public ParticleBufferManagerRenderData
 	{
 	public:
 		RenderableCPUParticleBufferManager();
+		//This buffer manager can be destroyed only by the OpenGL thread
 		~RenderableCPUParticleBufferManager();
 
+		//This function can only be called by the OpenGL thread. Calling this function will release old 
+		//particle buffers. Any operations acting on the old buffers will result in undefined behaviour 
+		//after calling this function. Therefore those operations must be waited on. Before waiting for the 
+		//operations function 'FlushAllOperations' must be called, otherwise a deadlock might occur
 		void Clear() override;
+		//Its safe to call this function from any thread but not at the same time
 		void Advance() override;
 
-		void AllocateDynamicParticles(uintMem count) override;
-		void AllocateStaticParticles(uintMem count) override;
+		//Calling this function might allocate new particle buffers and therefore invalidate the old ones. Any
+		//operations acting on the old buffers will result in undefined behaviour after calling this function.
+		//Therefore those operations must be waited on. Before waiting for the operations function 
+		//'FlushAllOperations' must be called otherwise a deadlock might occur
+		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
+		//Calling this function might allocate new particle buffers and therefore invalidate the old ones. Any
+		//operations acting on the old buffers will result in undefined behaviour after calling this function.
+		//Therefore those operations must be waited on. Before waiting for the operations function 
+		//'FlushAllOperations' must be called, otherwise a deadlock might occur
+		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
 
+		//It is safe to call this function from multiple threads at the same time
+		uintMem GetDynamicParticleBufferCount() const override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
 		uintMem GetDynamicParticleCount() override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
 		uintMem GetStaticParticleCount() override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetDynamicParticlesGraphicsBuffer(uintMem index, uintMem& stride, uintMem& bufferOffset) override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetStaticParticlesGraphicsBuffer(uintMem& stride, uintMem& bufferOffset) override;
 
-		CPUParticleBufferLockGuard LockDynamicParticlesActiveRead(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
-		CPUParticleBufferLockGuard LockDynamicParticlesAvailableRead(const TimeInterval& timeInterval = TimeInterval::Infinity(), uintMem* index) override;
-		CPUParticleBufferLockGuard LockDynamicParticlesReadWrite(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
+		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;		
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
+		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
+		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
+		//It is safe to call this function from multiple threads at the same time, as long as new particles 
+		//aren't being allocated at the same time
+		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;		
+		//This function can only be called by the OpenGL thread
+		ResourceLockGuard LockDynamicParticlesForRendering(void* signalEvent) override;
+		//This function can only be called by the OpenGL thread
+		ResourceLockGuard LockStaticParticlesForRendering(void* signalEvent) override;
 
-		CPUParticleBufferLockGuard LockStaticParticlesRead(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
-		CPUParticleBufferLockGuard LockStaticParticlesReadWrite(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
+		//This function can only be called by the OpenGL thread
+		void PrepareDynamicParticlesForRendering() override;
+		//This function can only be called by the OpenGL thread
+		void PrepareStaticParticlesForRendering() override;
 
-		Graphics::OpenGLWrapper::VertexArray& GetDynamicParticlesVertexArray(uintMem index) override;
-		Graphics::OpenGLWrapper::VertexArray& GetStaticParticlesVertexArray() override;
-
-	private:
-		struct Buffer
+		//This function can only be called by the OpenGL thread. It must be called before waiting for any
+		//locking/unlocking operations to finish, otherwise a deadlock might occur
+		void FlushAllOperations() override;
+	private:		
+		class ParticlesBuffer
 		{
-			Graphics::OpenGLWrapper::VertexArray dynamicParticlesVA;
+		public:
+			ParticlesBuffer();			
+			
+			void SetPointer(void* ptr, bool preparedForRendering);
+			
+			ResourceLockGuard LockRead();
+			ResourceLockGuard LockWrite(bool isOpenGLThread);
+			//This function can only be called by the OpenGL thread
+			ResourceLockGuard LockForRendering(Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& buffer, uintMem index, uintMem bufferSize);
+			
+			//This function can only be called by the OpenGL thread
+			void CheckRenderingFence();
 
-			std::mutex dynamicParticlesFencesMutex;
-			Array<Graphics::OpenGLWrapper::Fence> dynamicParticleFences;
-			Lock dynamicParticlesLock;			
-			DynamicParticle* dynamicParticlesMap;
+			//This function can only be called by the OpenGL thread
+			void WaitRenderingFence();
+			
+			//This function can only be called by the OpenGL thread
+			void PrepareForRendering(Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& buffer, uintMem index, uintMem bufferSize);
+		private:
+			void* ptr;
+			CPULock lock;
+			bool renderingFenceFlag;
+			bool preparedForRendering;
+			Graphics::OpenGLWrapper::Fence renderingFence;
 		};
 
-		Array<Buffer> buffers;
+		std::thread::id openGLThreadID;
 		uintMem currentBuffer;
 
-		std::mutex staticParticlesFencesMutex;
-		Array<Graphics::OpenGLWrapper::Fence> staticParticleFences;
-		Lock staticParticlesLock;		
-		StaticParticle* staticParticlesMap;
-		Graphics::OpenGLWrapper::VertexArray staticParticlesVA;
-
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer staticParticlesBuffer;
-		uintMem staticParticlesCount;
-		
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesBuffer;
+		Array<ParticlesBuffer> dynamicParticlesBuffers;
+		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesMemory;
 		uintMem dynamicParticlesCount;
 
-		void CleanDynamicParticlesBuffers();
-		void CleanStaticParticlesBuffer();
+		ParticlesBuffer staticParticlesBuffer;
+		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer staticParticlesMemory;
+		uintMem staticParticlesCount;
+
+		//This function can only be called by the OpenGL thread
+		void CheckAllRenderingFences(); 
+		
+		//This function can only be called by the OpenGL thread
+		void ClearDynamicParticlesBuffers();
+		//This function can only be called by the OpenGL thread
+		void ClearStaticParticlesBuffer();
 	};
 }

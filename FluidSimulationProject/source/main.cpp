@@ -15,33 +15,29 @@ CLIENT_API void Setup()
 	//Setup rendering and window
 	RenderingSystem renderingSystem;
 	Window& window = renderingSystem.GetWindow();
-	window.Maximize();
-	window.ShowWindow(true);
-	window.Raise();
+	window.SetHiddenFlag(false);
+	window.Raise();	
 
 	renderingSystem.SetProjection(Mat4f::PerspectiveMatrix(120 * Math::PI / 180, (float)window.GetSize().x / window.GetSize().y, 0.1, 1000));
 
-	//Setup processing pools	
+	//Setup OpenCL
 	OpenCLContext clContext{ renderingSystem.GetGraphicsContext() };	
-	cl_command_queue clQueue = clContext.GetCommandQueue(true, true);	
+	cl_command_queue clQueue = clContext.GetCommandQueue(true, true);		
 
-	ThreadPool threadPool;
-	threadPool.AllocateThreads(std::thread::hardware_concurrency());
-
-	LambdaEventHandler<Input::Events::WindowCloseEvent> windowCloseEventHandler{
+	LambdaEventHandler<Window::WindowCloseEvent> windowCloseEventHandler{
 		[&](auto event) { exitApp = true; }
 	};
-	window.closeEventDispatcher.AddHandler(windowCloseEventHandler);
-	LambdaEventHandler<Input::Events::WindowResizedEvent> windowResizedEventHandler{
+	window.windowCloseEventDispatcher.AddHandler(windowCloseEventHandler);
+	LambdaEventHandler<Window::WindowResizedEvent> windowResizedEventHandler{
 		[&](auto event) {
-			renderingSystem.SetProjection(Mat4f::PerspectiveMatrix(Math::PI / 2, (float)event.size.x / event.size.y, 0.1, 1000));
+			renderingSystem.SetProjection(Mat4f::PerspectiveMatrix(Math::PI / 2 * 1.4f, (float)event.size.x / event.size.y, 0.1, 1000));
 			}
 	};
-	window.resizedEventDispatcher.AddHandler(windowResizedEventHandler);
+	window.windowResizedEventDispatcher.AddHandler(windowResizedEventHandler);
 
 	std::function<Scene* ()> sceneCreators[]{
-		[&]() { return new SimulationVisualisationScene(clContext, clQueue, threadPool, renderingSystem); },
-		[&]() { return new ProfilingScene(clContext, clQueue, threadPool, renderingSystem); },
+		[&]() { return new SimulationVisualisationScene(clContext, clQueue, renderingSystem); },
+		[&]() { return new ProfilingScene(clContext, clQueue, renderingSystem); },
 	};
 	uintMem currentSceneIndex = 0;
 	Scene* currentScene = nullptr;
@@ -52,7 +48,7 @@ CLIENT_API void Setup()
 	{
 		Input::Update();				
 
-		if (window.GetLastKeyState(Key::Tab).pressed)
+		if (Keyboard::GetFrameKeyState(Keyboard::Key::TAB).pressed)
 		{
 			delete currentScene;
 			currentSceneIndex = (currentSceneIndex + 1) % _countof(sceneCreators);

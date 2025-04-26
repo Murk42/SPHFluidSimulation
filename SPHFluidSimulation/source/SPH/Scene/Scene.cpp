@@ -108,7 +108,7 @@ namespace SPH
 		validScene = true;
 		return true;
 	}	
-	void Scene::InitializeSystem(System& system, ParticleBufferSet& bufferSet)
+	void Scene::InitializeSystem(System& system, ParticleBufferManager& bufferManager)
 	{
 		if (!validScene)
 		{
@@ -128,7 +128,7 @@ namespace SPH
 		for (uintMem i = 0; i < staticParticles.Count(); ++i)
 			staticParticles[i].position = staticParticlesPositions[i];
 				
-		system.Initialize(systemParameters, bufferSet, std::move(dynamicParticles), std::move(staticParticles));
+		system.Initialize(systemParameters, bufferManager, std::move(dynamicParticles), std::move(staticParticles));
 	}
 	void Scene::MarkAsInvalid()
 	{

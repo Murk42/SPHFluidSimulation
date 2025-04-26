@@ -42,29 +42,27 @@ namespace SPH
 	}
 	void FilledBoxParticleSetBlueprint::AppendParticlePositions(Array<Vec3f>& positions)
 	{
-		float linearParticleDensity = Math::Pow(properties.particlesPerUnit, 1.0f / 3);
-		Vec3<uintMem> dynamicParticleGridSize{ properties.spawnVolumeSize * linearParticleDensity };
-		Vec3f dynamicParticleDistance = properties.spawnVolumeSize / Vec3f(dynamicParticleGridSize - Vec3<uintMem>(1));
+		const float linearParticleDensity = Math::Pow(properties.particlesPerUnit, 1.0f / 3);
+		const float particleDistance = 1.0f / linearParticleDensity;
+		const Vec3<uintMem> particleGridSize{ properties.spawnVolumeSize * linearParticleDensity };
 
-		if (dynamicParticleGridSize.x == 1) dynamicParticleDistance.x = 0.0f;
-		if (dynamicParticleGridSize.y == 1) dynamicParticleDistance.y = 0.0f;
-		if (dynamicParticleGridSize.z == 1) dynamicParticleDistance.z = 0.0f;
+		const Vec3f particleOffset = Vec3f(particleDistance / 2) + properties.spawnVolumeOffset;		
 
-		uintMem staticParticleCount = 0;
+		positions.ReserveAdditional(particleGridSize.x * particleGridSize.y * particleGridSize.z);
 
-		positions.ReserveAdditional(dynamicParticleGridSize.x * dynamicParticleGridSize.y * dynamicParticleGridSize.z);
+		uintMem startIndex = positions.Count();
+		for (int i = 0; i < particleGridSize.x; i++)
+			for (int j = 0; j < particleGridSize.y; j++)
+				for (int k = 0; k < particleGridSize.z; k++)
+					positions.AddBack(Vec3f(i, j, k) * particleDistance + particleOffset);
 
-		Random::SetSeed(properties.seed);		
-		for (int i = 0; i < dynamicParticleGridSize.x; i++)
-			for (int j = 0; j < dynamicParticleGridSize.y; j++)
-				for (int k = 0; k < dynamicParticleGridSize.z; k++)
-				{
-					Vec3f randomOffset = Vec3f(Random::Float(-1, 1), Random::Float(-1, 1), Random::Float(-1, 1)) * dynamicParticleDistance * properties.randomOffsetIntensity;
+		if (properties.randomOffsetIntensity != 0.0f)
+		{
+			Random::SetSeed(properties.seed);		
+			const float offsetAmplitude = particleDistance / 2.0f * properties.randomOffsetIntensity;
 
-					Vec3f position = ClampVec3f(Vec3f(i, j, k) * dynamicParticleDistance + randomOffset + properties.spawnVolumeOffset,
-						properties.spawnVolumeOffset, properties.spawnVolumeOffset + properties.spawnVolumeSize);
-
-					positions.AddBack(position);
-				}
+			for (uintMem i = startIndex; i < positions.Count(); ++i)
+				positions[i] += Vec3f(Random::Float(-1, 1), Random::Float(-1, 1), Random::Float(-1, 1)) * offsetAmplitude;
+		}
 	}
 }

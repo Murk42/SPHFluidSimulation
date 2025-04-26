@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SPH/System/System.h"
+#include "SPH/kernels/SPHFunctions.h"
 
 namespace SPH
 {	
@@ -35,27 +36,6 @@ namespace SPH
 		return false;			
 	}
 
-	void System::Initialize(const SystemParameters& initParams, ParticleBufferSet& bufferSet, Array<DynamicParticle> dynamicParticles, Array<StaticParticle> staticParticles)
-	{
-		Clear();
-
-		//Array<DynamicParticle> dynamicParticles;
-		//Array<StaticParticle> staticParticles;
-		//
-		//
-		//if (initParams.staticParticleGenerationParameters.generator)
-		//	initParams.staticParticleGenerationParameters.generator->Generate(staticParticles);
-		//if (initParams.dynamicParticleGenerationParameters.generator)
-		//	initParams.dynamicParticleGenerationParameters.generator->Generate(dynamicParticles);
-		//
-		//bufferSet.Initialize(initParams.bufferCount, dynamicParticles);
-
-
-		bufferSet.SetDynamicParticles(dynamicParticles);
-		CreateDynamicParticlesBuffers(bufferSet, initParams.particleBehaviourParameters.maxInteractionDistance);
-		CreateStaticParticlesBuffers(staticParticles, initParams.particleBehaviourParameters.maxInteractionDistance);
-		InitializeInternal(initParams);
-	}
 	SystemProfilingData::SystemProfilingData() :
 		timePerStep_s(0)
 	{
@@ -91,5 +71,52 @@ namespace SPH
 		timePerStep_s = other.timePerStep_s;
 		implementationSpecific = std::move(other.implementationSpecific);
 		return *this;
+	}
+
+	namespace Details
+	{
+		inline Vec3u GetCell(Vec3f position, float maxInteractionDistance);
+		inline uint GetHash(Vec3u cell);
+		float SmoothingKernelConstant(float h);
+		inline float SmoothingKernelD0(float r, float maxInteractionDistance);
+		inline float SmoothingKernelD1(float r, float maxInteractionDistance);
+		inline float SmoothingKernelD2(float r, float maxInteractionDistance);
+	}
+
+	Vec3u System::GetCell(Vec3f position, float maxInteractionDistance)
+	{
+		return Details::GetCell(position, maxInteractionDistance);		
+	}
+	uint System::GetHash(Vec3u cell)
+	{
+		return Details::GetHash(cell);		
+	}
+	float System::SmoothingKernelConstant(float h)
+	{		
+		return Details::SmoothingKernelConstant(h);
+	}
+	float System::SmoothingKernelD0(float r, float maxInteractionDistance)
+	{
+		return Details::SmoothingKernelD0(r, maxInteractionDistance);
+	}
+	float System::SmoothingKernelD1(float r, float maxInteractionDistance)
+	{
+		return Details::SmoothingKernelD1(r, maxInteractionDistance);
+	}
+	float System::SmoothingKernelD2(float r, float maxInteractionDistance)
+	{
+		return Details::SmoothingKernelD2(r, maxInteractionDistance);
+	}
+	Array<DynamicParticle> System::GenerateHashMapAndReorderParticles(ArrayView<DynamicParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance)
+	{
+		return GenerateHashMapAndReorderParticles<DynamicParticle>(particles, hashMap, [maxInteractionDistance = maxInteractionDistance, mod = hashMap.Count() - 1](const DynamicParticle& particle) {
+			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
+			});
+	}
+	Array<StaticParticle> System::GenerateHashMapAndReorderParticles(ArrayView<StaticParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance)
+	{
+		return GenerateHashMapAndReorderParticles<StaticParticle>(particles, hashMap, [maxInteractionDistance = maxInteractionDistance, mod = hashMap.Count() - 1](const StaticParticle& particle) {
+			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
+			});
 	}
 }

@@ -1,66 +1,10 @@
 #pragma once
-#include "SPH/ParticleBufferManager/CPUParticleBufferManager.h"
-#include "SPH/ParticleBufferManager/ResourceLock.h"
+#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
+#include "SPH/ParticleBufferManager/CPUResourceLock.h"
 
 namespace SPH
 {
-	/*
-	class OfflineCPUParticleBufferManager :
-		public CPUParticleBufferManager
-	{
-	public:
-		OfflineCPUParticleBufferManager();
-		
-		void Clear() override;
-		void Advance() override;		
-
-		void ManagerDynamicParticles(ArrayView<DynamicParticle> dynamicParticles) override;
-		void ManagerStaticParticles(ArrayView<StaticParticle> staticParticles) override;
-
-		CPUParticleReadBufferHandle& GetReadBufferHandle() override;
-		CPUParticleWriteBufferHandle& GetWriteBufferHandle() override;		
-		CPUParticleWriteBufferHandle& GetReadWriteBufferHandle() override;
-		StaticParticle* GetStaticParticles() override;
-
-		uintMem GetDynamicParticleCount() override;
-		uintMem GetStaticParticleCount() override;
-	private:
-		class Buffer :
-			public CPUParticleReadBufferHandle,
-			public CPUParticleWriteBufferHandle
-		{			
-			const OfflineCPUParticleBufferManager& bufferManager;
-			Array<DynamicParticle> dynamicParticles;
-
-			CPUSync readSync;
-			CPUSync writeSync;
-
-			std::mutex stateMutex;
-			std::condition_variable stateCV;			
-		public:
-			Buffer(const OfflineCPUParticleBufferManager& bufferManager);
-
-			void Clear();
-
-			void ManagerDynamicParticles(const DynamicParticle* dynamicParticlePtr);
-
-			CPUSync& GetReadSync() override;
-			CPUSync& GetWriteSync() override;			
-
-			const DynamicParticle* GetReadBuffer() override { return dynamicParticles.Ptr(); }
-			DynamicParticle* GetWriteBuffer() override { return dynamicParticles.Ptr(); }
-		};
-
-		Array<Buffer> buffers;
-		uintMem currentBuffer;
-
-		Array<StaticParticle> staticParticles;
-
-		uintMem dynamicParticleCount;		
-	};
-	*/	
-
-	class OfflineCPUParticleBufferManager : public CPUParticleBufferManager
+	class OfflineCPUParticleBufferManager : public ParticleBufferManager
 	{
 	public:		
 		OfflineCPUParticleBufferManager();
@@ -69,31 +13,41 @@ namespace SPH
 		void Clear() override;
 		void Advance() override;
 
-		void AllocateDynamicParticles(uintMem count) override;
-		void AllocateStaticParticles(uintMem count) override;
+		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
+		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
 
+		uintMem GetDynamicParticleBufferCount() const override;
 		uintMem GetDynamicParticleCount() override;
 		uintMem GetStaticParticleCount() override;
 
-		CPUParticleBufferLockGuard LockDynamicParticlesActiveRead(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
-		CPUParticleBufferLockGuard LockDynamicParticlesAvailableRead(const TimeInterval& timeInterval = TimeInterval::Infinity(), uintMem* index) override;
-		CPUParticleBufferLockGuard LockDynamicParticlesReadWrite(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;		
+		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;		
+		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
 
-		CPUParticleBufferLockGuard LockStaticParticlesRead(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
-		CPUParticleBufferLockGuard LockStaticParticlesReadWrite(const TimeInterval& timeInterval = TimeInterval::Infinity()) override;
-	private:				
-		struct Buffer
+		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;
+
+		void FlushAllOperations() override;
+	private:
+		struct ParticlesBuffer
 		{
-			Lock dynamicParticlesLock;
-			DynamicParticle* dynamicParticles;
-		};
+			void* ptr;
+			CPULock lock;
 
-		Array<Buffer> buffers;
-		uintMem currentBuffer;
+			ParticlesBuffer();
 
-		Lock staticParticlesLock;
-		Array<StaticParticle> staticParticles;
+			ResourceLockGuard LockRead();
+			ResourceLockGuard LockWrite();
+		}; 		
 
-		Array<DynamicParticle> dynamicParticlesBuffer;		
+		uintMem currentBuffer;		
+
+		Array<ParticlesBuffer> dynamicParticlesBuffers;
+		Array<DynamicParticle> dynamicParticlesMemory;		
+
+		ParticlesBuffer staticParticlesBuffer;		
+		Array<StaticParticle> staticParticlesMemory;
+
+		void ClearDynamicParticlesBuffers();
+		void ClearStaticParticlesBuffer();
 	};
 }

@@ -81,6 +81,18 @@
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -98,6 +110,12 @@
     <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
+    <PreBuildEvent>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -121,6 +139,12 @@
     <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
+    <PreBuildEvent>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -139,6 +163,12 @@
     <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
+    <PreBuildEvent>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -162,12 +192,19 @@
     <PostBuildEvent />
     <PostBuildEvent />
     <PostBuildEvent />
+    <PreBuildEvent>
+      <Command>"$(BlazeDir)scripts\CopyDependencies.bat" "$(BlazeDir)" "$(OutputPath)" "$(Configuration)" "$(PlatformTarget)"</Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\OpenCLContext.cpp" />
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingScene.cpp" />
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp" />
+    <ClCompile Include="source\Scenes\SimulationVisualisationScene\CameraControls.cpp" />
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.cpp" />
     <ClCompile Include="source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -186,6 +223,7 @@
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingScene.h" />
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h" />
     <ClInclude Include="source\Scenes\Scene.h" />
+    <ClInclude Include="source\Scenes\SimulationVisualisationScene\CameraControls.h" />
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimulationVisualisationScene.h" />
     <ClInclude Include="source\RenderingSystem.h" />
     <ClInclude Include="source\Scenes\SimulationVisualisationScene\SimVisUI.h" />
@@ -206,6 +244,7 @@
     <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="OpenCLInfo.txt" />
     <Text Include="outputs\log.txt" />
     <Text Include="outputs\waveRandomHash.txt" />
     <Text Include="outputs\waveZ-curveHash.txt" />

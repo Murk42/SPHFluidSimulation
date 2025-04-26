@@ -1,10 +1,11 @@
 #include "pch.h"
 #include "SimVisUI.h"
+#include "SimulationVisualisationScene.h"
 
-SimVisUI::SimVisUI(WindowBase* window)
-	: Screen(window)
-{
-	Graphics::FontAtlasesData::AddToFont(font, { 12, 20, 28}, CharacterSet::ASCIICharacterSet());
+SimVisUI::SimVisUI(SimulationVisualisationScene& scene)
+	: Screen(&scene.window), scene(scene)
+{	
+	Graphics::FontAtlasesData::AddToFont(font, ArrayView<uint>{ 12, 20, 28 }, CharacterSet::ASCIICharacterSet());
 
 	infoText.SetParent(this);
 	infoText.SetTransform({
@@ -20,6 +21,7 @@ SimVisUI::SimVisUI(WindowBase* window)
 		.horizontallyUnderfittedOption = UI::TextHorizontallyUnderfittedOptions::ResizeToFit,
 		.verticallyUnderfittedOption = UI::TextVerticallyUnderfittedOptions::ResizeToFit,		
 		});
+	infoText.SetTextColor(0xffffffff);
 	ReconstructInfoText();		
 
 	titleText.SetParent(this);
@@ -32,7 +34,22 @@ SimVisUI::SimVisUI(WindowBase* window)
 	titleText.SetFontHeight(28);
 	titleText.SetText("Simulation visualisation");
 
+	hashCounterText.SetParent(this);
+	hashCounterText.SetFont(font);
+	hashCounterText.SetFontHeight(12);
+	hashCounterText.SetText("0");
+	hashCounterText.SetTextColor(0x00ff00ff);
+
 	cameraMouseFocusNode.SetParent(this);
+
+	scene.cameraControls.SetAsTargetNode(&cameraMouseFocusNode);
+
+	Input::GetInputPostUpdateEventDispatcher().AddHandler<&SimVisUI::Event_PostInputUpdate>(*this);
+}
+
+SimVisUI::~SimVisUI()
+{
+	Input::GetInputPostUpdateEventDispatcher().RemoveHandler<&SimVisUI::Event_PostInputUpdate>(*this);
 }
 
 void SimVisUI::SetFPS(uintMem FPS)
@@ -82,47 +99,17 @@ void SimVisUI::ReconstructInfoText()
 	infoText.SetText(text);
 }
 
-CameraMouseFocusNode::~CameraMouseFocusNode()
+void SimVisUI::Event_PostInputUpdate(const Input::InputPostUpdateEvent&)
 {
-	if (((SimVisUI*)GetScreen())->cameraHasMouseFocus)
-	{
-		GetScreen()->GetWindow()->SetWindowLockMouseFlag(false);
-		Input::SetCursorType(Input::CursorType::Arrow);
-	}
-}
-
-void CameraMouseFocusNode::OnEvent(UI::UISelectEventHandler::SelectedEvent event)
-{	
-	((SimVisUI*)GetScreen())->cameraHasMouseFocus = true;	
-	GetScreen()->GetWindow()->SetWindowLockMouseFlag(true);	
-	Input::SetCursorType(Input::CursorType::Crosshair);
-}		
-
-void CameraMouseFocusNode::OnEvent(UI::UISelectEventHandler::DeselectedEvent event)
-{	
-	((SimVisUI*)GetScreen())->cameraHasMouseFocus = false;
-	GetScreen()->GetWindow()->SetWindowLockMouseFlag(false);	
-	Input::SetCursorType(Input::CursorType::Arrow);
-}	
-
-void CameraMouseFocusNode::OnEvent(UI::UIKeyboardEventHandler::KeyPressedEvent event)
-{
-	if (event.key == Key::Escape)	
-		event.inputManager->SelectNode(nullptr);	
-}
-
-void CameraMouseFocusNode::OnEvent(UI::UIMouseEventHandler::MousePressedEvent event)
-{		
-	event.inputManager->SelectNode(this);
-}
-void CameraMouseFocusNode::OnEvent(UI::UIMouseEventHandler::MouseEnterEvent event)
-{
-	if (event.inputManager->GetSelectedNode() == this)
-		Input::SetCursorType(Input::CursorType::Crosshair);
-}
-bool CameraMouseFocusNode::HitTest(Vec2f)
-{
-	return true;
+	auto shiftState = Keyboard::GetFrameKeyState(Keyboard::Key::LSHIFT);
+	auto upState = Keyboard::GetFrameKeyState(Keyboard::Key::UP);
+	auto downState = Keyboard::GetFrameKeyState(Keyboard::Key::DOWN);
+	if (upState.down && !shiftState.down || upState.pressed)
+		++hashCounter;
+	if (downState.down && !shiftState.down || downState.pressed)
+		--hashCounter;
+	hashCounterText.SetText(StringParsing::Convert(hashCounter));
+	//scene.SPHSystemRenderer.SetUniform<uint>(4, hashCounter);
 }
 
 EditableText::EditableText() :

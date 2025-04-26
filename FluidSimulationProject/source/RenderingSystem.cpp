@@ -3,13 +3,13 @@
 
 Graphics::OpenGL::GraphicsContextProperties_OpenGL graphicsContextProperties{	
 	.majorVersion = 4,
-	.minorVersion = 5,
+	.minorVersion = 5,	
 };
-Graphics::OpenGL::WindowSDLCreateOptions_OpenGL windowCreateOptions{	
+WindowCreateOptions windowCreateOptions{		
+	.hidden = true,
 	.title = "SPH fluid simulation",
 	.size = Vec2u(1920, 1080) / 10 * 7,
-	.openMode = WindowSDLOpenMode::Normal,	
-	.styleFlags = WindowSDLStyleFlags::Resizable,
+	.presentMode = WindowPresentMode::Maximized,	
 };
 
 RenderingSystem::RenderingSystem() :
@@ -17,19 +17,30 @@ RenderingSystem::RenderingSystem() :
 	renderWindow(graphicsContext, windowCreateOptions),
 	sphSystemRenderer(nullptr),
 	texturedRectRenderer(graphicsContext),
+	coloredCharacterRenderer(graphicsContext),
 	line2DRenderer(graphicsContext),
 	panelRenderer(graphicsContext),
-	UIRenderPipeline(texturedRectRenderer, panelRenderer),
+	UIRenderPipeline(texturedRectRenderer, coloredCharacterRenderer, panelRenderer),
 	sphSystemRenderCache(nullptr)
 {
+	graphicsContext.SetActiveRenderWindow(renderWindow);
 	graphicsContext.SetClearColor(clearColor);	
+	graphicsContext.SetRenderArea(Vec2i(), renderWindow.GetSize());		
+
+	//if (!graphicsContext.SetSwapInterval(Graphics::OpenGL::WindowSwapInterval::AdaptiveVSync))
+	//	Debug::Logger::LogInfo("Client", "Asked for adaptive VSync but its not supported");
+	graphicsContext.SetSwapInterval(Graphics::OpenGL::WindowSwapInterval::None);
 
 	windowResizedEvent.SetFunction([&](auto event) {
 		graphicsContext.Flush();
 		graphicsContext.SetRenderArea(Vec2i(), event.size);
 		});
-	renderWindow.GetWindowSDL().resizedEventDispatcher.AddHandler(windowResizedEvent);
-	graphicsContext.SetRenderArea(Vec2i(), renderWindow.GetSize());		
+	renderWindow.GetWindow().windowResizedEventDispatcher.AddHandler(windowResizedEvent);
+}
+
+RenderingSystem::~RenderingSystem()
+{
+	renderWindow.GetWindow().windowResizedEventDispatcher.RemoveHandler(windowResizedEvent);
 }
 
 void RenderingSystem::SetProjection(const Mat4f& matrix)
@@ -70,7 +81,7 @@ void RenderingSystem::Render()
 
 	UIRenderPipeline.Render(renderWindow.GetSize());
 
-	renderWindow.GetWindowSDL().SwapBuffers();
+	renderWindow.GetWindow().SwapBuffers();
 }
 
 void RenderingSystem::SetCustomClearColor(ColorRGBAf color)

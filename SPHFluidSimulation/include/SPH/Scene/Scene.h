@@ -1,6 +1,5 @@
 #pragma once
 #include "SPH/ParticleSetBlueprint/ParticleSetBlueprint.h"
-#include "SPH/kernels/CL_CPP_SPHDeclarations.h"
 #include "SPH/System/System.h"
 
 namespace SPH
@@ -16,7 +15,7 @@ namespace SPH
 		bool LoadScene(const Path& path);
 		bool LoadScene(ReadSubStream& stream);
 		
-		void InitializeSystem(System& system, ParticleBufferSet& bufferSet);
+		void InitializeSystem(System& system, ParticleBufferManager& bufferManager);
 	private:
 		bool validScene;
 		SystemParameters systemParameters;

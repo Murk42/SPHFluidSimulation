@@ -1,13 +1,10 @@
 #pragma once
 
-extern const unsigned int SPHKernelSourceSize;
-extern const unsigned char SPHKernelSource[];
-
 extern const unsigned int partialSumKernelSourceSize;
-extern const unsigned char partialSumKernelSource[];
+extern const char partialSumKernelSourceBytes[];
 
-extern const unsigned int CL_CPP_SPHDeclarationsSourceSize;
-extern const unsigned char CL_CPP_SPHDeclarationsSource[];
+extern const unsigned int compatibiliyHeaderOpenCLSize;
+extern const char compatibilityHeaderOpenCLBytes[];
 
-extern const unsigned int CL_CPP_SPHFuntionsSourceSize;
-extern const unsigned char CL_CPP_SPHFuntionsSource[];
+extern const unsigned int SPHKernelSourceSize;
+extern const char SPHKernelSourceBytes[];

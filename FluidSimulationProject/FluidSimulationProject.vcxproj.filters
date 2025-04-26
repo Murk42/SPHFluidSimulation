@@ -39,6 +39,9 @@
     <ClCompile Include="source\OpenCLContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\Scenes\SimulationVisualisationScene\CameraControls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\pch.h">
@@ -71,6 +74,9 @@
     <ClInclude Include="source\JSONParsing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Scenes\SimulationVisualisationScene\CameraControls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props">
@@ -93,5 +99,6 @@
     <Text Include="outputs\log.txt" />
     <Text Include="outputs\waveZ-curveHash.txt" />
     <Text Include="outputs\waveRandomHash.txt" />
+    <Text Include="OpenCLInfo.txt" />
   </ItemGroup>
 </Project>

@@ -74,14 +74,38 @@
     <Import Project="BlazeEngineProjectPropertySheet.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <CustomBuildAfterTargets>ResourceCompile</CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <CustomBuildAfterTargets>ResourceCompile</CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <CustomBuildAfterTargets>ResourceCompile</CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <CustomBuildAfterTargets>ResourceCompile</CustomBuildAfterTargets>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
     <VcpkgAutoLink>false</VcpkgAutoLink>
   </PropertyGroup>
-  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
-  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
-  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -90,17 +114,35 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <Lib>
       <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <CustomBuildStep>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp" dst="$(ProjectDir)source\SPH\Kernels\Kernels.cpp"
+call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp" dst="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp"</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Converting kernels into .cpp files</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)source\SPH\Kernels\Kernels.cpp; $(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp;$(ProjectDir)source\SPH\Kernels\partialSum.cl;$(ProjectDir)source\SPH\Kernels\CompatibilityHeaderOpenCL.cl;$(ProjectDir)source\SPH\Kernels\SPHFunctions.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\particle.frag;$(ProjectDir)source\SPH\Graphics\Shaders\particle.vert;%(Inputs)</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -112,6 +154,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -120,11 +163,28 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <Lib>
       <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <CustomBuildStep>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp" dst="$(ProjectDir)source\SPH\Kernels\Kernels.cpp"
+call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp" dst="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp"</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Converting kernels into .cpp files</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)source\SPH\Kernels\Kernels.cpp; $(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp;$(ProjectDir)source\SPH\Kernels\partialSum.cl;$(ProjectDir)source\SPH\Kernels\CompatibilityHeaderOpenCL.cl;$(ProjectDir)source\SPH\Kernels\SPHFunctions.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\particle.frag;$(ProjectDir)source\SPH\Graphics\Shaders\particle.vert;%(Inputs)</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -134,17 +194,35 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <Lib>
       <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <CustomBuildStep>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp" dst="$(ProjectDir)source\SPH\Kernels\Kernels.cpp"
+call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp" dst="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp"</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Converting kernels into .cpp files</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)source\SPH\Kernels\Kernels.cpp; $(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp;$(ProjectDir)source\SPH\Kernels\partialSum.cl;$(ProjectDir)source\SPH\Kernels\CompatibilityHeaderOpenCL.cl;$(ProjectDir)source\SPH\Kernels\SPHFunctions.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\particle.frag;$(ProjectDir)source\SPH\Graphics\Shaders\particle.vert;%(Inputs)</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -156,6 +234,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)source/;$(ProjectDir)include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -164,45 +243,76 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" "resourceToCPP" "$(ProjectDir)source\SPH\kernels\kernels_template.cpp" "$(ProjectDir)source\SPH\kernels\kernels.cpp"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <Lib>
       <AdditionalDependencies>OpenCL.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <CustomBuildStep>
+      <Command>call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp" dst="$(ProjectDir)source\SPH\Kernels\Kernels.cpp"
+call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp" dst="$(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp"</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Converting kernels into .cpp files</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)source\SPH\Kernels\Kernels.cpp; $(ProjectDir)source\SPH\Graphics\Shaders\Shaders.cpp</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(ProjectDir)source\SPH\Kernels\Kernels_template.cpp;$(ProjectDir)source\SPH\Kernels\partialSum.cl;$(ProjectDir)source\SPH\Kernels\CompatibilityHeaderOpenCL.cl;$(ProjectDir)source\SPH\Kernels\SPHFunctions.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\Shaders_template.cpp;$(ProjectDir)source\SPH\Graphics\Shaders\particle.frag;$(ProjectDir)source\SPH\Graphics\Shaders\particle.vert;%(Inputs)</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\OpenCLDebug.cpp" />
-    <ClCompile Include="source\SPH\kernels\kernels.cpp" />
-    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\CPUParticleBufferManager.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\GPUParticleBufferManager.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\OfflineCPUParticleBufferManager.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\OpenCLResourceLock.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\ParticleBufferManagerRenderData.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.cpp" />
-    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.cpp" />
     <ClCompile Include="source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\ResourceLock.cpp" />
+    <ClCompile Include="source\SPH\Graphics\Shaders\Shaders.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\SPH\Graphics\SystemRenderer.cpp" />
+    <ClCompile Include="source\SPH\Kernels\Kernels.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\SPH\Kernels\SPHFunctions.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferManager\CPUResourceLock.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\OfflineCPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\OpenCLResourceLock.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.cpp" />
+    <ClCompile Include="source\SPH\ParticleBufferManager\ResourceLockGuard.cpp" />
     <ClCompile Include="source\SPH\ParticleSetBlueprint\BoxShellParticleSetBlueprint.cpp" />
     <ClCompile Include="source\SPH\ParticleSetBlueprint\FilledBoxParticleSetBlueprint.cpp" />
     <ClCompile Include="source\SPH\ParticleSetBlueprint\ParticleSetBlueprint.cpp" />
-    <ClCompile Include="source\SPH\SPHFunctions.cpp" />
     <ClCompile Include="source\SPH\Scene\Scene.cpp" />
     <ClCompile Include="source\SPH\System\System.cpp" />
     <ClCompile Include="source\SPH\System\SystemCPU.cpp" />
     <ClCompile Include="source\SPH\System\SystemGPU.cpp" />
-    <ClCompile Include="source\ThreadPool.cpp" />
+    <ClCompile Include="source\SPH\ThreadParallelTaskManager.cpp" />
+    <ClCompile Include="source\SPH\ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\SPH\Graphics\SystemRenderer.h" />
-    <ClInclude Include="include\SPH\ParticleBufferManager\CPUParticleBufferManager.h" />
-    <ClInclude Include="include\SPH\ParticleBufferManager\GPUParticleBufferManager.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\CPUResourceLock.h" />
     <ClInclude Include="include\SPH\ParticleBufferManager\OfflineCPUParticleBufferManager.h" />
     <ClInclude Include="include\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.h" />
     <ClInclude Include="include\SPH\ParticleBufferManager\OpenCLResourceLock.h" />
@@ -210,30 +320,32 @@
     <ClInclude Include="include\SPH\ParticleBufferManager\ParticleBufferManagerRenderData.h" />
     <ClInclude Include="include\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.h" />
     <ClInclude Include="include\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.h" />
-    <ClInclude Include="include\SPH\ParticleBufferManager\ResourceLock.h" />
+    <ClInclude Include="include\SPH\ParticleBufferManager\ResourceLockGuard.h" />
     <ClInclude Include="include\SPH\ParticleSetBlueprint\BoxShellParticleSetBlueprint.h" />
     <ClInclude Include="include\SPH\ParticleSetBlueprint\FilledBoxParticleSetBlueprint.h" />
     <ClInclude Include="include\SPH\ParticleSetBlueprint\ParticleSetBlueprint.h" />
-    <ClInclude Include="include\SPH\SPHFunctions.h" />
+    <ClInclude Include="include\SPH\System\Particles.h" />
+    <ClInclude Include="source\SPH\Graphics\Shaders\Shaders.h" />
+    <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderC++.h" />
+    <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderOpenCL.cl" />
+    <ClInclude Include="source\SPH\Kernels\SPHFunctions.h" />
     <ClInclude Include="include\SPH\Scene\Scene.h" />
     <ClInclude Include="include\SPH\System\System.h" />
     <ClInclude Include="include\SPH\System\SystemCPU.h" />
     <ClInclude Include="include\SPH\System\SystemGPU.h" />
+    <ClInclude Include="include\SPH\ThreadParallelTaskManager.h" />
     <ClInclude Include="source\json.hpp" />
     <ClInclude Include="source\JSONParsing.h" />
-    <ClInclude Include="include\SPH\kernels\CL_CPP_SPHDeclarations.h" />
-    <ClInclude Include="source\SPH\kernels\CL_CPP_SPHFunctions.h" />
     <ClInclude Include="source\OpenCLDebug.h" />
-    <ClInclude Include="source\SPH\kernels\kernels.h" />
     <ClInclude Include="source\pch.h" />
-    <ClInclude Include="include\ThreadPool.h" />
+    <ClInclude Include="source\SPH\Kernels\Kernels.h" />
+    <ClInclude Include="include\SPH\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props" />
-    <None Include="source\SPH\kernels\partialSum.cl" />
-    <None Include="source\SPH\kernels\SPH.cl" />
-    <None Include="include\SPH\shaders\particle.frag" />
-    <None Include="include\SPH\shaders\particle.vert" />
+    <None Include="source\SPH\Graphics\Shaders\particle.frag" />
+    <None Include="source\SPH\Graphics\Shaders\particle.vert" />
+    <None Include="source\SPH\Kernels\partialSum.cl" />
     <None Include="vcpkg.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

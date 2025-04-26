@@ -24,13 +24,7 @@
     <ClCompile Include="source\SPH\ParticleBufferManager\OfflineGPUParticleBufferManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\ParticleBufferManagerRenderData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\SPH\System\System.cpp">
@@ -42,16 +36,7 @@
     <ClCompile Include="source\SPH\System\SystemGPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\SPHFunctions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\ThreadPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\SPH\kernels\kernels.cpp">
+    <ClCompile Include="source\SPH\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\OpenCLDebug.cpp">
@@ -69,45 +54,45 @@
     <ClCompile Include="source\SPH\ParticleSetBlueprint\BoxShellParticleSetBlueprint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\ResourceLock.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\SPH\ParticleBufferManager\OpenCLResourceLock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\CPUParticleBufferManager.cpp">
+    <ClCompile Include="source\SPH\ParticleBufferManager\ResourceLockGuard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\SPH\ParticleBufferManager\GPUParticleBufferManager.cpp">
+    <ClCompile Include="source\SPH\ThreadParallelTaskManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferManager\RenderableGPUParticleBufferManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\ParticleBufferManager\CPUResourceLock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\Kernels\SPHFunctions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\Graphics\Shaders\Shaders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SPH\Kernels\Kernels.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\SPH\kernels\CL_CPP_SPHDeclarations.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\SPH\kernels\CL_CPP_SPHFunctions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\JSONParsing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ThreadPool.h">
+    <ClInclude Include="include\SPH\ThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\Graphics\SystemRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\CPUParticleBufferManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\GPUParticleBufferManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\ParticleBufferManager\OfflineCPUParticleBufferManager.h">
@@ -146,10 +131,10 @@
     <ClInclude Include="include\SPH\System\SystemGPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\SPHFunctions.h">
+    <ClInclude Include="source\SPH\Kernels\SPHFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\SPH\kernels\kernels.h">
+    <ClInclude Include="source\SPH\Kernels\Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\OpenCLDebug.h">
@@ -158,19 +143,39 @@
     <ClInclude Include="include\SPH\Scene\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\ResourceLock.h">
+    <ClInclude Include="include\SPH\ParticleBufferManager\OpenCLResourceLock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\ParticleBufferManager\OpenCLResourceLock.h">
+    <ClInclude Include="include\SPH\ParticleBufferManager\ResourceLockGuard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SPH\ThreadParallelTaskManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SPH\ParticleBufferManager\CPUResourceLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderOpenCL.cl">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderC++.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SPH\System\Particles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SPH\Graphics\Shaders\Shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="source\SPH\kernels\partialSum.cl" />
-    <None Include="source\SPH\kernels\SPH.cl" />
-    <None Include="include\SPH\shaders\particle.frag" />
-    <None Include="include\SPH\shaders\particle.vert" />
+    <None Include="source\SPH\Kernels\partialSum.cl" />
     <None Include="vcpkg.json" />
     <None Include="BlazeEngineProjectPropertySheet.props" />
+    <None Include="source\SPH\Graphics\Shaders\particle.frag" />
+    <None Include="source\SPH\Graphics\Shaders\particle.vert" />
   </ItemGroup>
 </Project>

@@ -189,7 +189,7 @@ bool OpenCLContext::CheckForExtensions(cl_device_id device, const Set<String>& r
 
 bool OpenCLContext::SearchPlatformAndDevice()
 {
-    Set<String> extensions = SPH::SystemGPU::GetRequiredOpenCLExtensions();
+    Set<String> extensions = { "cl_khr_global_int32_base_atomics" };
 
     if (SearchPlatformAndDeviceWithCLGLInterop(extensions))
     {
@@ -327,7 +327,11 @@ bool OpenCLContext::CreateContext(Graphics::OpenGL::GraphicsContext_OpenGL& grap
       0
     };
 
-    context = clCreateContext(properties, 1, &device, nullptr, nullptr, &ret);    
+    auto errorCallback = [](const char* errInfo, const void* privateInfo, size_t cv, void* userData) {
+        Debug::Logger::LogFatal("OpenCL", "OpenCL error callback:\n " + StringView(errInfo, strlen(errInfo)));
+        };
+
+    context = clCreateContext(properties, 1, &device, errorCallback, nullptr, &ret);
     CL_CHECK(false);
 
     return true;

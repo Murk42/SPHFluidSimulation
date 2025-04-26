@@ -4,33 +4,29 @@ namespace SPH
 {
 	class OpenCLLock
 	{
-	public:
-		using TicketID = uint8;
+	public:		
 		OpenCLLock(cl_command_queue commandQueue);
 		~OpenCLLock();
+		
+		bool HasWriteFinished();	
 
-		TicketID TryLockRead(cl_event* signalEvent);
-		TicketID TryLockIfActiveRead(cl_event* signalEvent);
-		TicketID TryLockReadWrite(cl_event* signalEvent);
-		void Unlock(TicketID ticketID, ArrayView<cl_event> waitEvents);
-	private:
-		cl_command_queue commandQueue;
-		Array<cl_event> readSignalEvents;
-		cl_event writeSignalEvent;		
+		void WaitForWriteToFinish();
+		void WaitForReadToFinish();
 
-		//False means a write waiting place
-		uint64 queue;
-		uint8 queueSize;
-				
-		TicketID ticketIDCounter;
+		void LockRead(cl_event* signalEvent);		
+		void LockWrite(cl_event* signalEvent);		
 
-		std::condition_variable cv;
-		std::mutex mutex;
+		void UnlockRead(ArrayView<cl_event> waitEvents);
+		void UnlockWrite(ArrayView<cl_event> waitEvents);
 
-		void IncreaseCounter();
-		bool PushToQueue(bool value);
-		bool PopFromQueue();
-		bool PeekLastInQueue();
-		bool PeekFirstInQueue();
+		inline cl_command_queue GetCommandQueue() const { return commandQueue; }
+	private:		
+		Array<cl_event> readLockFinishedSignalEvents;		
+		Array<cl_event> writeLockFinishedSignalEvents;
+		
+		cl_command_queue commandQueue;		
+
+		//0 - unlocked, 1 - read locked, 2 - write locked
+		uint8 lockState;
 	};
 }

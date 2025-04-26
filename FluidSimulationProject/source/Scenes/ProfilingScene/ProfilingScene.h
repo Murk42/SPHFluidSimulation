@@ -2,23 +2,22 @@
 #include "Scenes/Scene.h"
 #include "OpenCLContext.h"
 #include "RenderingSystem.h"
-
-#include "ThreadPool.h"
-
 #include "ProfilingUI.h"
 
-#include "SPH/ParticleBufferSet/OfflineCPUParticleBufferSet.h"
-#include "SPH/ParticleBufferSet/OfflineGPUParticleBufferSet.h"
+#include "SPH/ParticleBufferManager/OfflineCPUParticleBufferManager.h"
+#include "SPH/ParticleBufferManager/OfflineGPUParticleBufferManager.h"
 #include "SPH/System/SystemCPU.h"
 #include "SPH/System/SystemGPU.h"
 
 class ProfilingScene : public Scene
 {
 public:
-	ProfilingScene(OpenCLContext& CLContext, cl_command_queue clQueue, ThreadPool& threadPool, RenderingSystem& renderingSystem);
+	ProfilingScene(OpenCLContext& CLContext, cl_command_queue clQueue, RenderingSystem& renderingSystem);
 	~ProfilingScene();
 
 	void Update() override;
+
+	void StartProfiling();
 private:
 	struct Profile 
 	{
@@ -33,28 +32,24 @@ private:
 	struct SPHSystemData
 	{
 		SPH::System& system;
-		SPH::ParticleBufferSet& particleBufferSet;		
+		SPH::ParticleBufferManager& particleBufferSet;		
 
-		Array<SPH::SystemProfilingData> profilingData;
+		//Array<SPH::SystemProfilingData> profilingData;
 	};
 
 	OpenCLContext& clContext;
 	RenderingSystem& renderingSystem;
-	Window& window;
+	Window& window;	
 
-	ThreadPool& threadPool;
-
-	SPH::OfflineGPUParticleBufferSet GPUParticleBufferSet;
+	SPH::OfflineGPUParticleBufferManager GPUParticleBufferManager;
 	SPH::SystemGPU SPHSystemGPU;
-	SPH::OfflineCPUParticleBufferSet CPUParticleBufferSet;
+	SPH::OfflineCPUParticleBufferManager CPUParticleBufferManager;
 	SPH::SystemCPU SPHSystemCPU;
 
 	Array<SPHSystemData> SPHSystems;	
 
 	UI::InputManager UIInputManager;
-	ProfilingUI uiScreen;	
-
-	LambdaEventHandler<TextButton::PressedEvent> startProfilingButtonPressedEventHandler;
+	ProfilingUI uiScreen;		
 
 	Array<Profile> profiles;
 
@@ -65,9 +60,6 @@ private:
 
 	void LoadProfiles();
 
-	void SetupEvents();
-
-	void StartProfiling();
 	void UpdateProfilingState();
 	void StopProfiling();	
 

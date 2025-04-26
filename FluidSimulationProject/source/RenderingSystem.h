@@ -5,6 +5,7 @@ class RenderingSystem
 {
 public:
 	RenderingSystem();
+	~RenderingSystem();
 	
 	void SetProjection(const Mat4f&);
 	void SetViewMatrix(const Mat4f&);	
@@ -18,7 +19,7 @@ public:
 	void SetCustomClearColor(ColorRGBAf color);
 	void DisableCustomClearColor();
 
-	inline Window& GetWindow() { return renderWindow.GetWindowSDL(); }
+	inline Window& GetWindow() { return renderWindow.GetWindow(); }
 	inline Graphics::OpenGL::GraphicsContext_OpenGL& GetGraphicsContext() { return graphicsContext; }
 	inline const Mat4f& GetViewMatrix() const { return viewMatrix; }
 	inline const Mat4f& GetProjectionMatrix() const { return projectionMatrix; }
@@ -28,13 +29,14 @@ private:
 	Graphics::OpenGL::GraphicsContext_OpenGL graphicsContext;
 	Graphics::OpenGL::RenderWindow_OpenGL renderWindow;
 	Graphics::OpenGL::TexturedRectRenderer_OpenGL texturedRectRenderer;
+	Graphics::OpenGL::ColoredCharacterRenderer_OpenGL coloredCharacterRenderer;
 	Graphics::OpenGL::Line2DRenderer_OpenGL line2DRenderer;
 
 	SPH::SystemRenderer* sphSystemRenderer;
 	Graphics::OpenGL::PanelRenderer_OpenGL panelRenderer;
 	Graphics::OpenGL::UIRenderPipeline_OpenGL UIRenderPipeline;
 
-	LambdaEventHandler<Input::Events::WindowResizedEvent> windowResizedEvent;	
+	LambdaEventHandler<Window::WindowResizedEvent> windowResizedEvent;
 
 	Mat4f projectionMatrix;
 	Mat4f viewMatrix;	

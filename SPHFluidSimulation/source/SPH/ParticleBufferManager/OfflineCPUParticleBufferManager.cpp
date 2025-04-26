@@ -4,106 +4,10 @@
 #include "GL/glew.h"
 
 namespace SPH
-{/*
+{		
 	OfflineCPUParticleBufferManager::OfflineCPUParticleBufferManager()
-		: dynamicParticleCount(0)
+		: currentBuffer(0), dynamicParticlesBuffers(3)
 	{
-		buffers = Array<Buffer>(3, *this);
-		currentBuffer = buffers.Count() - 1;
-	}	
-	void OfflineCPUParticleBufferManager::Clear()
-	{
-		for (auto& buffer : buffers)
-			buffer.Clear();		
-		
-		currentBuffer = 0;
-		dynamicParticleCount = 0;		
-		
-		staticParticles.Clear();
-	}
-	void OfflineCPUParticleBufferManager::Advance()
-	{
-		currentBuffer = (currentBuffer + 1) % buffers.Count();
-	}
-	void OfflineCPUParticleBufferManager::ManagerDynamicParticles(ArrayView<DynamicParticle> dynamicParticles)
-	{
-		dynamicParticleCount = dynamicParticles.Count();
-
-		buffers[currentBuffer].ManagerDynamicParticles(dynamicParticles.Ptr());
-		for (uintMem i = 0; i < buffers.Count(); ++i)
-			if (i != currentBuffer)
-				buffers[i].ManagerDynamicParticles(nullptr);
-	}
-	void OfflineCPUParticleBufferManager::ManagerStaticParticles(ArrayView<StaticParticle> staticParticles)
-	{
-		this->staticParticles = staticParticles;
-	}
-	CPUParticleReadBufferHandle& OfflineCPUParticleBufferManager::GetReadBufferHandle()
-	{
-		return buffers[currentBuffer];
-	}
-	CPUParticleWriteBufferHandle& OfflineCPUParticleBufferManager::GetWriteBufferHandle()
-	{
-		return buffers[(currentBuffer + 1) % buffers.Count()];
-	}
-	CPUParticleWriteBufferHandle& OfflineCPUParticleBufferManager::GetReadWriteBufferHandle()
-	{
-		return buffers[currentBuffer];
-	}
-	StaticParticle* OfflineCPUParticleBufferManager::GetStaticParticles()
-	{
-		return staticParticles.Ptr();
-	}
-
-	uintMem OfflineCPUParticleBufferManager::GetDynamicParticleCount()
-	{
-		return dynamicParticleCount;
-	}
-	uintMem OfflineCPUParticleBufferManager::GetStaticParticleCount()
-	{
-		return staticParticles.Count();
-	}
-	OfflineCPUParticleBufferManager::Buffer::Buffer(const OfflineCPUParticleBufferManager& bufferManager) 
-		: bufferManager(bufferManager)
-	{
-	}
-	void OfflineCPUParticleBufferManager::Buffer::Clear()
-	{
-		dynamicParticles.Clear();
-	}
-	void OfflineCPUParticleBufferManager::Buffer::ManagerDynamicParticles(const DynamicParticle* particles)
-	{
-		{
-			std::unique_lock lk{ stateMutex };
-
-			writeSync.WaitInactive();
-			readSync.WaitInactive();			
-		}
-		
-		if (particles != nullptr)
-			dynamicParticles = Array<DynamicParticle>(particles, bufferManager.dynamicParticleCount);
-		else
-			dynamicParticles = Array<DynamicParticle>(bufferManager.dynamicParticleCount);
-	}
-	CPUSync& OfflineCPUParticleBufferManager::Buffer::GetReadSync()
-	{
-		std::unique_lock lk{ stateMutex };
-		writeSync.WaitInactive();
-		readSync.MarkStart();
-		return readSync;
-	}
-	CPUSync& OfflineCPUParticleBufferManager::Buffer::GetWriteSync()
-	{
-		std::unique_lock lk{ stateMutex };
-		writeSync.WaitInactive();		
-		writeSync.MarkStart();
-		return writeSync;
-	}	*/
-	
-	OfflineCPUParticleBufferManager::OfflineCPUParticleBufferManager()
-		: currentBuffer(0)
-	{		
-		buffers = Array<Buffer>(3);
 	}
 	OfflineCPUParticleBufferManager::~OfflineCPUParticleBufferManager()
 	{		
@@ -111,93 +15,113 @@ namespace SPH
 	}
 	void OfflineCPUParticleBufferManager::Clear()
 	{		
-		for (auto& buffer : buffers)
-			buffer.dynamicParticles = nullptr;
-
-		dynamicParticlesBuffer.Clear();
-		staticParticles.Clear();
-
 		currentBuffer = 0;
+
+		ClearDynamicParticlesBuffers();
+		ClearStaticParticlesBuffer();						
 	}
 	void OfflineCPUParticleBufferManager::Advance()
 	{
-		currentBuffer = (currentBuffer + 1) % buffers.Count();
+		currentBuffer = (currentBuffer + 1) % dynamicParticlesBuffers.Count();
 	}
-	void OfflineCPUParticleBufferManager::AllocateDynamicParticles(uintMem count)
+	void OfflineCPUParticleBufferManager::AllocateDynamicParticles(uintMem count, DynamicParticle* particles)
 	{
-		dynamicParticlesBuffer.Resize(count * buffers.Count());
+		ClearDynamicParticlesBuffers();
+		
+		if (count == 0)
+			return;
 
-		for (uintMem i = 0; i < buffers.Count(); ++i)
-			buffers[i].dynamicParticles = dynamicParticlesBuffer.Ptr() + count * i;
+		currentBuffer = 0;
+
+		dynamicParticlesMemory = Array<DynamicParticle>((DynamicParticle*)nullptr, count * dynamicParticlesBuffers.Count());
+		memcpy(dynamicParticlesMemory.Ptr(), particles, count * sizeof(DynamicParticle));
+
+		for (uintMem i = 0; i < dynamicParticlesBuffers.Count(); ++i)		
+			dynamicParticlesBuffers[i].ptr = dynamicParticlesMemory.Ptr() + count * i;		
 	}
-	void OfflineCPUParticleBufferManager::AllocateStaticParticles(uintMem count)
+	void OfflineCPUParticleBufferManager::AllocateStaticParticles(uintMem count, StaticParticle* particles)
 	{
-		staticParticles.Resize(count);
+		ClearStaticParticlesBuffer();
+		
+		staticParticlesMemory = Array<StaticParticle>(particles, count);		
+		staticParticlesBuffer.ptr = staticParticlesMemory.Ptr();
+	}
+	uintMem OfflineCPUParticleBufferManager::GetDynamicParticleBufferCount() const
+	{
+		return dynamicParticlesBuffers.Count();
 	}
 	uintMem OfflineCPUParticleBufferManager::GetDynamicParticleCount()
 	{
-		return dynamicParticlesBuffer.Count() / buffers.Count();
+		return dynamicParticlesMemory.Count() / dynamicParticlesBuffers.Count();
 	}
 	uintMem OfflineCPUParticleBufferManager::GetStaticParticleCount()
 	{
-		return staticParticles.Count();
+		return staticParticlesMemory.Count();
 	}
-	CPUParticleBufferLockGuard OfflineCPUParticleBufferManager::LockDynamicParticlesActiveRead(const TimeInterval& timeInterval)
-	{		
-		auto& buffer = buffers[currentBuffer];
-
-		uint64 lockTicket = buffer.dynamicParticlesLock.TryLockRead(timeInterval);
-
-		if (lockTicket == 0)
-			return CPUParticleBufferLockGuard();
-
-		return CPUParticleBufferLockGuard([this, &buffer = buffer, lockTicket = lockTicket]() { buffer.dynamicParticlesLock.Unlock(lockTicket); }, buffer.dynamicParticles);		
-	}
-	CPUParticleBufferLockGuard OfflineCPUParticleBufferManager::LockDynamicParticlesAvailableRead(const TimeInterval& timeInterval, uintMem* index)
-	{
-		for (uintMem i = 0; i < buffers.Count(); ++i)
-		{
-			auto& buffer = buffers[(currentBuffer + buffers.Count() - i) % buffers.Count()];			
-
-			uint64 lockTicket = buffer.dynamicParticlesLock.TryLockRead(i == buffers.Count() - 1 ? timeInterval : TimeInterval::Zero());
-
-			if (lockTicket != 0)
-			{
-				if (index != nullptr)
-					*index = i;
-				return CPUParticleBufferLockGuard([this, &buffer = buffer, lockTicket = lockTicket]() { buffer.dynamicParticlesLock.Unlock(lockTicket); }, buffers[currentBuffer].dynamicParticles);
-			}
-		}
-
-		return CPUParticleBufferLockGuard();
-	}
-	CPUParticleBufferLockGuard OfflineCPUParticleBufferManager::LockDynamicParticlesReadWrite(const TimeInterval& timeInterval)
-	{
-		auto& buffer = buffers[currentBuffer];
-
-		uint64 lockTicket = buffer.dynamicParticlesLock.TryLockReadWrite(timeInterval);
-
-		if (lockTicket == 0)
-			return CPUParticleBufferLockGuard();
-
-		return CPUParticleBufferLockGuard([this, &buffer = buffer, lockTicket = lockTicket]() { buffer.dynamicParticlesLock.Unlock(lockTicket); }, buffer.dynamicParticles);		
-	}	
-	CPUParticleBufferLockGuard OfflineCPUParticleBufferManager::LockStaticParticlesRead(const TimeInterval& timeInterval)
+	ResourceLockGuard OfflineCPUParticleBufferManager::LockDynamicParticlesForRead(void* signalEvent)
 	{				
-		uint64 lockTicket = staticParticlesLock.TryLockRead(timeInterval);
-
-		if (lockTicket == 0)
-			return CPUParticleBufferLockGuard();
-
-		return CPUParticleBufferLockGuard([this, lockTicket=lockTicket]() { staticParticlesLock.Unlock(lockTicket); }, staticParticles.Ptr());		
+		return dynamicParticlesBuffers[currentBuffer].LockRead();
+	}	
+	ResourceLockGuard OfflineCPUParticleBufferManager::LockDynamicParticlesForWrite(void* signalEvent)
+	{		
+		return dynamicParticlesBuffers[currentBuffer].LockWrite();
+	}	
+	ResourceLockGuard OfflineCPUParticleBufferManager::LockStaticParticlesForRead(void* signalEvent)
+	{				
+		return staticParticlesBuffer.LockRead();		
 	}
-	CPUParticleBufferLockGuard OfflineCPUParticleBufferManager::LockStaticParticlesReadWrite(const TimeInterval& timeInterval)
+	ResourceLockGuard OfflineCPUParticleBufferManager::LockStaticParticlesForWrite(void* signalEvent)
 	{	
-		auto lockTicket = staticParticlesLock.TryLockReadWrite(timeInterval);
+		return staticParticlesBuffer.LockWrite();
+	}
+	void OfflineCPUParticleBufferManager::FlushAllOperations()
+	{
 
-		if (lockTicket == 0)
-			return CPUParticleBufferLockGuard();
+	}
+	void OfflineCPUParticleBufferManager::ClearDynamicParticlesBuffers()
+	{
+		Array<ResourceLockGuard> lockGuards;
+		lockGuards.ReserveExactly(dynamicParticlesBuffers.Count());
 
-		return CPUParticleBufferLockGuard([this, lockTicket = lockTicket]() { staticParticlesLock.Unlock(lockTicket); }, staticParticles.Ptr());
-	}		
+		for (auto& buffer : dynamicParticlesBuffers)
+			lockGuards.AddBack(buffer.LockWrite());
+
+		dynamicParticlesMemory.Clear();
+
+		for (auto& buffer : dynamicParticlesBuffers)		
+			buffer.ptr = nullptr;					
+
+		for (auto& lockGuard : lockGuards)
+			lockGuard.Unlock({});
+	}
+	void OfflineCPUParticleBufferManager::ClearStaticParticlesBuffer()
+	{
+		ResourceLockGuard lockGuard = staticParticlesBuffer.LockWrite();
+
+		staticParticlesMemory.Clear();
+
+		staticParticlesBuffer.ptr = nullptr;				
+
+		lockGuard.Unlock({ });
+	}
+	OfflineCPUParticleBufferManager::ParticlesBuffer::ParticlesBuffer()
+		: ptr(nullptr)
+	{
+	}
+	ResourceLockGuard OfflineCPUParticleBufferManager::ParticlesBuffer::LockRead()
+	{
+		lock.LockRead();
+
+		return ResourceLockGuard([](ArrayView<void*> waitEvents, void* userData) {
+			((CPULock*)userData)->UnlockRead();
+			}, ptr, &lock);
+	}
+	ResourceLockGuard OfflineCPUParticleBufferManager::ParticlesBuffer::LockWrite()
+	{		
+		lock.LockWrite();
+
+		return ResourceLockGuard([](ArrayView<void*> waitEvents, void* userData) {
+			((CPULock*)userData)->UnlockWrite();
+			}, ptr, &lock);		
+	}
 }

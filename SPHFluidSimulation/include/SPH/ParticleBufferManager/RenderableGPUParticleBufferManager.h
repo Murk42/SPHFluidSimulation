@@ -1,5 +1,4 @@
 #pragma once
-#include "SPH/ParticleBufferManager/GPUParticleBufferManager.h"
 #include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
 #include "SPH/ParticleBufferManager/ParticleBufferManagerRenderData.h"
 
@@ -91,67 +90,137 @@ namespace SPH
 		uintMem staticParticleCount;
 	};
 	*/
-
-	class RenderableGPUParticleBufferManager :
-		public GPUParticleBufferManager,
+	
+	class RenderableGPUParticleBufferManagerWithoutCLGLInterop :		
 		public ParticleBufferManagerRenderData
 	{
 	public:
-		RenderableGPUParticleBufferManager(cl_context clContext, cl_device_id clDevice, cl_command_queue commandQueue);
-		~RenderableGPUParticleBufferManager();
+		RenderableGPUParticleBufferManagerWithoutCLGLInterop(cl_context clContext, cl_device_id clDevice, cl_command_queue commandQueue);
+		~RenderableGPUParticleBufferManagerWithoutCLGLInterop();
 
 		void Clear() override;
 		void Advance() override;
 
-		void AllocateDynamicParticles(uintMem count) override;
-		void AllocateStaticParticles(uintMem count) override;
+		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
+		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
 
+		uintMem GetDynamicParticleBufferCount() const override;
+		uintMem GetDynamicParticleCount() override;
+		uintMem GetStaticParticleCount() override;				
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetDynamicParticlesGraphicsBuffer(uintMem index, uintMem& stride, uintMem& bufferOffset) override;
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetStaticParticlesGraphicsBuffer(uintMem& stride, uintMem& bufferOffset) override;\
+
+		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;
+		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;				
+		ResourceLockGuard LockDynamicParticlesForRendering(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForRendering(void* signalEvent) override;
+
+		void PrepareDynamicParticlesForRendering() override;
+		void PrepareStaticParticlesForRendering() override;
+
+		void FlushAllOperations() override;
+	private:		
+		struct ParticlesBuffer
+		{			
+		public:
+			ParticlesBuffer(cl_command_queue clCommandQueue);
+			~ParticlesBuffer();
+
+			void SetBuffer(cl_mem buffer, bool copyRequiredForRendering);
+
+			ResourceLockGuard LockRead(cl_event* signalEvent);
+			ResourceLockGuard LockWrite(cl_event* signalEvent);
+			ResourceLockGuard LockForRendering(Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& bufferGL, uintMem bufferSize);
+
+			void PrepareForRendering(Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer& bufferGL, uintMem bufferSize);
+		private:
+			bool copyRequiredForRendering;
+			cl_event copyForRenderingFinishedEvent;
+			cl_mem buffer;
+			OpenCLLock lock;			
+		};		
+
+		cl_context clContext;
+		cl_device_id clDevice;
+		cl_command_queue clCommandQueue;		
+
+		uintMem currentBuffer;
+		
+		Array<ParticlesBuffer> dynamicParticlesBuffers;
+		cl_mem dynamicParticlesMemoryCL;
+		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesBufferGL;
+		uintMem dynamicParticlesCount;
+
+		ParticlesBuffer staticParticlesBuffer;
+		cl_mem staticParticlesMemoryCL;
+		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer staticParticlesBufferGL;
+		uintMem staticParticlesCount;
+		
+		void CleanDynamicParticlesBuffers();
+		void CleanStaticParticlesBuffer();		
+	};
+
+	/*
+	class RenderableGPUParticleBufferManagerWithCLGLInterop :
+		public ParticleBufferManagerRenderData
+	{
+	public:
+		RenderableGPUParticleBufferManagerWithCLGLInterop(cl_context clContext, cl_device_id clDevice, cl_command_queue commandQueue);
+		~RenderableGPUParticleBufferManagerWithCLGLInterop();
+
+		void Clear() override;
+		void Advance() override;
+
+		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
+		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
+
+		uintMem GetDynamicParticleBufferCount() const override;
 		uintMem GetDynamicParticleCount() override;
 		uintMem GetStaticParticleCount() override;
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetDynamicParticlesGraphicsBuffer(uintMem index, uintMem& stride, uintMem& bufferOffset) override;
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetStaticParticlesGraphicsBuffer(uintMem& stride, uintMem& bufferOffset) override; \
 
-		GPUParticleBufferLockGuard LockDynamicParticlesActiveRead(cl_event* signalEvent) override;
-		GPUParticleBufferLockGuard LockDynamicParticlesAvailableRead(cl_event* signalEvent, uintMem* index) override;
-		GPUParticleBufferLockGuard LockDynamicParticlesReadWrite(cl_event* signalEvent) override;
+		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;
+		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;
+		ResourceLockGuard LockDynamicParticlesForRendering(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForRendering(void* signalEvent) override;
 
-		GPUParticleBufferLockGuard LockStaticParticlesRead(cl_event* signalEvent) override;
-		GPUParticleBufferLockGuard LockStaticParticlesReadWrite(cl_event* signalEvent) override;
-
-		Graphics::OpenGLWrapper::VertexArray& GetDynamicParticlesVertexArray(uintMem index) override;
-		Graphics::OpenGLWrapper::VertexArray& GetStaticParticlesVertexArray() override;
-
+		void PrepareDynamicParticlesForRendering() override;
+		void PrepareStaticParticlesForRendering() override;
 	private:
-		struct Buffer
+		struct DynamicParticlesSubBuffer
 		{
-			Graphics::OpenGLWrapper::VertexArray dynamicParticlesVA;
-			std::mutex dynamicParticlesFencesMutex;
-			Array<Graphics::OpenGLWrapper::Fence> dynamicParticleFences;
-			OpenCLLock dynamicParticlesLock;
-
-			cl_mem dynamicParticlesView;		
-
-			Buffer(cl_command_queue commandQueue);
+			cl_mem bufferView;
+			OpenCLLock lock;
+			Graphics::OpenGLWrapper::Fence renderingFence;
 		};
 
 		cl_context clContext;
-		bool CLGLInteropSupported;
+		cl_device_id clDevice;
+		cl_command_queue clCommandQueue;
 
-		Array<Buffer> buffers;
+		Array<DynamicParticlesSubBuffer> buffers;
 		uintMem currentBuffer;
 
-		Graphics::OpenGLWrapper::VertexArray staticParticlesVA;
-		std::mutex staticParticlesFencesMutex;
-		Array<Graphics::OpenGLWrapper::Fence> staticParticleFences;
 		OpenCLLock staticParticlesLock;
+		Graphics::OpenGLWrapper::Fence staticParticlesRenderingFence;
 
 		cl_mem staticParticlesBufferCL;
 		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer staticParticlesBufferGL;
+		void* staticParticlesBufferMap;//Only used if CLGLInteropSupported is false
 		uintMem staticParticlesCount;
 
 		cl_mem dynamicParticlesBufferCL;
 		Graphics::OpenGLWrapper::ImmutableDynamicGraphicsBuffer dynamicParticlesBufferGL;
+		void* dynamicParticlesBufferMap; //Only used if CLGLInteropSupported is false
 		uintMem dynamicParticlesCount;
-
+		
 		void CleanDynamicParticlesBuffers();
 		void CleanStaticParticlesBuffer();
 	};
+	*/
 }

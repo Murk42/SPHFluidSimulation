@@ -1,7 +1,13 @@
 #pragma once
+#include "BlazeEngineCore/DataStructures/Color.h"
+#include "BlazeEngineCore/Math/Matrix.h"
+#include "BlazeEngineGraphics/Core/OpenGL/OpenGLWrapper/OpenGLVertexArray.h"
+#include "BlazeEngineGraphics/Core/OpenGL/OpenGLWrapper/OpenGLProgram.h"
+#include "BlazeEngineGraphics/Core/OpenGL/GraphicsContext_OpenGL.h"
+using namespace Blaze;
+
 #include "SPH/System/System.h"
-#include "SPH/ParticleBufferSet/ParticleBufferSetRenderData.h"
-#include <memory>
+#include "SPH/ParticleBufferManager/ParticleBufferManagerRenderData.h"
 
 namespace SPH
 {
@@ -10,16 +16,20 @@ namespace SPH
 	public:
 		SystemRenderCache();
 
-		void LinkSPHSystem(SPH::System* system, SPH::ParticleBufferSetRenderData& renderData);
+		void SetParticleBufferManagerRenderData(SPH::ParticleBufferManagerRenderData& renderData);
 		void SetModelMatrix(Mat4f modelMatrix) { this->modelMatrix = modelMatrix; }
 
 		const Mat4f& GetModelMatrix() const { return modelMatrix; }
-		SPH::System* GetSystem() const { return system; }
 	private:		
-		SPH::ParticleBufferSetRenderData* renderData;
-		SPH::System* system;
+		Array<Graphics::OpenGLWrapper::VertexArray> VAs;
+		Graphics::OpenGLWrapper::VertexArray staticParticlesVA;
+		SPH::ParticleBufferManagerRenderData* renderData;		
 
-		Mat4f modelMatrix;		
+		Mat4f modelMatrix;
+
+		bool VAsInitialized;
+
+		void InitializeVAs();
 
 		friend class SystemRenderer;
 	};
@@ -28,12 +38,18 @@ namespace SPH
 	{
 	public:
 		SystemRenderer(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext);
-		virtual ~SystemRenderer() { }
+		~SystemRenderer() { }
 
-		virtual void SetDynamicParticleColor(ColorRGBAf color);		
-		virtual void SetStaticParticleColor(ColorRGBAf color);
+		void SetDynamicParticleColor(ColorRGBAf color);
+		void SetStaticParticleColor(ColorRGBAf color);
 
-		virtual void Render(SystemRenderCache& renderCache, const Mat4f& viewMatrix, const Mat4f& projMatrix);
+		template<typename T>
+		void SetUniform(uintMem index, const T& value)
+		{
+			shaderProgram.SetUniform(index, value);
+		}
+
+		void Render(SystemRenderCache& renderCache, const Mat4f& viewMatrix, const Mat4f& projMatrix);
 	protected:
 		Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext;
 

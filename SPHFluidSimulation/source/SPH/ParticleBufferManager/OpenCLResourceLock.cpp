@@ -1,188 +1,164 @@
 #include "pch.h"
 #include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
+#include "OpenCLDebug.h"
 #include "CL/cl.h"
 
 namespace SPH
 {
 	OpenCLLock::OpenCLLock(cl_command_queue commandQueue)
-		: commandQueue(commandQueue), queue(0), queueSize(0), ticketIDCounter(1), writeSignalEvent(NULL)
+		: commandQueue(commandQueue), lockState(0)
 	{
 	}
 	OpenCLLock::~OpenCLLock()
 	{
-	}
-	OpenCLLock::TicketID OpenCLLock::TryLockRead(cl_event* signalEvent)
-	{
-		std::unique_lock lk{ mutex };
-
-		if (queueSize == 0 || !PeekLastInQueue())
-			if (!PushToQueue(true))
-			{
-				Debug::Logger::LogWarning("SPH Library", "Lock queue filled up");
-				return 0;
-			}
-
-		TicketID ticketID = ticketIDCounter;
-		IncreaseCounter();
-
-		cv.wait(lk, [&]() { return writeSignalEvent != NULL; });
-
-		if (writeSignalEvent)
-			clEnqueueBarrierWithWaitList(commandQueue, 1, &writeSignalEvent, signalEvent);
-		else		
-			*signalEvent = NULL;
-		
-		readSignalEvents.AddBack((cl_event)NULL);
-
-		return ticketID;
-	}
-	OpenCLLock::TicketID OpenCLLock::TryLockIfActiveRead(cl_event* signalEvent)
-	{
-		std::unique_lock lk{ mutex };
-
-		if (queueSize == 0)
+		if (!writeLockFinishedSignalEvents.Empty())
 		{
-			if (!PushToQueue(true))
+			Debug::Logger::LogWarning("SPH Library", "Lock destroyed but there are events that haven't been waited on.");
+			for (const auto& event : writeLockFinishedSignalEvents)
+				clReleaseEvent(event);
+		}
+
+		if (!readLockFinishedSignalEvents.Empty())
+		{
+			Debug::Logger::LogWarning("SPH Library", "Lock destroyed but there are events that haven't been waited on.");
+			for (const auto& event : readLockFinishedSignalEvents)
+				clReleaseEvent(event);
+		}
+
+		if (lockState != 0)
+			Debug::Logger::LogFatal("SPH Library", "A locked lock is being destroyed.");
+	}
+	bool OpenCLLock::HasWriteFinished()
+	{
+		bool allFinished = true;
+		for (auto& event : writeLockFinishedSignalEvents)
+		{
+			cl_int status;
+
+			CL_CALL(clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &status, NULL), false);
+
+			if (status != CL_COMPLETE)
 			{
-				Debug::Logger::LogWarning("SPH Library", "Lock queue filled up");
-				return 0;
+				allFinished = false;
+				break;
 			}
 		}
-		else if (!PeekFirstInQueue() || queueSize > 1)
-			return 0;
 
-		TicketID ticketID = ticketIDCounter;
-		IncreaseCounter();
-
-		cv.wait(lk, [&]() { return writeSignalEvent != NULL; });
-
-		if (writeSignalEvent)
-			clEnqueueBarrierWithWaitList(commandQueue, 1, &writeSignalEvent, signalEvent);
-		else
-			*signalEvent = NULL;
-
-		readSignalEvents.AddBack((cl_event)NULL);
-
-		return ticketID;
+		return allFinished;
 	}
-	OpenCLLock::TicketID OpenCLLock::TryLockReadWrite(cl_event* signalEvent)
+	void OpenCLLock::WaitForWriteToFinish()
 	{
-		std::unique_lock lk{ mutex };
-
-		bool previousInQueue = PeekLastInQueue();
-
-		if (!PushToQueue(false))
+		if (!writeLockFinishedSignalEvents.Empty())
 		{
-			Debug::Logger::LogWarning("SPH Library", "Lock queue filled up");
-			return 0;
+			CL_CALL(clWaitForEvents((cl_uint)writeLockFinishedSignalEvents.Count(), writeLockFinishedSignalEvents.Ptr()));
+
+			for (const auto& event : writeLockFinishedSignalEvents)
+				clReleaseEvent(event);
+
+			writeLockFinishedSignalEvents.Clear();
 		}
-
-		TicketID ticketID = ticketIDCounter;
-		IncreaseCounter();
-
-		if (previousInQueue)
-		{
-			for (auto& readSignalEvent : readSignalEvents)			
-				cv.wait(lk, [&]() { return readSignalEvent != NULL; });
-			
-			clEnqueueBarrierWithWaitList(commandQueue, readSignalEvents.Count(), readSignalEvents.Ptr(), signalEvent);
-		}
-		else
-		{
-			cv.wait(lk, [&]() { return writeSignalEvent != NULL; });
-
-			clEnqueueBarrierWithWaitList(commandQueue, 1, &writeSignalEvent, signalEvent);
-		}
-
-		writeSignalEvent = NULL;
-
-		return ticketID;
 	}
-	void OpenCLLock::Unlock(TicketID ticketID, ArrayView<cl_event> waitEvents)
+	void OpenCLLock::WaitForReadToFinish()
 	{
-		if (ticketID == 0)
+		if (!readLockFinishedSignalEvents.Empty())
 		{
-			Debug::Logger::LogFatal("SPH Library", "Unlocking a lock with a 0 ticket, meaning the lock wasnt succesfully locked in the first place");
+			CL_CALL(clWaitForEvents((cl_uint)readLockFinishedSignalEvents.Count(), readLockFinishedSignalEvents.Ptr()));
+
+			for (const auto& event : readLockFinishedSignalEvents)
+				clReleaseEvent(event);
+
+			readLockFinishedSignalEvents.Clear();
+		}
+	}
+	void OpenCLLock::LockRead(cl_event* signalEvent)
+	{
+		if (lockState != 0)
+		{
+			Debug::Logger::LogFatal("SPH Library", "Trying to lock a lock for reading but it isn't unlocked.");
 			return;
 		}
 
-		std::lock_guard lk{ mutex };
+		lockState = 1;
 
-		if (queueSize != 0)
-		{
-			Debug::Logger::LogFatal("SPH Library", "Unlocking a lock that was not locked by any object");
-			return;
-		}
-
-		if (ticketID != ticketIDCounter - queueSize)
-		{
-			Debug::Logger::LogFatal("SPH Library", "Unlocking a lock with a invalid ticket");
-			return;
-		}
-
-		if (waitEvents.Empty())
-		{
-			Debug::Logger::LogFatal("SPH Library", "Unlocking a lock with a empty wait event list");
-			return;
-		}			
-
-		if (PeekFirstInQueue())
-		{
-			for (auto& readSignalEvent : readSignalEvents)
-				if (readSignalEvent == NULL)
-				{					
-					if (waitEvents.Count() == 1)					
-						readSignalEvent = waitEvents.First();											
-					else					
-						clEnqueueBarrierWithWaitList(commandQueue, waitEvents.Count(), waitEvents.Ptr(), &readSignalEvent);					
-					
-					break;
-				}
-
-			if (readSignalEvents.Last() != NULL)
-				PopFromQueue();
-		}
+		if (writeLockFinishedSignalEvents.Empty())		
+			*signalEvent = NULL;		
 		else
 		{
-			if (waitEvents.Count() == 1)			
-				writeSignalEvent = waitEvents.First();			
-			else
-				clEnqueueBarrierWithWaitList(commandQueue, waitEvents.Count(), waitEvents.Ptr(), &writeSignalEvent);
+			CL_CALL(clEnqueueBarrierWithWaitList(commandQueue, (cl_uint)writeLockFinishedSignalEvents.Count(), writeLockFinishedSignalEvents.Ptr(), signalEvent));
 
-			PopFromQueue();
+			//Dont release events here because they might be waited by the second lock read
 		}
-
-		cv.notify_all();
 	}	
-	void OpenCLLock::IncreaseCounter()
+	void OpenCLLock::LockWrite(cl_event* signalEvent)
 	{
-		ticketIDCounter = (ticketIDCounter % (std::numeric_limits<TicketID>::max() - 1)) + 1;
-	}
-	bool OpenCLLock::PushToQueue(bool value)
-	{
-		if (queueSize == std::numeric_limits<decltype(queue)>::digits)
-			return false;
+		if (lockState != 0)
+		{
+			Debug::Logger::LogFatal("SPH Library", "Trying to lock a lock for writing but it isn't unlocked.");
+			return;
+		}
 
-		queue |= static_cast<uint64>(value) << queueSize;
-		++queueSize;
+		lockState = 2;
 
-		return true;
-	}
-	bool OpenCLLock::PopFromQueue()
-	{
-		bool value = static_cast<bool>(queue & 1);
+		if (readLockFinishedSignalEvents.Empty())
+			if (writeLockFinishedSignalEvents.Empty())
+				*signalEvent = NULL;
+			else
+			{
+				CL_CALL(clEnqueueBarrierWithWaitList(commandQueue, (cl_uint)writeLockFinishedSignalEvents.Count(), writeLockFinishedSignalEvents.Ptr(), signalEvent));
+			}
+		else
+		{			
+			CL_CALL(clEnqueueBarrierWithWaitList(commandQueue, (cl_uint)readLockFinishedSignalEvents.Count(), readLockFinishedSignalEvents.Ptr(), signalEvent));
 
-		queue >>= 1;
-		--queueSize;
+			for (const auto& event : readLockFinishedSignalEvents)
+				clReleaseEvent(event);
 
-		return value;
+			readLockFinishedSignalEvents.Clear();
+		}	
+
+		for (const auto& event : writeLockFinishedSignalEvents)
+			clReleaseEvent(event);
+
+		writeLockFinishedSignalEvents.Clear();		
 	}
-	bool OpenCLLock::PeekLastInQueue()
+	void OpenCLLock::UnlockRead(ArrayView<cl_event> waitEvents)
 	{
-		return (queue >> (queueSize - 1)) & 1;
+		if (lockState == 0)
+		{
+			Debug::Logger::LogFatal("SPH Library", "Trying to unlock an unlocked lock.");
+			return;
+		}
+		else if (lockState == 2)
+		{
+			Blaze::Debug::Logger::LogFatal("SPH Library", "Unlocking a lock for reading that is locked for writing");
+			return;
+		}
+
+		lockState = 0;
+
+		for (auto event : waitEvents)
+			clRetainEvent(event);
+
+		readLockFinishedSignalEvents.Append(waitEvents);
 	}
-	bool OpenCLLock::PeekFirstInQueue()
+	void OpenCLLock::UnlockWrite(ArrayView<cl_event> waitEvents)
 	{
-		return queue & 1;
+		if (lockState == 0)
+		{
+			Debug::Logger::LogFatal("SPH Library", "Trying to unlock an unlocked lock.");
+			return;
+		}
+		else if (lockState == 1)
+		{
+			Blaze::Debug::Logger::LogFatal("SPH Library", "Unlocking a lock for writing that is locked for reading");
+			return;
+		}
+
+		lockState = 0;
+
+		for (auto event : waitEvents)
+			clRetainEvent(event);
+
+		writeLockFinishedSignalEvents = waitEvents;
 	}
 }

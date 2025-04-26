@@ -1,5 +1,5 @@
 #pragma once
-#include "SPH/ParticleBufferManager/GPUParticleBufferManager.h"
+#include "SPH/ParticleBufferManager/ParticleBufferManager.h"
 #include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
 
 namespace SPH
@@ -65,39 +65,41 @@ namespace SPH
 		uintMem staticParticleCount;
 	};
 	*/
-	class OfflineGPUParticleBufferManager : public GPUParticleBufferManager
+	class OfflineGPUParticleBufferManager : public ParticleBufferManager
 	{
 	public:
-		OfflineGPUParticleBufferManager(cl_context clContext, cl_command_queue commandQueue);
+		OfflineGPUParticleBufferManager(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue);
 		~OfflineGPUParticleBufferManager();
 
 		void Clear() override;
 		void Advance() override;
 
-		void AllocateDynamicParticles(uintMem count) override;
-		void AllocateStaticParticles(uintMem count) override;
+		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
+		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
 
+		uintMem GetDynamicParticleBufferCount() const override;
 		uintMem GetDynamicParticleCount() override;
 		uintMem GetStaticParticleCount() override;
 
-		GPUParticleBufferLockGuard LockDynamicParticlesActiveRead(cl_event* signalEvent) override;
-		GPUParticleBufferLockGuard LockDynamicParticlesAvailableRead(cl_event* signalEvent, uintMem* index) override;
-		GPUParticleBufferLockGuard LockDynamicParticlesReadWrite(cl_event* signalEvent) override;
+		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;		
+		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
+		
+		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
+		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;
 
-		GPUParticleBufferLockGuard LockStaticParticlesRead(cl_event* signalEvent) override;
-		GPUParticleBufferLockGuard LockStaticParticlesReadWrite(cl_event* signalEvent) override;
+		void FlushAllOperations() override;
 	private:
-		struct Buffer
+		struct DynamicParticlesSubBuffer
 		{
 			OpenCLLock dynamicParticlesLock;
-			cl_mem dynamicParticlesView;			
-
-			Buffer(cl_command_queue commandQueue);
+			cl_mem dynamicParticlesView;
 		};
 
 		cl_context clContext;
+		cl_device_id clDevice;
+		cl_command_queue clCommandQueue;
 
-		Array<Buffer> buffers;
+		Array<DynamicParticlesSubBuffer> buffers;
 		uintMem currentBuffer;
 
 		OpenCLLock staticParticlesLock;
@@ -106,7 +108,7 @@ namespace SPH
 
 		cl_mem dynamicParticlesBuffer;		
 		uintMem dynamicParticlesCount;
-
+			
 		void CleanDynamicParticlesBuffers();
 		void CleanStaticParticlesBuffer();
 	};

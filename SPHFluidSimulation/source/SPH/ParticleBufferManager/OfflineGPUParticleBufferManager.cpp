@@ -5,11 +5,11 @@
 
 namespace SPH
 {	
-	OfflineGPUParticleBufferManager::OfflineGPUParticleBufferManager(cl_context clContext, cl_command_queue commandQueue)
-		: clContext(clContext), staticParticlesLock(commandQueue), currentBuffer(0), dynamicParticlesBuffer(NULL), staticParticlesBuffer(NULL), dynamicParticlesCount(0), staticParticlesCount(0)
+	OfflineGPUParticleBufferManager::OfflineGPUParticleBufferManager(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue)
+		: clContext(clContext), clDevice(clDevice), clCommandQueue(clCommandQueue), staticParticlesLock(clCommandQueue), currentBuffer(0), dynamicParticlesBuffer(NULL), staticParticlesBuffer(NULL), dynamicParticlesCount(0), staticParticlesCount(0)
 	{
-		buffers = Array<Buffer>(3, [commandQueue = commandQueue](Buffer* buffer, uintMem index) {
-			std::construct_at(buffer, commandQueue);
+		buffers = Array<DynamicParticlesSubBuffer>(3, [clCommandQueue = clCommandQueue](DynamicParticlesSubBuffer* buffer, uintMem index) {
+			std::construct_at(buffer, DynamicParticlesSubBuffer{ clCommandQueue, NULL });
 			});
 	}
 	OfflineGPUParticleBufferManager::~OfflineGPUParticleBufferManager()
@@ -25,30 +25,37 @@ namespace SPH
 	{
 		currentBuffer = (currentBuffer + 1) % buffers.Count();
 	}
-	void OfflineGPUParticleBufferManager::AllocateDynamicParticles(uintMem count)
+	void OfflineGPUParticleBufferManager::AllocateDynamicParticles(uintMem count, DynamicParticle* particles)
 	{
 		cl_int ret;
 
 		CleanDynamicParticlesBuffers();
 
 		if (count == 0)		
-			return;				
+			return;
+
+		currentBuffer = 0;
+
+		uint subBufferAlign = 0;
+		CL_CALL(clGetDeviceInfo(clDevice, CL_DEVICE_MEM_BASE_ADDR_ALIGN, sizeof(uint), &subBufferAlign, NULL));
+		uintMem subBufferSize = (sizeof(DynamicParticle) * count + subBufferAlign - 1) / subBufferAlign * subBufferAlign; //Round up to a multiple of subBufferAlign
 
 		dynamicParticlesCount = count;
-		dynamicParticlesBuffer = clCreateBuffer(clContext, CL_MEM_READ_WRITE, sizeof(DynamicParticle) * count * buffers.Count(), nullptr, &ret);
+		dynamicParticlesBuffer = clCreateBuffer(clContext, CL_MEM_READ_WRITE | (particles == nullptr ? 0 : CL_MEM_USE_HOST_PTR), subBufferSize * buffers.Count(), particles, &ret);
 		CL_CHECK();
+		CL_CALL(clEnqueueWriteBuffer(clCommandQueue, dynamicParticlesBuffer, CL_TRUE, 0, subBufferSize, particles, 0, nullptr, nullptr));
 
 		for (uintMem i = 0; i < buffers.Count(); ++i)
 		{
 			cl_buffer_region region{
-				.origin = sizeof(DynamicParticle) * count * i,
-				.size = sizeof(DynamicParticle) * count
+				.origin = subBufferSize * i,
+				.size = subBufferSize
 			};
 			buffers[i].dynamicParticlesView = clCreateSubBuffer(dynamicParticlesBuffer, 0, CL_BUFFER_CREATE_TYPE_REGION, &region, &ret);
 			CL_CHECK();
 		}		
 	}
-	void OfflineGPUParticleBufferManager::AllocateStaticParticles(uintMem count)
+	void OfflineGPUParticleBufferManager::AllocateStaticParticles(uintMem count, StaticParticle* particles)
 	{
 		cl_int ret;
 
@@ -58,8 +65,12 @@ namespace SPH
 			return;
 
 		staticParticlesCount = count;
-		staticParticlesBuffer = clCreateBuffer(clContext, CL_MEM_READ_WRITE, sizeof(StaticParticle) * count, nullptr, &ret);
+		staticParticlesBuffer = clCreateBuffer(clContext, CL_MEM_READ_WRITE | (particles == nullptr ? 0 : CL_MEM_USE_HOST_PTR), sizeof(StaticParticle) * count, particles, &ret);
 		CL_CHECK();
+	}
+	uintMem OfflineGPUParticleBufferManager::GetDynamicParticleBufferCount() const
+	{
+		return buffers.Count();
 	}
 	uintMem OfflineGPUParticleBufferManager::GetDynamicParticleCount()
 	{
@@ -69,69 +80,54 @@ namespace SPH
 	{
 		return staticParticlesCount;
 	}
-	GPUParticleBufferLockGuard OfflineGPUParticleBufferManager::LockDynamicParticlesActiveRead(cl_event* signalEvent)
+	ResourceLockGuard OfflineGPUParticleBufferManager::LockDynamicParticlesForRead(void* signalEvent)
+	{
+		auto& buffer = buffers[(currentBuffer + buffers.Count() - 1) % buffers.Count()];
+
+		buffer.dynamicParticlesLock.LockRead((cl_event*)signalEvent);
+
+		return ResourceLockGuard([](ArrayView<void*> waitEvents, void* userData) {
+			((OpenCLLock*)userData)->UnlockRead(ArrayView<cl_event>((cl_event*)waitEvents.Ptr(), waitEvents.Count()));
+			}, buffer.dynamicParticlesView,& buffer.dynamicParticlesLock);
+	}	
+	ResourceLockGuard OfflineGPUParticleBufferManager::LockDynamicParticlesForWrite(void* signalEvent)
 	{
 		auto& buffer = buffers[currentBuffer];
 
-		uint64 lockTicket = buffer.dynamicParticlesLock.TryLockRead(signalEvent);
+		buffer.dynamicParticlesLock.LockWrite((cl_event*)signalEvent);
 
-		if (lockTicket == 0)
-			return GPUParticleBufferLockGuard();
-
-		return GPUParticleBufferLockGuard([this, &buffer = buffer, lockTicket = lockTicket](ArrayView<cl_event> waitEvents) { buffer.dynamicParticlesLock.Unlock(lockTicket, waitEvents); }, buffer.dynamicParticlesView);
+		return ResourceLockGuard([](ArrayView<void*> waitEvents, void* userData) {
+			((OpenCLLock*)userData)->UnlockWrite(ArrayView<cl_event>((cl_event*)waitEvents.Ptr(), waitEvents.Count()));
+			}, buffer.dynamicParticlesView, &buffer.dynamicParticlesLock);		
 	}
-	GPUParticleBufferLockGuard OfflineGPUParticleBufferManager::LockDynamicParticlesAvailableRead(cl_event* signalEvent, uintMem* index)
+	ResourceLockGuard OfflineGPUParticleBufferManager::LockStaticParticlesForRead(void* signalEvent)
 	{
-		for (uintMem i = 0; i < buffers.Count(); ++i)
-		{
-			auto& buffer = buffers[(currentBuffer + buffers.Count() - i) % buffers.Count()];
+		staticParticlesLock.LockRead((cl_event*)signalEvent);
 
-			uint64 lockTicket = buffer.dynamicParticlesLock.TryLockIfActiveRead(signalEvent);
+		return ResourceLockGuard([](ArrayView<void*> waitEvents, void* userData) {
+			((OpenCLLock*)userData)->UnlockRead(ArrayView<cl_event>((cl_event*)waitEvents.Ptr(), waitEvents.Count()));
+			}, staticParticlesBuffer, & staticParticlesLock);
+	}
+	ResourceLockGuard OfflineGPUParticleBufferManager::LockStaticParticlesForWrite(void* signalEvent)
+	{
+		staticParticlesLock.LockWrite((cl_event*)signalEvent);
 
-			if (lockTicket != 0)
-			{
-				if (index != nullptr)
-					*index = i;
-
-				return GPUParticleBufferLockGuard([this, &buffer = buffer, lockTicket = lockTicket](ArrayView<cl_event> waitEvents) { buffer.dynamicParticlesLock.Unlock(lockTicket, waitEvents); }, buffer.dynamicParticlesView);				
-			}
+		return ResourceLockGuard([](ArrayView<void*> waitEvents, void* userData) {
+			((OpenCLLock*)userData)->UnlockWrite(ArrayView<cl_event>((cl_event*)waitEvents.Ptr(), waitEvents.Count()));
+			}, staticParticlesBuffer, &staticParticlesLock);
+	}
+	void OfflineGPUParticleBufferManager::FlushAllOperations()
+	{
+		for (auto& buffer : buffers)
+		{			
+			buffer.dynamicParticlesLock.WaitForReadToFinish();
+			buffer.dynamicParticlesLock.WaitForWriteToFinish();
 		}
-
-		return GPUParticleBufferLockGuard();
-	}
-	GPUParticleBufferLockGuard OfflineGPUParticleBufferManager::LockDynamicParticlesReadWrite(cl_event* signalEvent)
-	{
-		auto& buffer = buffers[currentBuffer];
-
-		uint64 lockTicket = buffer.dynamicParticlesLock.TryLockReadWrite(signalEvent);
-
-		if (lockTicket == 0)
-			return GPUParticleBufferLockGuard();
-
-		return GPUParticleBufferLockGuard([this, &buffer = buffer, lockTicket = lockTicket](ArrayView<cl_event> waitEvents) { buffer.dynamicParticlesLock.Unlock(lockTicket, waitEvents); }, buffer.dynamicParticlesView);		
-	}
-	GPUParticleBufferLockGuard OfflineGPUParticleBufferManager::LockStaticParticlesRead(cl_event* signalEvent)
-	{
-		uint64 lockTicket = staticParticlesLock.TryLockRead(signalEvent);
-
-		if (lockTicket == 0)
-			return GPUParticleBufferLockGuard();
-
-		return GPUParticleBufferLockGuard([this, lockTicket = lockTicket](ArrayView<cl_event> waitEvents) { staticParticlesLock.Unlock(lockTicket, waitEvents); }, staticParticlesBuffer);
-	}
-	GPUParticleBufferLockGuard OfflineGPUParticleBufferManager::LockStaticParticlesReadWrite(cl_event* signalEvent)
-	{
-		auto lockTicket = staticParticlesLock.TryLockReadWrite(signalEvent);
-
-		if (lockTicket == 0)
-			return GPUParticleBufferLockGuard();
-
-		return GPUParticleBufferLockGuard([this, lockTicket = lockTicket](ArrayView<cl_event> waitEvents) { staticParticlesLock.Unlock(lockTicket, waitEvents); }, staticParticlesBuffer);
+		staticParticlesLock.WaitForReadToFinish();
+		staticParticlesLock.WaitForWriteToFinish();
 	}
 	void OfflineGPUParticleBufferManager::CleanDynamicParticlesBuffers()
-	{
-		cl_int ret;
-
+	{		
 		if (dynamicParticlesCount == 0)
 			return;
 
@@ -146,20 +142,14 @@ namespace SPH
 		dynamicParticlesCount = 0;
 	}
 	void OfflineGPUParticleBufferManager::CleanStaticParticlesBuffer()
-	{
-		cl_int ret;
-
+	{		
 		if (staticParticlesCount == 0)
 			return;
 
 		CL_CALL(clReleaseMemObject(staticParticlesBuffer));
 		staticParticlesBuffer = NULL;
 		staticParticlesCount = 0;
-	}
-	OfflineGPUParticleBufferManager::Buffer::Buffer(cl_command_queue commandQueue)
-		: dynamicParticlesLock(commandQueue), dynamicParticlesView(NULL)
-	{
-	}
+	}	
 	/*
 	void WaitFence(Graphics::OpenGLWrapper::Fence& fence);
 

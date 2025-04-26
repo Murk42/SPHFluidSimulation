@@ -48,59 +48,59 @@ namespace SPH
 		for (int x = 1; x < particleGridSize.x - 1; x++)
 			for (int y = 1; y < particleGridSize.y - 1; y++)
 			{
-				positions.AddBack(Vec3f(x, y, 0) * properties.particleDistance);
-				positions.AddBack(Vec3f(x, y, particleGridSize.z - 1) * properties.particleDistance);
+				positions.AddBack(Vec3f((float)x, (float)y, 0.0f) * properties.particleDistance);
+				positions.AddBack(Vec3f((float)x, (float)y, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
 			}
 
 		for (int x = 1; x < particleGridSize.x - 1; x++)
 			for (int z = 1; z < particleGridSize.z - 1; z++)
 			{
-				positions.AddBack(Vec3f(x, 0, z) * properties.particleDistance);
-				positions.AddBack(Vec3f(x, particleGridSize.y - 1, z) * properties.particleDistance);
+				positions.AddBack(Vec3f((float)x, 0.0f, (float)z) * properties.particleDistance);
+				positions.AddBack(Vec3f((float)x, (float)particleGridSize.y - 1.0f, (float)z) * properties.particleDistance);
 			}
 
 		for (int y = 1; y < particleGridSize.y - 1; y++)
 			for (int z = 1; z < particleGridSize.z - 1; z++)
 			{
-				positions.AddBack(Vec3f(0, y, z) * properties.particleDistance);
-				positions.AddBack(Vec3f(particleGridSize.x - 1, y, z) * properties.particleDistance);
+				positions.AddBack(Vec3f(0.0f, (float)y, (float)z) * properties.particleDistance);
+				positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, (float)y, (float)z) * properties.particleDistance);
 			}
 
 		for (int x = 1; x < particleGridSize.x - 1; x++)
 		{
-			positions.AddBack(Vec3f(x, 0, 0) * properties.particleDistance);
-			positions.AddBack(Vec3f(x, particleGridSize.y - 1, 0) * properties.particleDistance);
-			positions.AddBack(Vec3f(x, 0, particleGridSize.z - 1) * properties.particleDistance);
-			positions.AddBack(Vec3f(x, particleGridSize.y - 1, particleGridSize.z - 1) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)x, 0.0f, 0.0f) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)x, (float)particleGridSize.y - 1.0f, 0.0f) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)x, 0.0f, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)x, (float)particleGridSize.y - 1.0f, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
 		}
 
 		for (int y = 1; y < particleGridSize.y - 1; y++)
 		{
-			positions.AddBack(Vec3f(0, y, 0) * properties.particleDistance);
-			positions.AddBack(Vec3f(particleGridSize.x - 1, y, 0) * properties.particleDistance);
-			positions.AddBack(Vec3f(0, y, particleGridSize.z - 1) * properties.particleDistance);
-			positions.AddBack(Vec3f(particleGridSize.x - 1, y, particleGridSize.z - 1) * properties.particleDistance);
+			positions.AddBack(Vec3f(0.0f, (float)y, 0.0f) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, (float)y, 0.0f) * properties.particleDistance);
+			positions.AddBack(Vec3f(0.0f, (float)y, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, (float)y, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
 		}
 
 		for (int z = 1; z < particleGridSize.z - 1; z++)
 		{
-			positions.AddBack(Vec3f(0, 0, z) * properties.particleDistance);
-			positions.AddBack(Vec3f(particleGridSize.x - 1, 0, z) * properties.particleDistance);
-			positions.AddBack(Vec3f(0, particleGridSize.y - 1, z) * properties.particleDistance);
-			positions.AddBack(Vec3f(particleGridSize.x - 1, particleGridSize.y - 1, z) * properties.particleDistance);
+			positions.AddBack(Vec3f(0.0f, 0.0f, z) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, 0.0f, z) * properties.particleDistance);
+			positions.AddBack(Vec3f(0.0f, (float)particleGridSize.y - 1.0f, z) * properties.particleDistance);
+			positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, (float)particleGridSize.y - 1.0f, z) * properties.particleDistance);
 		}
 
-		positions.AddBack(Vec3f(0, 0, 0) * properties.particleDistance);
-		positions.AddBack(Vec3f(particleGridSize.x - 1, 0, 0) * properties.particleDistance);
-		positions.AddBack(Vec3f(0, particleGridSize.y - 1, 0) * properties.particleDistance);
-		positions.AddBack(Vec3f(particleGridSize.x - 1, particleGridSize.y - 1, 0) * properties.particleDistance);
-		positions.AddBack(Vec3f(0, 0, particleGridSize.z - 1) * properties.particleDistance);
-		positions.AddBack(Vec3f(particleGridSize.x - 1, 0, particleGridSize.z - 1) * properties.particleDistance);
-		positions.AddBack(Vec3f(0, particleGridSize.y - 1, particleGridSize.z - 1) * properties.particleDistance);
-		positions.AddBack(Vec3f(particleGridSize.x - 1, particleGridSize.y - 1, particleGridSize.z - 1) * properties.particleDistance);
+		positions.AddBack(Vec3f(0.0f, 0.0f, 0.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, 0.0f, 0.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f(0.0f, (float)particleGridSize.y - 1.0f, 0.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, (float)particleGridSize.y - 1.0f, 0.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f(0.0f, 0.0f, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, 0.0f, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f(0.0f, (float)particleGridSize.y - 1.0f, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
+		positions.AddBack(Vec3f((float)particleGridSize.x - 1.0f, (float)particleGridSize.y - 1.0f, (float)particleGridSize.z - 1.0f) * properties.particleDistance);
 
 		Random::SetSeed(properties.seed);
-		for (uint i = positions.Count() - particleCount; i < positions.Count(); ++i)
+		for (uintMem i = positions.Count() - particleCount; i < positions.Count(); ++i)
 			positions[i] += properties.spawnVolumeOffset + Vec3f(Random::Float(), Random::Float(), Random::Float()) * properties.randomOffsetIntensity * properties.particleDistance;
     }
 }

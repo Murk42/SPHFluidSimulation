@@ -1,7 +1,12 @@
 #pragma once
-#include "BlazeEngineCore/BlazeEngineCore.h"
-#include "SPH/ParticleBufferSet/ParticleBufferSet.h"
-#include "SPH/SPHFunctions.h"
+#include "BlazeEngineCore/DataStructures/Map.h"
+#include "BlazeEngineCore/DataStructures/VirtualMap.h"
+#include "BlazeEngineCore/DataStructures/Array.h"
+#include "BlazeEngineCore/DataStructures/ArrayView.h"
+#include "BlazeEngineCore/DataStructures/String.h"
+#include "BlazeEngineCore/DataStructures/StringView.h"
+
+#include "SPH/System/Particles.h"
 
 namespace SPH
 {
@@ -9,7 +14,7 @@ namespace SPH
 	{						
 		ParticleBehaviourParameters particleBehaviourParameters;		
 
-		Map<String, String> otherParameters;
+		Blaze::Map<String, String> otherParameters;
 		
 		bool ParseParameter(StringView name, float& value) const;
 		bool ParseParameter(StringView name, bool& value) const;
@@ -37,46 +42,46 @@ namespace SPH
 		SystemProfilingData& operator=(const SystemProfilingData& other) noexcept;
 		SystemProfilingData& operator=(SystemProfilingData&& other) noexcept;
 	};
+	
+	class ParticleBufferManager;
 
 	class System
 	{
 	public:
 		virtual ~System() { }
 
-		void Initialize(const SystemParameters& parameters, ParticleBufferSet& bufferSet, Array<DynamicParticle> dynamicParticles, Array<StaticParticle> staticParticles);
 		virtual void Clear() = 0;
-		virtual void Update(float dt, uint simulationSteps) = 0;
+		virtual void Initialize(const SystemParameters& parameters, ParticleBufferManager& particleBufferManager, Array<DynamicParticle> dynamicParticles, Array<StaticParticle> staticParticles) = 0;
+		virtual void Update(float dt, uint simulationStepCount) = 0;
 
 		virtual StringView SystemImplementationName() = 0;			
-		
-		virtual uintMem GetDynamicParticleCount() const = 0;
-		virtual uintMem GetStaticParticleCount() const = 0;
 
-		virtual void EnableProfiling(bool enable) = 0;
-		virtual const SystemProfilingData& GetProfilingData() = 0;
-		virtual float GetSimulationTime() = 0;
+		virtual float GetSimulationTime() = 0;		
 
-		inline ParticleBufferSet* GetParticleBufferSet() { return particleBufferSet; }
-	protected:
-		virtual void CreateStaticParticlesBuffers(Array<StaticParticle>& staticParticles, float maxInteractionDistance) = 0;
-		virtual void CreateDynamicParticlesBuffers(ParticleBufferSet& particleBufferSet, float maxInteractionDistance) = 0;
-		virtual void InitializeInternal(const SystemParameters&) = 0;
+		static Vec3u GetCell(Vec3f position, float maxInteractionDistance);
+		static uint GetHash(Vec3u cell);
+		static float SmoothingKernelConstant(float h);
+		static float SmoothingKernelD0(float r, float maxInteractionDistance);
+		static float SmoothingKernelD1(float r, float maxInteractionDistance);
+		static float SmoothingKernelD2(float r, float maxInteractionDistance);
 
 		template<typename T, typename F> requires std::invocable<F, const T&>
-		static Array<T> GenerateHashMapAndReorderParticles(ArrayView<T> particles, Array<uint32>& hashMap, const F& hashGetter);		
+		static Array<T> GenerateHashMapAndReorderParticles(ArrayView<T> particles, Array<uint32>& hashMap, const F& hashGetter);				
+		static Array<DynamicParticle> GenerateHashMapAndReorderParticles(ArrayView<DynamicParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance);
+		static Array<StaticParticle> GenerateHashMapAndReorderParticles(ArrayView<StaticParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance);
 
 		template<typename T>
 		static void DebugParticles(ArrayView<T> particles, float maxInteractionDistance, uintMem hashMapSize);
 		template<typename T, typename H> requires ParticleWithHash<T>
 		static void DebugPrePrefixSumHashes(ArrayView<T> particles, Array<H> hashMap);
 		template<typename T, typename H> requires ParticleWithHash<T>
-		static void DebugInterPrefixSumHashes(Array<T> particles, Array<H> hashMap, uintMem groupSize, uintMem layerCount = 0);		
-		template<ParticleWithHash T, typename H>
-		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap);
+		static void DebugInterPrefixSumHashes(Array<T> particles, Array<H> hashMap, uintMem groupSize, uintMem layerCount = 0);				
 		template<typename T, typename H, typename F> requires std::invocable<F, const T&>
-		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap, const F& hashGetter);
-	private:
-		ParticleBufferSet* particleBufferSet;
+		static void DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap, const F& hashGetter);				
+		template<typename H>
+		static void DebugHashAndParticleMap(ArrayView<StaticParticle> particles, ArrayView<H> hashMap, float maxInteractionDistance);
+		template<typename H>
+		static void DebugHashAndParticleMap(ArrayView<DynamicParticle> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap);
 	};	
 	
 	template<typename T, typename F> requires std::invocable<F, const T&>
@@ -202,10 +207,17 @@ namespace SPH
 				__debugbreak();
 			}
 	}
-	template<ParticleWithHash T, typename H>
-	inline void System::DebugHashAndParticleMap(ArrayView<T> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap)
+	template<typename H>
+	inline void System::DebugHashAndParticleMap(ArrayView<StaticParticle> particles, ArrayView<H> hashMap, float maxInteractionDistance)
 	{
-		DebugHashAndParticleMap<T, H>(particles, hashMap, particleMap, [](const T& particle) {
+		DebugHashAndParticleMap<StaticParticle, H>(particles, hashMap, {}, [&, mod = hashMap.Count() - 1](const StaticParticle& particle) {
+			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
+			});
+	}
+	template<typename H>
+	inline void System::DebugHashAndParticleMap(ArrayView<DynamicParticle> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap)
+	{
+		DebugHashAndParticleMap<DynamicParticle, H>(particles, hashMap, particleMap, [](const DynamicParticle& particle) {
 			return particle.hash;
 			});
 	}
