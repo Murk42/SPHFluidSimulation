@@ -36,9 +36,6 @@
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\OpenCLContext.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\CameraControls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -63,9 +60,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OpenCLContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\json.hpp">

@@ -13,7 +13,7 @@ namespace SPH
 		~SystemCPU();
 		
 		void Clear() override;
-		void Initialize(const SystemParameters& parameters, ParticleBufferManager& particleBufferManager, Array<DynamicParticle> dynamicParticles, Array<StaticParticle> staticParticles) override;
+		void Initialize(Scene& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager) override;		
 		void Update(float dt, uint simulationSteps) override;
 				
 		StringView SystemImplementationName() override { return "CPU"; };
@@ -22,14 +22,16 @@ namespace SPH
 	private:									
 		ThreadParallelTaskManager threadManager;				
 		
-		ParticleBufferManager* particleBufferManager;
+		ParticleBufferManager* dynamicParticlesBufferManager;
+		ParticleBufferManager* staticParticlesBufferManager;
 
 		bool parallelPartialSum;	
 		Array<std::atomic_uint32_t> hashMapGroupSums;
-		Array<std::atomic_uint32_t> dynamicParticlesHashMapBuffer;		
+		Array<std::atomic_uint32_t> dynamicParticlesHashMap;		
+		Array<std::atomic_uint32_t> staticParticlesHashMap;
+
 		Array<uint32> particleMap;
 		
-		Array<uint32> staticParticlesHashMapBuffer;
 		
 		ParticleBehaviourParameters particleBehaviourParameters;		
 
@@ -38,6 +40,7 @@ namespace SPH
 				
 		float simulationTime;		
 
-		void WaitForTasksToFinish();
+		void InitializeStaticParticles(Scene& scene, ParticleBufferManager& staticParticlesBufferManager);
+		void InitializeDynamicParticles(Scene& scene, ParticleBufferManager& dynamicParticlesBufferManager);
 	};		
 }

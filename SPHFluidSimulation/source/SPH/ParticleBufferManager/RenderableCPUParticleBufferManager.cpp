@@ -25,10 +25,8 @@ namespace SPH
 		fence.Clear();
 	}
 
-	RenderableCPUParticleBufferManager::RenderableCPUParticleBufferManager() :
-		currentBuffer(0), openGLThreadID(),
-		dynamicParticlesCount(0), dynamicParticlesMemory(0), dynamicParticlesBuffers(3),
-		staticParticlesCount(0), staticParticlesMemory(0), staticParticlesBuffer()
+	RenderableCPUParticleBufferManager::RenderableCPUParticleBufferManager() 
+		: openGLThreadID(), currentBuffer(0), bufferSize(0), bufferGL(0)
 	{
 	}
 	RenderableCPUParticleBufferManager::~RenderableCPUParticleBufferManager()
@@ -36,188 +34,97 @@ namespace SPH
 		Clear();
 	}
 	void RenderableCPUParticleBufferManager::Clear()
-	{		
-		ClearDynamicParticlesBuffers();		
-		ClearStaticParticlesBuffer();
+	{				
+		if (bufferGL.GetHandle() != 0)
+		{
+			bufferGL.UnmapBuffer();
+			bufferGL.Release();
+		}
+
+		buffers.Clear();		
+		bufferSize = 0;
+		currentBuffer = 0;
 	}
 	void RenderableCPUParticleBufferManager::Advance()
 	{
-		currentBuffer = (currentBuffer + 1) % dynamicParticlesBuffers.Count();
+		currentBuffer = (currentBuffer + 1) % buffers.Count();
 	}
-	void RenderableCPUParticleBufferManager::AllocateDynamicParticles(uintMem count, DynamicParticle* particles)
+	void RenderableCPUParticleBufferManager::Allocate(uintMem newBufferSize, void* ptr, uintMem bufferCount)
 	{
 		openGLThreadID = std::this_thread::get_id();
 
-		ClearDynamicParticlesBuffers();
+		Clear();
 
-		if (count == 0)		
+		if (bufferCount == 0)
+		{
+			Debug::Logger::LogFatal("SPH Library", "bufferCount is 0");
 			return;
+		}
 
-		//Set current buffer to 0 because the initial particles are going to be copied to that buffer
-		currentBuffer = 0;
-		dynamicParticlesCount = count;
-		
-		//The OpenGL buffers aren't created so they need to be created
-		dynamicParticlesMemory = decltype(dynamicParticlesMemory)();
+		buffers = Array<ParticlesBuffer>(bufferCount);
+		bufferSize = newBufferSize;
 
 		using namespace Graphics::OpenGLWrapper;
-		dynamicParticlesMemory.Allocate(nullptr, sizeof(DynamicParticle) * count * dynamicParticlesBuffers.Count(),
-			GraphicsBufferMapAccessFlags::Read | GraphicsBufferMapAccessFlags::Write,
-			GraphicsBufferMapType::PersistentUncoherent
-		);
-
-		DynamicParticle* ptr = (DynamicParticle*)dynamicParticlesMemory.MapBufferRange(0, sizeof(DynamicParticle) * count * dynamicParticlesBuffers.Count(), GraphicsBufferMapOptions::ExplicitFlush);
-		
-		//Copy the initial particles to the first buffer, intentionally not flushing because it will be done when 'preparing' for rendering
-		if (particles != nullptr)
-			memcpy(ptr, particles, sizeof(DynamicParticle) * count);
-
-		for (uintMem i = 0; i < dynamicParticlesBuffers.Count(); ++i)
-			dynamicParticlesBuffers[i].SetPointer(ptr + count * i, false); 
-	}
-	void RenderableCPUParticleBufferManager::AllocateStaticParticles(uintMem count, StaticParticle* particles)
-	{
-		openGLThreadID = std::this_thread::get_id();
-
-		ClearStaticParticlesBuffer();
-
-		if (count == 0)		
-			return;				
-
-		staticParticlesCount = count;
-		
 		//The OpenGL buffers aren't created so they need to be created
-		staticParticlesMemory = decltype(staticParticlesMemory)();
+		bufferGL = ImmutableMappedGraphicsBuffer();
+		bufferGL.Allocate(nullptr, bufferSize * bufferCount, GraphicsBufferMapAccessFlags::Read | GraphicsBufferMapAccessFlags::Write, GraphicsBufferMapType::PersistentUncoherent);
 
-		staticParticlesMemory.Allocate(particles, sizeof(StaticParticle) * count,
-			Graphics::OpenGLWrapper::GraphicsBufferMapAccessFlags::Read | Graphics::OpenGLWrapper::GraphicsBufferMapAccessFlags::Write,
-			Graphics::OpenGLWrapper::GraphicsBufferMapType::PersistentUncoherent
-		);
+		void* map = bufferGL.MapBufferRange(0, bufferSize * bufferCount, GraphicsBufferMapOptions::ExplicitFlush);
 
-		void* ptr = (StaticParticle*)staticParticlesMemory.MapBufferRange(0, sizeof(StaticParticle) * count, Graphics::OpenGLWrapper::GraphicsBufferMapOptions::ExplicitFlush);
+		//Copy the initial particles to the first buffer, intentionally not flushing because it will be done when 'preparing' for rendering
+		if (ptr != nullptr)
+			memcpy(map, ptr, bufferSize);
 
-		//The buffer is prepared for rendering because there isn't a need to flush the buffer. It's been initialized with the particles
-		staticParticlesBuffer.SetPointer(ptr, true);		
+		bufferGL.FlushBufferRange(0, bufferSize);
+
+		for (uintMem i = 0; i < buffers.Count(); ++i)
+			buffers[i].SetPointer((char*)map + bufferSize * i, true);
 	}
-	uintMem RenderableCPUParticleBufferManager::GetDynamicParticleBufferCount() const
+	uintMem RenderableCPUParticleBufferManager::GetBufferCount() const
 	{
-		return dynamicParticlesBuffers.Count();
+		return buffers.Count();
 	}
-	uintMem RenderableCPUParticleBufferManager::GetDynamicParticleCount()
+	uintMem RenderableCPUParticleBufferManager::GetBufferSize()
 	{
-		return dynamicParticlesCount;
+		return bufferSize;
 	}
-	uintMem RenderableCPUParticleBufferManager::GetStaticParticleCount()
+	Graphics::OpenGLWrapper::GraphicsBuffer* RenderableCPUParticleBufferManager::GetGraphicsBuffer(uintMem index, uintMem& bufferOffset)
 	{
-		return staticParticlesCount;
+		bufferOffset = index * bufferSize;
+		return &bufferGL;
 	}
-	Graphics::OpenGLWrapper::GraphicsBuffer* RenderableCPUParticleBufferManager::GetDynamicParticlesGraphicsBuffer(uintMem index, uintMem& stride, uintMem& bufferOffset)
+	ResourceLockGuard RenderableCPUParticleBufferManager::LockRead(void* signalEvent)
 	{
-		stride = sizeof(DynamicParticle);
-		bufferOffset = index * dynamicParticlesCount * sizeof(DynamicParticle);
-		return &dynamicParticlesMemory;
+		return buffers[currentBuffer].LockRead();
 	}
-	Graphics::OpenGLWrapper::GraphicsBuffer* RenderableCPUParticleBufferManager::GetStaticParticlesGraphicsBuffer(uintMem& stride, uintMem& bufferOffset)
+	ResourceLockGuard RenderableCPUParticleBufferManager::LockWrite(void* signalEvent)
 	{
-		stride = sizeof(StaticParticle);
-		bufferOffset = 0;
-		return &staticParticlesMemory;
+		return buffers[currentBuffer].LockWrite(openGLThreadID == std::this_thread::get_id());
 	}
-	ResourceLockGuard RenderableCPUParticleBufferManager::LockDynamicParticlesForRead(void* signalEvent)
-	{		
-		return dynamicParticlesBuffers[currentBuffer].LockRead();
-	}
-	ResourceLockGuard RenderableCPUParticleBufferManager::LockDynamicParticlesForWrite(void* signalEvent)
+	ResourceLockGuard RenderableCPUParticleBufferManager::LockForRendering(void* signalEvent)
 	{
-		return dynamicParticlesBuffers[currentBuffer].LockWrite(openGLThreadID == std::this_thread::get_id());
-	}
-	ResourceLockGuard RenderableCPUParticleBufferManager::LockStaticParticlesForRead(void* signalEvent)
-	{	
-		return staticParticlesBuffer.LockRead();	
-	}
-	ResourceLockGuard RenderableCPUParticleBufferManager::LockStaticParticlesForWrite(void* signalEvent)
-	{
-		return staticParticlesBuffer.LockWrite(openGLThreadID == std::this_thread::get_id());
-	}	
-	ResourceLockGuard RenderableCPUParticleBufferManager::LockDynamicParticlesForRendering(void* signalEvent)
-	{
-		auto lockGuard = dynamicParticlesBuffers[currentBuffer].LockForRendering(dynamicParticlesMemory, currentBuffer, sizeof(DynamicParticle) * dynamicParticlesCount);
+		auto lockGuard = buffers[currentBuffer].LockForRendering(bufferGL, currentBuffer, bufferSize);
 
 		CheckAllRenderingFences();
 
-		return lockGuard;
+		return lockGuard;		
 	}
-	ResourceLockGuard RenderableCPUParticleBufferManager::LockStaticParticlesForRendering(void* signalEvent)
-	{						
-		auto lockGuard = staticParticlesBuffer.LockForRendering(staticParticlesMemory, 0, sizeof(StaticParticle) * staticParticlesCount);		
-
-		CheckAllRenderingFences();
-
-		return lockGuard;
-	}
-	void RenderableCPUParticleBufferManager::PrepareDynamicParticlesForRendering()
-	{	
-		auto lockGuard = dynamicParticlesBuffers[currentBuffer].LockRead();
-		dynamicParticlesBuffers[currentBuffer].PrepareForRendering(dynamicParticlesMemory, currentBuffer, sizeof(DynamicParticle) * dynamicParticlesCount);
-		lockGuard.Unlock({ });
-	}
-	void RenderableCPUParticleBufferManager::PrepareStaticParticlesForRendering() 
-	{	
-		auto lockGuard = staticParticlesBuffer.LockRead();
-		staticParticlesBuffer.PrepareForRendering(staticParticlesMemory, 0, sizeof(StaticParticle) * staticParticlesCount);
+	void RenderableCPUParticleBufferManager::PrepareForRendering()
+	{
+		auto lockGuard = buffers[currentBuffer].LockRead();
+		buffers[currentBuffer].PrepareForRendering(bufferGL, currentBuffer, bufferSize);
 		lockGuard.Unlock({ });
 	}
 	void RenderableCPUParticleBufferManager::FlushAllOperations()
 	{
-		for (auto& buffer : dynamicParticlesBuffers)
+		for (auto& buffer : buffers)
 			buffer.WaitRenderingFence();
-		staticParticlesBuffer.WaitRenderingFence();
 	}
 	void RenderableCPUParticleBufferManager::CheckAllRenderingFences()
 	{
-		for (auto& buffer : dynamicParticlesBuffers)
+		for (auto& buffer : buffers)
 			buffer.CheckRenderingFence();
-
-		staticParticlesBuffer.CheckRenderingFence();
 	}
-	void RenderableCPUParticleBufferManager::ClearDynamicParticlesBuffers()
-	{				
-		Array<ResourceLockGuard> lockGuards;
-		lockGuards.ReserveExactly(dynamicParticlesBuffers.Count());
-
-		for (auto& buffer : dynamicParticlesBuffers)
-			lockGuards.AddBack(buffer.LockWrite(true));
-
-		if (dynamicParticlesMemory.GetHandle() != 0)
-		{
-			dynamicParticlesMemory.UnmapBuffer();
-			dynamicParticlesMemory.Release();
-		}
-
-		for (auto& buffer : dynamicParticlesBuffers)
-			buffer.SetPointer(nullptr, false);		
-
-		dynamicParticlesCount = 0;
-
-		for (auto& lockGuard : lockGuards)
-			lockGuard.Unlock({});
-	}
-	void RenderableCPUParticleBufferManager::ClearStaticParticlesBuffer()
-	{		
-		ResourceLockGuard lockGuard = staticParticlesBuffer.LockWrite(true);
-
-		if (staticParticlesMemory.GetHandle() != 0)
-		{
-			staticParticlesMemory.UnmapBuffer();
-			staticParticlesMemory.Release();
-		}
-
-		staticParticlesBuffer.SetPointer(nullptr, false);
-		staticParticlesCount = 0;
-
-		lockGuard.Unlock({ });
-	}
-
 	RenderableCPUParticleBufferManager::ParticlesBuffer::ParticlesBuffer()
 		: ptr(nullptr), renderingFenceFlag(true), preparedForRendering(false)
 	{

@@ -80,6 +80,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <VcpkgAdditionalInstallOptions>--clean-after-build</VcpkgAdditionalInstallOptions>
@@ -201,7 +202,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\main.cpp" />
-    <ClCompile Include="source\OpenCLContext.cpp" />
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingScene.cpp" />
     <ClCompile Include="source\Scenes\ProfilingScene\ProfilingUI.cpp" />
     <ClCompile Include="source\Scenes\SimulationVisualisationScene\CameraControls.cpp" />
@@ -218,7 +218,6 @@
   <ItemGroup>
     <ClInclude Include="source\json.hpp" />
     <ClInclude Include="source\JSONParsing.h" />
-    <ClInclude Include="source\OpenCLContext.h" />
     <ClInclude Include="source\pch.h" />
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingScene.h" />
     <ClInclude Include="source\Scenes\ProfilingScene\ProfilingUI.h" />

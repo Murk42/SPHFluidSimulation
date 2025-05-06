@@ -123,6 +123,10 @@ void PrintDeviceInfo(cl_device_id device, WriteStream& stream)
 
 	cl_device_type type;
 	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(type), &type, nullptr));
+	
+	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &paramRetSize));
+	String version{ paramRetSize - 1 };
+	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_VERSION, paramRetSize, version.Ptr(), nullptr));
 
 	uint maxComputeUnits;
 	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(maxComputeUnits), &maxComputeUnits, nullptr));
@@ -160,6 +164,10 @@ void PrintDeviceInfo(cl_device_id device, WriteStream& stream)
 	uint preferredInteropUserSync;
 	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_PREFERRED_INTEROP_USER_SYNC, sizeof(preferredInteropUserSync), &preferredInteropUserSync, nullptr));
 
+	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, 0, nullptr, &paramRetSize));
+	String openCLCVersion{ paramRetSize - 1 };
+	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, paramRetSize, openCLCVersion.Ptr(), nullptr));
+
 	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, 0, nullptr, &paramRetSize));
 	String extensions{ paramRetSize - 1};
 	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, paramRetSize, extensions.Ptr(), nullptr));
@@ -169,12 +177,13 @@ void PrintDeviceInfo(cl_device_id device, WriteStream& stream)
 	//
 	//uintMem preferredWorkGroupSizeMultiple;
 	//CL_CALL(clGetDeviceInfo(device, CL_DEVICE_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(preferredWorkGroupSizeMultiple), &preferredWorkGroupSizeMultiple, nullptr));
-	
+
 	Write(stream, "Name: " + name + "\n");
 	Write(stream, "Type: " + ToString(type) + "\n");
+	Write(stream, "Version: " + version + "\n");
 	Write(stream, "Max compute units: " + StringParsing::Convert(maxComputeUnits) + "\n");
 	Write(stream, "Max work item dimensions: " + StringParsing::Convert(maxWorkItemDimensions) + "\n");
-	Write(stream, "Max work item sizes: \n");
+	Write(stream, "Max work item sizes: ");
 	for (uintMem i = 0; i < maxWorkItemSizes.Count(); ++i)
 		Write(stream, StringParsing::Convert(maxWorkItemSizes[i]) + (i == maxWorkItemSizes.Count() - 1 ? StringView("\n") : StringView(", ")));
 	Write(stream, "Max work group size: " + StringParsing::Convert(maxWorkGroupSize) + "\n");
@@ -188,6 +197,7 @@ void PrintDeviceInfo(cl_device_id device, WriteStream& stream)
 	Write(stream, "Preferred interop user sync: " + (preferredInteropUserSync == 1 ? StringView("true") : StringView("false")) + "\n");
 	//Write(stream, "Non uniform work group support: " + (nonUniformWorkGroupSupport == 1 ? StringView("true") : StringView("false")) + "\n");
 	//Write(stream, "Preferred work group size multiple: " + StringParsing::Convert(preferredWorkGroupSizeMultiple) + "\n");
+	Write(stream, "OpenCL C version: " + openCLCVersion + "\n");
 	Write(stream, "Extensions: " + extensions + "\n");
 	Write(stream, "\n");
 }
@@ -255,4 +265,22 @@ void PrintKernelInfo(cl_kernel kernel, cl_device_id device, WriteStream& stream)
 	Write(stream, "Preferred work group size multiple: " + StringParsing::Convert(preferredWorkGroupSizeMultiple) + "\n");
 	Write(stream, "Private memory size: " + StringParsing::Convert(privateMemSize) + "\n");
 	Write(stream, "\n");
+}
+
+void GetDeviceVersion(cl_device_id device, uintMem& major, uintMem& minor)
+{
+	major = 0;
+	minor = 0;
+
+	uintMem size = 0;
+	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_VERSION, 0, nullptr, &size));
+	String versionString{ size - 1 };
+	CL_CALL(clGetDeviceInfo(device, CL_DEVICE_VERSION, size, versionString.Ptr(), nullptr));
+	
+	auto words = StringParsing::Split(versionString, ' ');
+	String majorVersionString, minorVersionString;
+	StringParsing::SplitAtFirst(words[1], majorVersionString, minorVersionString, '.');
+
+	StringParsing::Convert((StringView)majorVersionString, major);
+	StringParsing::Convert((StringView)minorVersionString, minor);
 }

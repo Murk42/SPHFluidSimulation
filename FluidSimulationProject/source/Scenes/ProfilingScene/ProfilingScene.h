@@ -32,7 +32,8 @@ private:
 	struct SPHSystemData
 	{
 		SPH::System& system;
-		SPH::ParticleBufferManager& particleBufferSet;		
+		SPH::ParticleBufferManager& dynamicParticleBufferSet;		
+		SPH::ParticleBufferManager& staticParticleBufferSet;
 
 		//Array<SPH::SystemProfilingData> profilingData;
 	};
@@ -41,9 +42,11 @@ private:
 	RenderingSystem& renderingSystem;
 	Window& window;	
 
-	SPH::OfflineGPUParticleBufferManager GPUParticleBufferManager;
+	SPH::OfflineGPUParticleBufferManager GPUDynamicParticlesBufferManager;
+	SPH::OfflineGPUParticleBufferManager GPUStaticParticlesBufferManager;
 	SPH::SystemGPU SPHSystemGPU;
-	SPH::OfflineCPUParticleBufferManager CPUParticleBufferManager;
+	SPH::OfflineCPUParticleBufferManager CPUDynamicParticlesBufferManager;
+	SPH::OfflineCPUParticleBufferManager CPUStaticParticlesBufferManager;
 	SPH::SystemCPU SPHSystemCPU;
 
 	Array<SPHSystemData> SPHSystems;	

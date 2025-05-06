@@ -1,12 +1,12 @@
 #pragma once
 #include "SPH/Core/ParticleBufferManager.h"
-#include "SPH/Core/ParticleBufferManagerRenderData.h"
+#include "SPH/Core/ParticleBufferManagerGL.h"
 #include "SPH/ParticleBufferManager/CPUResourceLock.h"
 
 namespace SPH
 {
 	class RenderableCPUParticleBufferManager : 
-		public ParticleBufferManagerRenderData
+		public ParticleBufferManagerGL
 	{
 	public:
 		RenderableCPUParticleBufferManager();
@@ -25,49 +25,29 @@ namespace SPH
 		//operations acting on the old buffers will result in undefined behaviour after calling this function.
 		//Therefore those operations must be waited on. Before waiting for the operations function 
 		//'FlushAllOperations' must be called otherwise a deadlock might occur
-		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
-		//Calling this function might allocate new particle buffers and therefore invalidate the old ones. Any
-		//operations acting on the old buffers will result in undefined behaviour after calling this function.
-		//Therefore those operations must be waited on. Before waiting for the operations function 
-		//'FlushAllOperations' must be called, otherwise a deadlock might occur
-		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
+		void Allocate(uintMem newBufferSize, void* ptr, uintMem bufferCount) override;		
 
 		//It is safe to call this function from multiple threads at the same time
-		uintMem GetDynamicParticleBufferCount() const override;
+		uintMem GetBufferCount() const override;
 		//It is safe to call this function from multiple threads at the same time, as long as new particles 
 		//aren't being allocated at the same time
-		uintMem GetDynamicParticleCount() override;
-		//It is safe to call this function from multiple threads at the same time, as long as new particles 
-		//aren't being allocated at the same time
-		uintMem GetStaticParticleCount() override;
-		//It is safe to call this function from multiple threads at the same time, as long as new particles 
-		//aren't being allocated at the same time
-		Graphics::OpenGLWrapper::GraphicsBuffer* GetDynamicParticlesGraphicsBuffer(uintMem index, uintMem& stride, uintMem& bufferOffset) override;
-		//It is safe to call this function from multiple threads at the same time, as long as new particles 
-		//aren't being allocated at the same time
-		Graphics::OpenGLWrapper::GraphicsBuffer* GetStaticParticlesGraphicsBuffer(uintMem& stride, uintMem& bufferOffset) override;
+		uintMem GetBufferSize() override;
 
 		//It is safe to call this function from multiple threads at the same time, as long as new particles 
 		//aren't being allocated at the same time
-		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;		
+		Graphics::OpenGLWrapper::GraphicsBuffer* GetGraphicsBuffer(uintMem index, uintMem& bufferOffset) override;		
+
 		//It is safe to call this function from multiple threads at the same time, as long as new particles 
 		//aren't being allocated at the same time
-		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
+		ResourceLockGuard LockRead(void* signalEvent) override;		
 		//It is safe to call this function from multiple threads at the same time, as long as new particles 
 		//aren't being allocated at the same time
-		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
-		//It is safe to call this function from multiple threads at the same time, as long as new particles 
-		//aren't being allocated at the same time
-		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;		
+		ResourceLockGuard LockWrite(void* signalEvent) override;		
 		//This function can only be called by the OpenGL thread
-		ResourceLockGuard LockDynamicParticlesForRendering(void* signalEvent) override;
-		//This function can only be called by the OpenGL thread
-		ResourceLockGuard LockStaticParticlesForRendering(void* signalEvent) override;
+		ResourceLockGuard LockForRendering(void* signalEvent) override;		
 
 		//This function can only be called by the OpenGL thread
-		void PrepareDynamicParticlesForRendering() override;
-		//This function can only be called by the OpenGL thread
-		void PrepareStaticParticlesForRendering() override;
+		void PrepareForRendering() override;				
 
 		//This function can only be called by the OpenGL thread. It must be called before waiting for any
 		//locking/unlocking operations to finish, otherwise a deadlock might occur
@@ -104,20 +84,11 @@ namespace SPH
 		std::thread::id openGLThreadID;
 		uintMem currentBuffer;
 
-		Array<ParticlesBuffer> dynamicParticlesBuffers;
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer dynamicParticlesMemory;
-		uintMem dynamicParticlesCount;
-
-		ParticlesBuffer staticParticlesBuffer;
-		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer staticParticlesMemory;
-		uintMem staticParticlesCount;
+		Array<ParticlesBuffer> buffers;
+		Graphics::OpenGLWrapper::ImmutableMappedGraphicsBuffer bufferGL;
+		uintMem bufferSize;
 
 		//This function can only be called by the OpenGL thread
-		void CheckAllRenderingFences(); 
-		
-		//This function can only be called by the OpenGL thread
-		void ClearDynamicParticlesBuffers();
-		//This function can only be called by the OpenGL thread
-		void ClearStaticParticlesBuffer();
+		void CheckAllRenderingFences(); 				
 	};
 }

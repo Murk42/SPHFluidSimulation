@@ -40,29 +40,34 @@ namespace SPH
 			properties = FilledBoxParticleSetBlueprintProperties();
 		}
 	}
-	void FilledBoxParticleSetBlueprint::AppendParticlePositions(Array<Vec3f>& positions)
+	uintMem FilledBoxParticleSetBlueprint::GetParticleCount() const
+	{		
+		const Vec3<uintMem> gridSize{ properties.spawnVolumeSize * Math::Pow(properties.particlesPerUnit, 1.0f / 3) };
+		return gridSize.x * gridSize.y * gridSize.z;
+	}
+	void FilledBoxParticleSetBlueprint::WriteParticlesPositions(const WriteFunction<Vec3f> writeFunction, void* userData) const
 	{
 		const float linearParticleDensity = Math::Pow(properties.particlesPerUnit, 1.0f / 3);
 		const float particleDistance = 1.0f / linearParticleDensity;
-		const Vec3<uintMem> particleGridSize{ properties.spawnVolumeSize * linearParticleDensity };
+		const Vec3<uintMem> gridSize{ properties.spawnVolumeSize * linearParticleDensity };
 
 		const Vec3f particleOffset = Vec3f(particleDistance / 2) + properties.spawnVolumeOffset;		
+		
+		Random::SetSeed(properties.seed);
+		const float offsetAmplitude = particleDistance / 2.0f * properties.randomOffsetIntensity;
 
-		positions.ReserveAdditional(particleGridSize.x * particleGridSize.y * particleGridSize.z);
+		uintMem index = 0;
+		for (int i = 0; i < gridSize.x; i++)
+			for (int j = 0; j < gridSize.y; j++)
+				for (int k = 0; k < gridSize.z; k++)
+				{
+					Vec3f position = Vec3f(i, j, k) * particleDistance + particleOffset;
 
-		uintMem startIndex = positions.Count();
-		for (int i = 0; i < particleGridSize.x; i++)
-			for (int j = 0; j < particleGridSize.y; j++)
-				for (int k = 0; k < particleGridSize.z; k++)
-					positions.AddBack(Vec3f(i, j, k) * particleDistance + particleOffset);
+					if (properties.randomOffsetIntensity != 0.0f)
+						position += Vec3f(Random::Float(-1, 1), Random::Float(-1, 1), Random::Float(-1, 1))* offsetAmplitude;
 
-		if (properties.randomOffsetIntensity != 0.0f)
-		{
-			Random::SetSeed(properties.seed);		
-			const float offsetAmplitude = particleDistance / 2.0f * properties.randomOffsetIntensity;
-
-			for (uintMem i = startIndex; i < positions.Count(); ++i)
-				positions[i] += Vec3f(Random::Float(-1, 1), Random::Float(-1, 1), Random::Float(-1, 1)) * offsetAmplitude;
-		}
+					writeFunction(index, position, userData);
+					++index;
+				}
 	}
 }

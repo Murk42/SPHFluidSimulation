@@ -53,11 +53,6 @@ void RenderingSystem::SetViewMatrix(const Mat4f& matrix)
 	this->viewMatrix = matrix;	
 }
 
-void RenderingSystem::SetSPHSystemRenderingCache(SPH::SystemRenderCache* renderCache)
-{
-	sphSystemRenderCache = renderCache;
-}
-
 void RenderingSystem::SetSPHSystemRenderer(SPH::SystemRenderer* renderer)
 {
 	sphSystemRenderer = renderer;
@@ -68,14 +63,14 @@ void RenderingSystem::SetScreen(UI::Screen* screen)
 	UIRenderPipeline.SetScreen(screen);			
 }
 
-void RenderingSystem::Render()
+void RenderingSystem::Render(ArrayView<SPH::SystemRenderCache&> renderCaches)
 {
 	graphicsContext.ClearTarget();
 
 	graphicsContext.EnableDepthTest(true);
 	
-	if (sphSystemRenderCache != nullptr)	
-		sphSystemRenderer->Render(*sphSystemRenderCache, viewMatrix, projectionMatrix);		
+	for (auto& renderCache : renderCaches)
+		sphSystemRenderer->Render(renderCache, viewMatrix, projectionMatrix);
 	
 	graphicsContext.EnableDepthTest(false);
 

@@ -9,6 +9,13 @@ namespace SPH
 
 namespace SPH::Details
 {	
+	void InitializeParticleMap(uint64 threadID, uint32* particleMap);
+	void PrepareStaticParticlesHashMap(uint64 threadID, volatile std::atomic_uint32_t* hashMap, uintMem hashMapSize, const StaticParticle* inParticles, float maxInteractionDistance);
+	void ReorderStaticParticlesAndFinishHashMap(uint64 threadID, volatile std::atomic_uint32_t* hashMap, uintMem hashMapSize, const StaticParticle* inParticles, StaticParticle* outParticles, float maxInteractionDistance);
+	void ComputeDynamicParticlesHashAndPrepareHashMap(uint64 threadID, volatile std::atomic_uint32_t* hashMap, uintMem hashMapSize, DynamicParticle* particles, float maxInteractionDistance);
+	void ReorderDynamicParticlesAndFinishHashMap(uint64 threadID, uint32* particleMap, volatile std::atomic_uint32_t* hashMap, const DynamicParticle* inParticles, DynamicParticle* outParticles);
+	void FillDynamicParticleMapAndFinishHashMap(uint64 threadID, uint32* particleMap, volatile std::atomic_uint32_t* hashMap, const DynamicParticle* inParticles);
+
 	void UpdateParticlePressure(
 		uint64 threadID,
 		uint64 dynamicParticlesCount,
@@ -20,7 +27,7 @@ namespace SPH::Details
 		const std::atomic_uint32_t* hashMap,
 		const uint* particleMap,
 		const StaticParticle* staticParticles,
-		const uint* staticParticleHashMap,
+		const std::atomic_uint32_t* staticParticleHashMap,
 		const ParticleBehaviourParameters* parameters
 	);	
 
@@ -35,17 +42,8 @@ namespace SPH::Details
 		const std::atomic_uint32_t* hashMap,
 		const uint* particleMap,
 		const StaticParticle* staticParticles,
-		const uint* staticParticlesHashMap,
+		const std::atomic_uint32_t* staticParticlesHashMap,
 		const float deltaTime,
 		const ParticleBehaviourParameters* parameters
-	);
-
-	void ComputeParticleMap(
-		uint64 threadID,
-		const DynamicParticle* particles,
-		DynamicParticle* orderedParticles,
-		std::atomic_uint32_t* hashMap,
-		uint* particleMap,
-		const uint reorderParticles
 	);
 }

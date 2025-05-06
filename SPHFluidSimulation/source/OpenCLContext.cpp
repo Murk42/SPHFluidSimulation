@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "OpenCLContext.h"
+#include "OpenCLDebug.h"
 #include "CL/opencl.hpp"
 #include "CL/cl_gl.h"
 

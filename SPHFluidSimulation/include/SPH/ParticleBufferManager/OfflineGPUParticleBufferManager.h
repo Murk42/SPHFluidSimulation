@@ -4,67 +4,6 @@
 
 namespace SPH
 {
-	/*
-	class OfflineGPUParticleBufferManager :
-		public GPUParticleBufferManager
-	{
-	public:
-		OfflineGPUParticleBufferManager(cl_context clContext, cl_command_queue queue);
-		
-		void Clear() override;
-		void Advance() override;
-
-		void ManagerDynamicParticles(ArrayView<DynamicParticle> dynamicParticles) override;
-		void ManagerStaticParticles(ArrayView<StaticParticle> staticParticles) override;
-
-		GPUParticleReadBufferHandle& GetReadBufferHandle() override;
-		GPUParticleWriteBufferHandle& GetWriteBufferHandle() override;		
-		GPUParticleWriteBufferHandle& GetReadWriteBufferHandle() override;
-		const cl_mem& GetStaticParticleBuffer() override;
-
-		uintMem GetDynamicParticleCount() override;
-		uintMem GetStaticParticleCount() override;
-	private:
-		class Buffer :
-			public GPUParticleReadBufferHandle,
-			public GPUParticleWriteBufferHandle
-		{
-			const OfflineGPUParticleBufferManager& bufferManager;
-			
-			cl_mem dynamicParticleBufferCL;			
-
-			cl_event readFinishedEvent;
-			cl_event writeFinishedEvent;
-			cl_event copyFinishedEvent;						
-		public:
-			Buffer(const OfflineGPUParticleBufferManager& bufferManager);
-			~Buffer();
-
-			void Clear();
-
-			void ManagerDynamicParticles(const DynamicParticle* dynamicParticlesPtr);
-
-			void StartRead(cl_event* finishedEvent) override;
-			void FinishRead(ArrayView<cl_event> waitEvents) override;
-			void StartWrite(cl_event* finishedEvent) override;
-			void FinishWrite(ArrayView<cl_event> waitEvents, bool prepareForRendering) override;
-
-			const cl_mem& GetReadBuffer() override { return dynamicParticleBufferCL; }
-			const cl_mem& GetWriteBuffer() override { return dynamicParticleBufferCL; }			
-		};
-
-		cl_context clContext;
-		cl_command_queue queue;
-
-		Array<Buffer> buffers;
-		uintMem currentBuffer;
-
-		cl_mem staticParticleBuffer;
-
-		uintMem dynamicParticleCount;
-		uintMem staticParticleCount;
-	};
-	*/
 	class OfflineGPUParticleBufferManager : public ParticleBufferManager
 	{
 	public:
@@ -74,42 +13,38 @@ namespace SPH
 		void Clear() override;
 		void Advance() override;
 
-		void AllocateDynamicParticles(uintMem count, DynamicParticle* particles) override;
-		void AllocateStaticParticles(uintMem count, StaticParticle* particles) override;
+		void Allocate(uintMem newBufferSize, void* ptr, uintMem bufferCount) override;
 
-		uintMem GetDynamicParticleBufferCount() const override;
-		uintMem GetDynamicParticleCount() override;
-		uintMem GetStaticParticleCount() override;
+		uintMem GetBufferCount() const override;
+		uintMem GetBufferSize() override;
 
-		ResourceLockGuard LockDynamicParticlesForRead(void* signalEvent) override;		
-		ResourceLockGuard LockDynamicParticlesForWrite(void* signalEvent) override;
+		ResourceLockGuard LockRead(void* signalEvent) override;
+		ResourceLockGuard LockWrite(void* signalEvent) override;		
 		
-		ResourceLockGuard LockStaticParticlesForRead(void* signalEvent) override;
-		ResourceLockGuard LockStaticParticlesForWrite(void* signalEvent) override;
-
 		void FlushAllOperations() override;
 	private:
-		struct DynamicParticlesSubBuffer
+		struct ParticlesBuffer
 		{
-			OpenCLLock dynamicParticlesLock;
-			cl_mem dynamicParticlesView;
+		public:
+			ParticlesBuffer(cl_command_queue clCommandQueue);
+
+			void CreateBuffer(cl_mem parentBuffer, uintMem offset, uintMem size);
+
+			ResourceLockGuard LockRead(cl_event* signalEvent);
+			ResourceLockGuard LockWrite(cl_event* signalEvent);
+		private:
+			OpenCLLock lock;
+			cl_mem buffer;
 		};
 
 		cl_context clContext;
 		cl_device_id clDevice;
 		cl_command_queue clCommandQueue;
 
-		Array<DynamicParticlesSubBuffer> buffers;
 		uintMem currentBuffer;
 
-		OpenCLLock staticParticlesLock;
-		cl_mem staticParticlesBuffer;
-		uintMem staticParticlesCount;
-
-		cl_mem dynamicParticlesBuffer;		
-		uintMem dynamicParticlesCount;
-			
-		void CleanDynamicParticlesBuffers();
-		void CleanStaticParticlesBuffer();
+		Array<ParticlesBuffer> buffers;
+		cl_mem bufferCL;
+		uintMem bufferSize;		
 	};
 }

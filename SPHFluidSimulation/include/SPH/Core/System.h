@@ -10,6 +10,8 @@
 
 namespace SPH
 {
+	class Scene;
+
 	struct SystemParameters
 	{						
 		ParticleBehaviourParameters particleBehaviourParameters;		
@@ -51,7 +53,7 @@ namespace SPH
 		virtual ~System() { }
 
 		virtual void Clear() = 0;
-		virtual void Initialize(const SystemParameters& parameters, ParticleBufferManager& particleBufferManager, Array<DynamicParticle> dynamicParticles, Array<StaticParticle> staticParticles) = 0;
+		virtual void Initialize(Scene& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager) = 0;
 		virtual void Update(float dt, uint simulationStepCount) = 0;
 
 		virtual StringView SystemImplementationName() = 0;			
@@ -65,10 +67,12 @@ namespace SPH
 		static float SmoothingKernelD1(float r, float maxInteractionDistance);
 		static float SmoothingKernelD2(float r, float maxInteractionDistance);
 
-		template<typename T, typename F> requires std::invocable<F, const T&>
-		static Array<T> GenerateHashMapAndReorderParticles(ArrayView<T> particles, Array<uint32>& hashMap, const F& hashGetter);				
-		static Array<DynamicParticle> GenerateHashMapAndReorderParticles(ArrayView<DynamicParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance);
-		static Array<StaticParticle> GenerateHashMapAndReorderParticles(ArrayView<StaticParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance);
+		template<typename T, typename H, typename F> requires std::invocable<F, const T&>
+		static Array<T> GenerateHashMapAndReorderParticles(ArrayView<T> particles, Array<H>& hashMap, const F& hashGetter);				
+		template<typename H>
+		static Array<DynamicParticle> GenerateHashMapAndReorderParticles(ArrayView<DynamicParticle> particles, Array<H>& hashMap, float maxInteractionDistance);
+		template<typename H>
+		static Array<StaticParticle> GenerateHashMapAndReorderParticles(ArrayView<StaticParticle> particles, Array<H>& hashMap, float maxInteractionDistance);
 
 		template<typename T>
 		static void DebugParticles(ArrayView<T> particles, float maxInteractionDistance, uintMem hashMapSize);
@@ -84,10 +88,10 @@ namespace SPH
 		static void DebugHashAndParticleMap(ArrayView<DynamicParticle> particles, ArrayView<H> hashMap, ArrayView<uint32> particleMap);
 	};	
 	
-	template<typename T, typename F> requires std::invocable<F, const T&>
-	inline Array<T> System::GenerateHashMapAndReorderParticles(ArrayView<T> particles, Array<uint32>& hashMap, const F& hashGetter)
+	template<typename T, typename H, typename F> requires std::invocable<F, const T&>
+	inline Array<T> System::GenerateHashMapAndReorderParticles(ArrayView<T> particles, Array<H>& hashMap, const F& hashGetter)
 	{
-		memset(hashMap.Ptr(), 0, sizeof(uint32) * hashMap.Count());
+		memset(hashMap.Ptr(), 0, sizeof(H) * hashMap.Count());
 
 		for (const auto& particle : particles)
 			++hashMap[hashGetter(particle)];
@@ -107,6 +111,20 @@ namespace SPH
 
 		return particlesOutput;
 	}	
+	template<typename H>
+	Array<DynamicParticle> System::GenerateHashMapAndReorderParticles(ArrayView<DynamicParticle> particles, Array<H>& hashMap, float maxInteractionDistance)
+	{
+		return GenerateHashMapAndReorderParticles<DynamicParticle, H>(particles, hashMap, [maxInteractionDistance = maxInteractionDistance, mod = hashMap.Count() - 1](const DynamicParticle& particle) {
+			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
+			});
+	}
+	template<typename H>
+	Array<StaticParticle> System::GenerateHashMapAndReorderParticles(ArrayView<StaticParticle> particles, Array<H>& hashMap, float maxInteractionDistance)
+	{
+		return GenerateHashMapAndReorderParticles<StaticParticle, H>(particles, hashMap, [maxInteractionDistance = maxInteractionDistance, mod = hashMap.Count() - 1](const StaticParticle& particle) {
+			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
+			});
+	}
 	template<typename T> 
 	inline void System::DebugParticles(ArrayView<T> particles, float maxInteractionDistance, uintMem hashMapSize)
 	{
@@ -159,7 +177,7 @@ namespace SPH
 
 			if constexpr (ParticleWithHash<T>)
 			{
-				Vec3i cell = GetCell(particle.position, maxInteractionDistance);
+				Vec3u cell = GetCell(particle.position, maxInteractionDistance);
 				uint32 hash = GetHash(cell) % hashMapSize;
 
 				if (particle.hash != hash)

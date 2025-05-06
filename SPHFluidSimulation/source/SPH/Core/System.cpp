@@ -106,17 +106,5 @@ namespace SPH
 	float System::SmoothingKernelD2(float r, float maxInteractionDistance)
 	{
 		return Details::SmoothingKernelD2(r, maxInteractionDistance);
-	}
-	Array<DynamicParticle> System::GenerateHashMapAndReorderParticles(ArrayView<DynamicParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance)
-	{
-		return GenerateHashMapAndReorderParticles<DynamicParticle>(particles, hashMap, [maxInteractionDistance = maxInteractionDistance, mod = hashMap.Count() - 1](const DynamicParticle& particle) {
-			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
-			});
-	}
-	Array<StaticParticle> System::GenerateHashMapAndReorderParticles(ArrayView<StaticParticle> particles, Array<uint32>& hashMap, float maxInteractionDistance)
-	{
-		return GenerateHashMapAndReorderParticles<StaticParticle>(particles, hashMap, [maxInteractionDistance = maxInteractionDistance, mod = hashMap.Count() - 1](const StaticParticle& particle) {
-			return GetHash(GetCell(particle.position, maxInteractionDistance)) % mod;
-			});
-	}
+	}	
 }

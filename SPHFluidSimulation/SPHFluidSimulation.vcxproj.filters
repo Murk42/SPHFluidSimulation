@@ -78,6 +78,9 @@
     <ClCompile Include="source\SPH\Kernels\Kernels.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\OpenCLContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\json.hpp">
@@ -101,7 +104,7 @@
     <ClInclude Include="include\SPH\Core\ParticleBufferManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\SPH\Core\ParticleBufferManagerRenderData.h">
+    <ClInclude Include="include\SPH\Core\ParticleBufferManagerGL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\ParticleBufferManager\RenderableCPUParticleBufferManager.h">
@@ -134,7 +137,7 @@
     <ClInclude Include="source\SPH\Kernels\Kernels.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\OpenCLDebug.h">
+    <ClInclude Include="include\OpenCLDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\SPH\Core\Scene.h">
@@ -167,9 +170,14 @@
     <ClInclude Include="source\SPH\Graphics\Shaders\Shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\OpenCLContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\OpenCLTemplatedKernel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="source\SPH\Kernels\partialSum.cl" />
     <None Include="vcpkg.json" />
     <None Include="BlazeEngineProjectPropertySheet.props" />
     <None Include="source\SPH\Graphics\Shaders\particle.frag" />

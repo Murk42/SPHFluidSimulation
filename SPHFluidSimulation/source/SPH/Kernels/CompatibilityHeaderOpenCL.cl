@@ -4,6 +4,7 @@
 #define HASH_TYPE uint
 #define uint32 uint
 #define uint64 ulong
+#define uintMem size_t
 
 
 #define modf fract
@@ -22,3 +23,5 @@
 #define PACKED __attribute__((packed))
 #define Vec4f float4
 #define CONSTEXPR inline
+
+#define INITIALIZE_THREAD_ID() threadID = get_global_id(0)

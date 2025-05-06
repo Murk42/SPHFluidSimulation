@@ -8,7 +8,8 @@
 ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl_command_queue clQueue, RenderingSystem& renderingSystem) :
 	clContext(clContext), renderingSystem(renderingSystem), window(renderingSystem.GetWindow()),
 	SPHSystemGPU(clContext.context, clContext.device, clQueue, renderingSystem.GetGraphicsContext()), SPHSystemCPU(std::thread::hardware_concurrency()),
-	GPUParticleBufferManager(clContext.context, clContext.device, clQueue),
+	GPUDynamicParticlesBufferManager(clContext.context, clContext.device, clQueue),
+	GPUStaticParticlesBufferManager(clContext.context, clContext.device, clQueue),
 	uiScreen(*this, &window)
 {
 	//Setup UI	
@@ -17,8 +18,8 @@ ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl_command_queue clQueu
 	UIInputManager.SetScreen(&uiScreen);	
 
 
-	SPHSystems.AddBack(SPHSystemData{ SPHSystemGPU, GPUParticleBufferManager });
-	SPHSystems.AddBack(SPHSystemData{ SPHSystemCPU, CPUParticleBufferManager });
+	SPHSystems.AddBack(SPHSystemData{ SPHSystemGPU, GPUDynamicParticlesBufferManager, GPUStaticParticlesBufferManager });
+	SPHSystems.AddBack(SPHSystemData{ SPHSystemCPU, CPUDynamicParticlesBufferManager, CPUStaticParticlesBufferManager });
 }
 ProfilingScene::~ProfilingScene()
 {
@@ -27,7 +28,7 @@ ProfilingScene::~ProfilingScene()
 }
 void ProfilingScene::Update()
 {	
-	renderingSystem.Render();	
+	renderingSystem.Render({});
 
 	if (profiling && !SPHSystems.Empty() && !profiles.Empty())
 	{		
@@ -128,7 +129,8 @@ void ProfilingScene::UpdateProfilingState()
 			else
 			{
 				SPHSystems[systemIndex].system.Clear();
-				SPHSystems[systemIndex].particleBufferSet.Clear();
+				SPHSystems[systemIndex].dynamicParticleBufferSet.Clear();
+				SPHSystems[systemIndex].staticParticleBufferSet.Clear();
 
 				systemIndex = 0;
 
@@ -140,7 +142,8 @@ void ProfilingScene::UpdateProfilingState()
 		else
 		{
 			SPHSystems[systemIndex].system.Clear();
-			SPHSystems[systemIndex].particleBufferSet.Clear();
+			SPHSystems[systemIndex].dynamicParticleBufferSet.Clear();
+			SPHSystems[systemIndex].staticParticleBufferSet.Clear();
 
 			++systemIndex;
 			NewSystemStarted();
@@ -152,8 +155,8 @@ void ProfilingScene::StopProfiling()
 	for (auto& system : SPHSystems)
 	{
 		system.system.Clear();
-		system.particleBufferSet.Clear();
-		//system.profilingData.Clear();
+		system.dynamicParticleBufferSet.Clear();
+		system.staticParticleBufferSet.Clear();		
 	}
 
 	profiling = false;		
@@ -184,9 +187,8 @@ void ProfilingScene::ProfileFinished()
 
 	output +=
 		"Started profiling profile named \"" + profiles[profileIndex].name + "\".\n"
-		"   Number of dynamic particles: " + StringParsing::Convert(SPHSystems[systemIndex].particleBufferSet.GetDynamicParticleCount()) + "\n"
-		"   Number of static particles:  " + StringParsing::Convert(SPHSystems[systemIndex].particleBufferSet.GetStaticParticleCount()) + "\n"
-		"   Simulation duration:         " + StringParsing::Convert(profiles[profileIndex].simulationDuration) + "s\n"
+		"   Number of dynamic particles: " + StringParsing::Convert(SPHSystems[systemIndex].dynamicParticleBufferSet.GetBufferSize() / sizeof(SPH::DynamicParticle)) + "\n"
+		"   Number of static particles:  " + StringParsing::Convert(SPHSystems[systemIndex].staticParticleBufferSet.GetBufferSize() / sizeof(SPH::StaticParticle)) + "\n"		"   Simulation duration:         " + StringParsing::Convert(profiles[profileIndex].simulationDuration) + "s\n"
 		"   Simulation step time:        " + StringParsing::Convert(profiles[profileIndex].simulationStepTime) + "s\n"
 		"   Steps per update:            " + StringParsing::Convert(profiles[profileIndex].stepsPerUpdate) + "\n"		
 		"\n";

@@ -7,41 +7,43 @@
 using namespace Blaze;
 
 #include "SPH/Core/System.h"
-#include "SPH/Core/ParticleBufferManagerRenderData.h"
+#include "SPH/Core/ParticleBufferManagerGL.h"
 
 namespace SPH
 {
 	class SystemRenderCache
 	{
-	public:
+	public:		
 		SystemRenderCache();
 
-		void SetParticleBufferManagerRenderData(SPH::ParticleBufferManagerRenderData& renderData);
-		void SetModelMatrix(Mat4f modelMatrix) { this->modelMatrix = modelMatrix; }
+		void SetParticleBufferManagerRenderData(SPH::ParticleBufferManagerGL& renderData, uintMem particleByteSize);
 
+		void SetModelMatrix(Mat4f modelMatrix) { this->modelMatrix = modelMatrix; }
+		void SetParticleColor(ColorRGBAf particleColor) { this->particleColor = particleColor; }
+		void SetParticleSize(float particleSize) { this->particleSize = particleSize; }
+		
 		const Mat4f& GetModelMatrix() const { return modelMatrix; }
+		float GetParticleSize() const { return particleSize; }
+		ColorRGBAf GetParticleColor() const { return particleColor; }
+		ResourceLockGuard GetVertexArray(Graphics::OpenGLWrapper::VertexArray*& VA);
+		uintMem GetParticleCount() const { return renderData->GetBufferSize() / particleByteSize; }
+
+		bool Empty() { return renderData == nullptr || renderData->GetBufferSize() == 0; }
 	private:		
 		Array<Graphics::OpenGLWrapper::VertexArray> VAs;
-		Graphics::OpenGLWrapper::VertexArray staticParticlesVA;
-		SPH::ParticleBufferManagerRenderData* renderData;		
+		SPH::ParticleBufferManagerGL* renderData;		
+		uintMem particleByteSize;
 
 		Mat4f modelMatrix;
-
-		bool VAsInitialized;
-
-		void InitializeVAs();
-
-		friend class SystemRenderer;
+		ColorRGBAf particleColor;
+		float particleSize;		
 	};
 
 	class SystemRenderer
 	{
 	public:
 		SystemRenderer(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext);
-		~SystemRenderer() { }
-
-		void SetDynamicParticleColor(ColorRGBAf color);
-		void SetStaticParticleColor(ColorRGBAf color);
+		~SystemRenderer() { }		
 
 		template<typename T>
 		void SetUniform(uintMem index, const T& value)
@@ -54,8 +56,5 @@ namespace SPH
 		Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext;
 
 		Graphics::OpenGLWrapper::ShaderProgram shaderProgram;
-
-		Vec4f dynamicParticleColor = Vec4f(1.0f);
-		Vec4f staticParticleColor = Vec4f(1.0f, 0.0f, 0.0f, 0.5f);
 	};
 }

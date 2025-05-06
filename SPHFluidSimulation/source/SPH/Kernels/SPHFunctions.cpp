@@ -4,6 +4,8 @@
 
 namespace SPH
 {
+#else
+#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 #endif
 
 
@@ -136,53 +138,132 @@ namespace SPH::Details
 	}
 
 #ifdef CL_COMPILER
-#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
-
-	void kernel computeParticleHashes(global struct DynamicParticle* particles, volatile global uint32* hashMap, float maxInteractionDistance, uint64 hashMapSize)
+	//array should be sized get_enqueued_local_size(0) * get_num_groups(0) * 2
+	void kernel InclusiveScanUpPass(local uint* temp, global uint* array, uint scale)
 	{
-		float3 particlePosition = particles[get_global_id(0)].positionAndPressure.xyz;
+		const uint n = min((get_global_size(0) - get_local_size(0) * get_group_id(0)), get_local_size(0)) * 2;
+		global uint* ptrIn = array + get_local_size(0) * get_group_id(0) * 2 * scale;
+		global uint* ptrOut = ptrIn;
 
-		uint3 cell = GetCell(particlePosition, maxInteractionDistance);
-		uint32 particleHash = GetHash(cell) % hashMapSize;
+		int thid = get_local_id(0);
+		int offset = 1;
 
-		particles[get_global_id(0)].velocityAndHash.w = *(float*)&particleHash;
+		temp[2 * thid + 0] = ptrIn[(2 * thid + 1) * scale - 1]; // load input into shared memory
+		temp[2 * thid + 1] = ptrIn[(2 * thid + 2) * scale - 1];
 
-		atomic_inc(hashMap + particleHash);
+		for (int d = n >> 1; d > 0; d >>= 1) // build sum in place up the tree
+		{
+			barrier(CLK_LOCAL_MEM_FENCE);
+
+			if (thid < d)
+			{
+				int ai = offset * (2 * thid + 1) - 1;
+				int bi = offset * (2 * thid + 2) - 1;
+
+				temp[bi] += temp[ai];
+			}
+
+			offset *= 2;
+		}
+
+
+		if (thid == 0)
+		{
+			temp[n] = temp[n - 1];
+			temp[n - 1] = 0;
+		} // clear the last element
+
+
+		for (int d = 1; d < n; d *= 2) // traverse down tree & build scan
+		{
+			offset >>= 1;
+			barrier(CLK_LOCAL_MEM_FENCE);
+
+			if (thid < d)
+			{
+				int ai = offset * (2 * thid + 1) - 1;
+				int bi = offset * (2 * thid + 2) - 1;
+
+				float t = temp[ai];
+				temp[ai] = temp[bi];
+				temp[bi] += t;
+			}
+		}
+
+		barrier(CLK_LOCAL_MEM_FENCE);
+
+		ptrOut[(2 * thid + 1) * scale - 1] = temp[2 * thid + 1]; // write results to device memory
+		ptrOut[(2 * thid + 2) * scale - 1] = temp[2 * thid + 2];
 	}
 
-	void kernel incrementHashMap(global struct DynamicParticle* particles, volatile global uint32* hashMap)
+	void kernel InclusiveScanDownPass(global uint* arrays, uint scale)
 	{
-		float particleHash_FLOAT = particles[get_global_id(0)].velocityAndHash.w;
-		uint32 particleHash = *(uint32*)&particleHash_FLOAT;
+		uint index = (get_group_id(0) + 1) * (get_local_size(0) + 1);
+		uint inc = arrays[index * scale - 1];
 
-		atomic_inc(hashMap + particleHash);
+		arrays[(index + get_local_id(0) + 1) * scale - 1] += inc;
 	}
 #endif
 
-	void KERNEL ComputeParticleMap(
-		uint64 threadID,
-		CONSTANT STRUCT DynamicParticle* particles,
-		GLOBAL STRUCT DynamicParticle* orderedParticles,
-		GLOBAL HASH_TYPE* hashMap,
-		GLOBAL uint32* particleMap,
-		const uint32 reorderParticles
-	) {
-#ifdef CL_COMPILER
-		threadID = get_global_id(0);
-#endif
+	void KERNEL InitializeParticleMap(uint64 threadID, GLOBAL uint32* particleMap)
+	{
+		INITIALIZE_THREAD_ID();
 
-		float particleHash_FLOAT = particles[threadID].velocityAndHash.w;
-		uint32 particleHash = *(uint32*)&particleHash_FLOAT;
+		particleMap[threadID] = threadID;
+	}
+	void KERNEL PrepareStaticParticlesHashMap(uint64 threadID, volatile GLOBAL HASH_TYPE* hashMap, uintMem hashMapSize, CONSTANT STRUCT StaticParticle* inParticles, float maxInteractionDistance)
+	{
+		INITIALIZE_THREAD_ID();
+
+		uint32 particleHash = GetHash(GetCell(inParticles[threadID].positionAndPressure.xyz(), maxInteractionDistance)) % hashMapSize;
+
+		atomic_inc(hashMap + particleHash);
+	}
+	void KERNEL ReorderStaticParticlesAndFinishHashMap(uint64 threadID, volatile GLOBAL HASH_TYPE* hashMap, uintMem hashMapSize, CONSTANT STRUCT StaticParticle* inParticles, GLOBAL STRUCT StaticParticle* outParticles, float maxInteractionDistance)
+	{
+		INITIALIZE_THREAD_ID();
+
+		size_t oldIndex = threadID;
+		
+		uint32 particleHash = GetHash(GetCell(inParticles[oldIndex].positionAndPressure.xyz(), maxInteractionDistance)) % hashMapSize;
+
+		size_t newIndex = (size_t)(atomic_dec(hashMap + particleHash) - 1);
+		
+		outParticles[newIndex] = inParticles[oldIndex];
+	}
+	void KERNEL ComputeDynamicParticlesHashAndPrepareHashMap(uint64 threadID, volatile GLOBAL HASH_TYPE* hashMap, uintMem hashMapSize, GLOBAL STRUCT DynamicParticle* particles, float maxInteractionDistance)
+	{
+		INITIALIZE_THREAD_ID();
+
+		uint32 particleHash = GetHash(GetCell(particles[threadID].positionAndPressure.xyz(), maxInteractionDistance)) % hashMapSize;
+
+		particles[threadID].velocityAndHash.w = *(float*)&particleHash;
+
+		atomic_inc(hashMap + particleHash);
+	}
+	void KERNEL ReorderDynamicParticlesAndFinishHashMap(uint64 threadID, GLOBAL uint32* particleMap, volatile GLOBAL HASH_TYPE* hashMap, CONSTANT STRUCT DynamicParticle* inParticles, GLOBAL STRUCT DynamicParticle* outParticles)
+	{
+		INITIALIZE_THREAD_ID();
+
+		size_t oldIndex = threadID;
+
+		uint32 particleHash = as_uint(inParticles[oldIndex].velocityAndHash.w);
+		
+		size_t newIndex = (size_t)(atomic_dec(hashMap + particleHash) - 1);
+		
+		particleMap[threadID] = threadID;
+		outParticles[newIndex] = inParticles[oldIndex];
+	}
+
+	void KERNEL FillDynamicParticleMapAndFinishHashMap(uint64 threadID, GLOBAL uint32* particleMap, volatile GLOBAL HASH_TYPE* hashMap, CONSTANT STRUCT DynamicParticle* inParticles)
+	{
+		INITIALIZE_THREAD_ID();
+
+		uint32 particleHash = as_uint(inParticles[threadID].velocityAndHash.w);
 
 		uint32 index = atomic_dec(hashMap + particleHash) - 1;
-
-		if (reorderParticles == 1)
-		{
-			orderedParticles[index] = particles[threadID];
-			particleMap[index] = index;
-		}
-		else
-			particleMap[index] = threadID;
+		
+		particleMap[index] = threadID;
 	}
 
 	void KERNEL UpdateParticlePressure(
@@ -196,12 +277,10 @@ namespace SPH::Details
 		CONSTANT HASH_TYPE* hashMap,
 		CONSTANT uint32* particleMap,
 		CONSTANT STRUCT StaticParticle* staticParticles,
-		CONSTANT uint32* staticParticlesHashMap,
+		CONSTANT HASH_TYPE* staticParticlesHashMap,
 		CONSTANT STRUCT ParticleBehaviourParameters* parameters
 	) {
-#ifdef CL_COMPILER
-		threadID = get_global_id(0);
-#endif
+		INITIALIZE_THREAD_ID();
 
 		CONSTANT STRUCT DynamicParticle* inParticlePtr = inParticles + threadID;
 		GLOBAL STRUCT DynamicParticle* outParticlePtr = outParticles + threadID;
@@ -342,13 +421,11 @@ namespace SPH::Details
 		CONSTANT HASH_TYPE* hashMap,
 		CONSTANT uint32* particleMap,
 		CONSTANT STRUCT StaticParticle* staticParticles,
-		CONSTANT uint32* staticParticlesHashMap,
+		CONSTANT HASH_TYPE* staticParticlesHashMap,
 		const float deltaTime,
 		CONSTANT STRUCT ParticleBehaviourParameters* parameters
 	) {
-#ifdef CL_COMPILER
-		threadID = get_global_id(0);
-#endif
+		INITIALIZE_THREAD_ID();
 
 		uint64 inParticleIndex = threadID;
 		CONSTANT STRUCT DynamicParticle* inParticlePtr = inParticles + inParticleIndex;

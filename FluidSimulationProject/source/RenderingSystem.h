@@ -8,13 +8,12 @@ public:
 	~RenderingSystem();
 	
 	void SetProjection(const Mat4f&);
-	void SetViewMatrix(const Mat4f&);	
-	void SetSPHSystemRenderingCache(SPH::SystemRenderCache * renderCache);
+	void SetViewMatrix(const Mat4f&);		
 	void SetSPHSystemRenderer(SPH::SystemRenderer* renderer);
 	
 	void SetScreen(UI::Screen* screen);
 
-	void Render();
+	void Render(ArrayView<SPH::SystemRenderCache&> renderCaches);
 
 	void SetCustomClearColor(ColorRGBAf color);
 	void DisableCustomClearColor();

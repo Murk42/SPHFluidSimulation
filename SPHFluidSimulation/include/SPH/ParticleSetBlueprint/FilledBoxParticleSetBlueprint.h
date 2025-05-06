@@ -20,7 +20,8 @@ namespace SPH
 
 		void Load(StringView string) override;
 
-		void AppendParticlePositions(Array<Vec3f>& positions) override;		
+		uintMem GetParticleCount() const override;
+		void WriteParticlesPositions(const WriteFunction<Vec3f> writeFunction, void* userData) const override;
 	private:
 		FilledBoxParticleSetBlueprintProperties properties;		
 	};

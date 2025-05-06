@@ -24,3 +24,6 @@ using namespace Blaze;
 #define dot(x, y) x.DotProduct(y)
 #define atomic_inc(x) ((*(x))++)
 #define atomic_dec(x) ((*(x))--)
+#define as_uint(x) (*(uint32*)(&x))
+
+#define INITIALIZE_THREAD_ID()

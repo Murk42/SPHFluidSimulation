@@ -18,26 +18,30 @@ public:
 	struct SPHSystemData
 	{
 		SPH::System& system;
-		SPH::ParticleBufferManagerRenderData& particleBufferManager;
+		SPH::ParticleBufferManagerGL& dynamicParticlesBufferManager;
+		SPH::ParticleBufferManagerGL& staticParticlesBufferManager;
 	};
 
-	OpenCLContext& clContext;	
+	OpenCLContext& clContext;
 	cl_command_queue clCommandQueue;
 	RenderingSystem& renderingSystem;
 	Window& window;	
 
 	SPH::Scene simulationScene;	
 
-	SPH::RenderableGPUParticleBufferManagerWithoutCLGLInterop GPUParticleBufferManager;
+	SPH::RenderableGPUParticleBufferManagerWithoutCLGLInterop GPUdynamicParticleBufferManager;
+	SPH::RenderableGPUParticleBufferManagerWithoutCLGLInterop GPUstaticParticleBufferManager;
 	SPH::SystemGPU SPHSystemGPU;
-	SPH::RenderableCPUParticleBufferManager CPUParticleBufferManager;
+	SPH::RenderableCPUParticleBufferManager CPUdynamicParticleBufferManager;
+	SPH::RenderableCPUParticleBufferManager CPUstaticParticleBufferManager;
 	SPH::SystemCPU SPHSystemCPU;
 	Array<SPHSystemData> SPHSystems;
 
 	uintMem currentSPHSystemIndex;
 
 	SPH::SystemRenderer SPHSystemRenderer;
-	SPH::SystemRenderCache SPHSystemRenderCache;
+	SPH::SystemRenderCache SPHSystemDynamicParticlesRenderCache;
+	SPH::SystemRenderCache SPHSystemStaticParticlesRenderCache;
 	Mat4f SPHSystemModelMatrix = Mat4f::TranslationMatrix(Vec3f(0, 0, 20));
 
 	UI::InputManager UIInputManager;

@@ -33,7 +33,7 @@ namespace SPH
 		Array<Vec3f> particles;
 
 		for (auto& particleSetBlueprint : it->value)
-			particleSetBlueprint->AppendParticlePositions(particles);
+			particleSetBlueprint->WriteParticlesPositions([](uintMem index, const Vec3f& ptr, void* userData) { ((Vec3f*)userData)[index] = ptr; }, particles.Ptr());
 		
 		return particles;
 	}
@@ -107,29 +107,7 @@ namespace SPH
 
 		validScene = true;
 		return true;
-	}	
-	void Scene::InitializeSystem(System& system, ParticleBufferManager& bufferManager)
-	{
-		if (!validScene)
-		{
-			Debug::Logger::LogWarning("SPH Library", "Trying to initiaize a system with a invalid scene");
-			return;
-		}
-
-		auto dynamicParticlesPositions = GenerateLayerParticlePositions("dynamic");
-		auto staticParticlesPositions = GenerateLayerParticlePositions("static");
-
-		Array<DynamicParticle> dynamicParticles{ dynamicParticlesPositions.Count() };
-		Array<StaticParticle> staticParticles{ staticParticlesPositions.Count() };	
-
-		for (uintMem i = 0; i < dynamicParticles.Count(); ++i)
-			dynamicParticles[i].position = dynamicParticlesPositions[i];
-
-		for (uintMem i = 0; i < staticParticles.Count(); ++i)
-			staticParticles[i].position = staticParticlesPositions[i];
-				
-		system.Initialize(systemParameters, bufferManager, std::move(dynamicParticles), std::move(staticParticles));
-	}
+	}		
 	void Scene::MarkAsInvalid()
 	{
 		validScene = false;
