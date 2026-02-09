@@ -1,0 +1,108 @@
+-------------Basic device info-------------
+Type: CL_DEVICE_TYPE_GPU
+Vendor ID: 4098
+Vendor: Advanced Micro Devices, Inc.
+Name: Kalindi
+Version: OpenCL 2.0 AMD-APP (3075.13)
+-------------Device compute capabilites info-------------
+Max compute units: 2
+Max work item dimensions: 3
+Max work item sizes: 1024, 1024, 1024
+Max work group size: 256
+-------------Device memory info-------------
+Host unified memory: true
+Address bits: 64
+Global mem cache type: CL_READ_WRITE_CACHE
+Global mem cacheline size: 64 bytes
+Global mem cache size: 16KB
+Global mem size: 3.1GB
+Local mem type: CL_LOCAL
+Local mem size: 32KB
+-------------Other device info-------------
+Maximum device queues: 1024
+Profiling timer resoultion: 1ns
+Preferred interop user sync: true
+OpenCL C version: OpenCL C 2.0 
+Extensions: cl_khr_fp64 cl_amd_fp64 cl_khr_global_int32_base_atomics cl_khr_global_int32_extended_atomics cl_khr_local_int32_base_atomics cl_khr_local_int32_extended_atomics cl_khr_int64_base_atomics cl_khr_int64_extended_atomics cl_khr_3d_image_writes cl_khr_byte_addressable_store cl_khr_gl_sharing cl_khr_gl_depth_images cl_amd_device_attribute_query cl_amd_vec3 cl_amd_printf cl_amd_media_ops cl_amd_media_ops2 cl_amd_popcnt cl_khr_d3d10_sharing cl_khr_d3d11_sharing cl_khr_dx9_media_sharing cl_khr_image2d_from_buffer cl_khr_spir cl_khr_subgroups cl_khr_gl_event cl_khr_depth_images cl_khr_mipmap_image cl_khr_mipmap_image_writes cl_amd_liquid_flash cl_amd_planar_yuv
+
+Function name: "InclusiveScanUpPass"
+Argument count: 3
+Arguments: uint* temp, uint* array, uint scale
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "InclusiveScanDownPass"
+Argument count: 2
+Arguments: uint* arrays, uint scale
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "PrepareStaticParticlesHashMap"
+Argument count: 5
+Arguments: ulong threadID, uint* hashMap, size_t hashMapSize, struct StaticParticle* inParticles, float maxInteractionDistance
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "ReorderStaticParticlesAndFinishHashMap"
+Argument count: 6
+Arguments: ulong threadID, uint* hashMap, size_t hashMapSize, struct StaticParticle* inParticles, struct StaticParticle* outParticles, float maxInteractionDistance
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "ComputeDynamicParticlesHashAndPrepareHashMap"
+Argument count: 5
+Arguments: ulong threadID, uint* hashMap, size_t hashMapSize, struct DynamicParticle* particles, float maxInteractionDistance
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "ReorderDynamicParticlesAndFinishHashMap"
+Argument count: 5
+Arguments: ulong threadID, uint* particleMap, uint* hashMap, struct DynamicParticle* inParticles, struct DynamicParticle* outParticles
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "FillDynamicParticleMapAndFinishHashMap"
+Argument count: 4
+Arguments: ulong threadID, uint* particleMap, uint* hashMap, struct DynamicParticle* inParticles
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "UpdateParticlePressure"
+Argument count: 12
+Arguments: ulong threadID, ulong dynamicParticlesCount, ulong dynamicParticlesHashMapSize, ulong staticParticlesCount, ulong staticParticlesHashMapSize, struct DynamicParticle* inParticles, struct DynamicParticle* outParticles, uint* hashMap, uint* particleMap, struct StaticParticle* staticParticles, uint* staticParticlesHashMap, struct ParticleBehaviourParameters* parameters
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+
+Function name: "UpdateParticleDynamics"
+Argument count: 13
+Arguments: ulong threadID, ulong dynamicParticlesCount, ulong dynamicParticlesHashMapSize, ulong staticParticlesCount, ulong staticParticlesHashMapSize, struct DynamicParticle* inParticles, struct DynamicParticle* outParticles, uint* hashMap, uint* particleMap, struct StaticParticle* staticParticles, uint* staticParticlesHashMap, float deltaTime, struct ParticleBehaviourParameters* parameters
+Work group size: 256
+Compiled work group size: 0, 0, 0
+Local memory size: 0
+Preferred work group size multiple: 64
+Private memory size: 0
+

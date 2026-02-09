@@ -1,0 +1,55 @@
+{
+  "profiles": [
+    {
+      "profileName": "wave",
+      "outputFilePath": "outputs/wave-ACER.txt",
+      "simulationDuration": 20,
+      "simulationStepTime": 0.01,
+      "stepsPerUpdate": 100,
+
+      "systemParameters": {
+        "dynamicParticleGenerationParameters": {
+          "generatorType": "FilledBoxParticleGenerator",
+          "spawnVolumeSize": [ 38, 13, 13 ],
+          "spawnVolumeOffset": [ -19, -9.0, -19 ],
+          "particlesPerUnit": 8,
+          "randomOffsetIntensity": 0.5
+        },
+        "staticParticleGenerationParameters": {
+          "generatorType": "BoxShellParticleGenerator",
+          "spawnVolumeSize": [ 40, 20, 40 ],
+          "spawnVolumeOffset": [ -20, -10, -20 ],
+          "particleDistance": 0.15,
+          "randomOffsetIntensity": 0.25
+        },
+        "particleBehaviourParameters": {
+          "particleMass": 1.0,
+          "gasConstant": 200,
+          "elasticity": 0.5,
+          "viscosity": 0.3,
+          "gravity": [ 0, -9.81, 0 ],
+          "restDensity": 7.0,
+          "maxInteractionDistance": 1.0
+        },
+        "particleBoundParameters": {
+          "bounded": false
+        },
+        "bufferCount": 3,
+        "hashesPerDynamicParticle": 2,
+        "hashesPerStaticParticle": 2,
+        "implementationSpecifics": {
+          "OpenCL": {
+            "reorderTimeInterval": 0.1,
+            "detailedProfiling": false,
+            "openCLChoosesGroupSize": true,
+            "useMaxGroupSize": false
+          },
+          "CPU": {
+            "reorderTimeInterval": 0.1,
+            "parallelPartialSum": true
+          }
+        }
+      }
+    }
+  ]
+}

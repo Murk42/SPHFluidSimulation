@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <BlazeDir>D:\Programming\Projects\BlazeEngine\</BlazeDir>
+    <BlazeDir>C:\Users\Marko\Programming\Projects\BlazeEngine\</BlazeDir>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>$(ProjectDir)build\$(Configuration)\$(PlatformTarget)\</OutDir>
@@ -10,17 +10,18 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngine\include;$(BlazeDir)BlazeEngineCore\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BlazeDir)BlazeEngineGraphics\include;$(BlazeDir)BlazeEngineRuntime\include;$(BlazeDir)BlazeEngineCore\include;$(BlazeDir)BlazeEngineUI\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BLAZE_STATIC;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(BlazeDir)install\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>BlazeEngineCore-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngine-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineGraphics-static-$(PlatformTarget)-$(Configuration).lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(BlazeDir)BlazeEngineRuntime\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineCore\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineGraphics\build\$(Configuration)\$(PlatformTarget)\;$(BlazeDir)BlazeEngineUI\build\$(Configuration)\$(PlatformTarget)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>BlazeEngineCore-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineRuntime-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineGraphics-static-$(PlatformTarget)-$(Configuration).lib;BlazeEngineUI-static-$(PlatformTarget)-$(Configuration).lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(BlazeDir)BlazeEngineCore\build\$(Configuration)\$(PlatformTarget)\*.dll" "$(OutputPath)" /y /d</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PreLinkEvent>
       <Command>

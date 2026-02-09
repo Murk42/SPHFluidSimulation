@@ -1,0 +1,30 @@
+{
+  "particleSetBlueprints": [
+    {
+      "layerName": "dynamic",
+      "particleSetBlueprintType": "FilledBox",
+      "properties": {
+        "spawnVolumeSize": [ 8, 8, 8 ],
+        "spawnVolumeOffset": [ -4, -1, -4 ],
+        "particlesPerUnit": 20,
+        "randomOffsetIntensity": 0
+      }
+    }
+  ],
+  "particleBehaviourParameters": {
+    "particleMass": 1.0,
+    "gasConstant": 200,
+    "elasticity": 1,
+    "viscosity": 0.1,
+    "gravity": [ 0, -9.81, 0 ],
+    "restDensity": 15.0,
+    "maxInteractionDistance":2
+  },
+  "boundaryMesh": {
+    "path": "assets/simulationScenes/untitled.obj"
+  },
+  "otherParameters": {
+    "reorderTimeInterval": "10000.0",
+    "openCLChoosesGroupSize": "true"
+  }
+}

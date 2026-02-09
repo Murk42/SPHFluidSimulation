@@ -1,0 +1,1518 @@
+[
+  {
+    "profiles": [
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.000000s.txt",
+        "profileName": "0.000000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.0,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.0,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.100000s.txt",
+        "profileName": "0.100000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.10000000149011612,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.10000000149011612,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.200000s.txt",
+        "profileName": "0.200000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.20000000298023224,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.20000000298023224,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.300000s.txt",
+        "profileName": "0.300000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.30000001192092896,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.30000001192092896,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.400000s.txt",
+        "profileName": "0.400000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.4000000059604645,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.4000000059604645,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.500000s.txt",
+        "profileName": "0.500000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.5,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.5,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.600000s.txt",
+        "profileName": "0.600000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.6000000238418579,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.6000000238418579,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.700000s.txt",
+        "profileName": "0.700000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.7000000476837158,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.7000000476837158,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.800000s.txt",
+        "profileName": "0.800000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.8000000715255737,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.8000000715255737,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/0.900000s.txt",
+        "profileName": "0.900000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 0.9000000953674316,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 0.9000000953674316,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.000000s.txt",
+        "profileName": "1.000000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.0000001192092896,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.0000001192092896,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.100000s.txt",
+        "profileName": "1.100000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.1000001430511475,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.1000001430511475,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.200000s.txt",
+        "profileName": "1.200000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.2000001668930054,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.2000001668930054,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.300000s.txt",
+        "profileName": "1.300000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.3000001907348633,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.3000001907348633,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.400000s.txt",
+        "profileName": "1.400000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.4000002145767212,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.4000002145767212,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.500000s.txt",
+        "profileName": "1.500000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.500000238418579,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.500000238418579,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.600000s.txt",
+        "profileName": "1.600000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.600000262260437,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.600000262260437,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.700000s.txt",
+        "profileName": "1.700000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.700000286102295,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.700000286102295,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.800000s.txt",
+        "profileName": "1.800000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.8000003099441528,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.8000003099441528,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/1.900000s.txt",
+        "profileName": "1.900000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 1.9000003337860107,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 1.9000003337860107,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      },
+      {
+        "outputFilePath": "outputs/increasingReorderTimeIntervalProfiles/2.000000s.txt",
+        "profileName": "2.000000",
+        "simulationDuration": 20,
+        "simulationStepTime": 0.01,
+        "stepsPerUpdate": 100,
+        "systemParameters": {
+          "bufferCount": 3,
+          "dynamicParticleGenerationParameters": {
+            "generatorType": "FilledBoxParticleGenerator",
+            "particlesPerUnit": 8,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -19,
+              -9.0,
+              -19
+            ],
+            "spawnVolumeSize": [
+              38,
+              18,
+              18
+            ]
+          },
+          "hashesPerDynamicParticle": 2,
+          "hashesPerStaticParticle": 2,
+          "implementationSpecifics": {
+            "CPU": {
+              "parallelPartialSum": true,
+              "reorderInterval": 2.000000238418579,
+              "reorderTimeInterval": 0.1
+            },
+            "OpenCL": {
+              "detailedProfiling": false,
+              "openCLChoosesGroupSize": true,
+              "reorderInterval": 2.000000238418579,
+              "reorderTimeInterval": 0.1,
+              "useMaxGroupSize": false
+            }
+          },
+          "particleBehaviourParameters": {
+            "elasticity": 0.5,
+            "gasConstant": 200,
+            "gravity": [
+              0,
+              -9.81,
+              0
+            ],
+            "maxInteractionDistance": 1.0,
+            "particleMass": 1.0,
+            "restDensity": 7.0,
+            "viscosity": 0.3
+          },
+          "particleBoundParameters": {
+            "bounded": false
+          },
+          "staticParticleGenerationParameters": {
+            "generatorType": "BoxShellParticleGenerator",
+            "particleDistance": 0.05,
+            "randomOffsetIntensity": 0.5,
+            "spawnVolumeOffset": [
+              -20,
+              -10,
+              -20
+            ],
+            "spawnVolumeSize": [
+              40,
+              40,
+              60
+            ]
+          }
+        }
+      }
+    ]
+  }
+]
