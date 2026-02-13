@@ -1,4 +1,4 @@
 #pragma once
-#include "BlazeEngine/Core/BlazeEngineCore.h"
+#include "BlazeEngine/BlazeEngineCore.h"
 #include "BlazeEngine/BlazeEngine.h"
-#include "BlazeEngine/Graphics/BlazeEngineGraphics.h"
+#include "BlazeEngine/BlazeEngineGraphics.h"

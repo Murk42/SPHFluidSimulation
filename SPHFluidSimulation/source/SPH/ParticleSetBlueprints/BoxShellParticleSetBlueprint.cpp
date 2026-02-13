@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SPH/ParticleSetBlueprint/BoxShellParticleSetBlueprint.h"
+#include "SPH/ParticleSetBlueprints/BoxShellParticleSetBlueprint.h"
 #include "JSONParsing.h"
 
 namespace SPH

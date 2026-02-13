@@ -19,7 +19,7 @@ Global mem size: 7.9 GB
 Local mem type: CL_LOCAL
 Local mem size: 48 KB
 -------------Other device info-------------
-Maximum device queues: 0
+Maximum device queues: 14757395255531667456
 Profiling timer resoultion: 1000ns
 Preferred interop user sync: false
 OpenCL C version: OpenCL C 1.2 

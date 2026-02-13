@@ -17,7 +17,7 @@
     "elasticity": 1,
     "viscosity": 0.1,
     "gravity": [ 0, -9.81, 0 ],
-    "restDensity": 15.0,
+    "restDensity": 1.0,
     "maxInteractionDistance":2
   },
   "boundaryMesh": {

@@ -1,6 +1,6 @@
 #pragma once
-#include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
-#include "SPH/ParticleBufferManager/ParticleBufferManagerGL.h"
+#include "SPH/ParticleBufferManagers/OpenCLResourceLock.h"
+#include "SPH/ParticleBufferManagers/ParticleBufferManagerGL.h"
 
 namespace SPH
 {

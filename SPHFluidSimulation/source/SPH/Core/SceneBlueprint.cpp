@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "SPH/Core/SceneBlueprint.h"
 #include "JSONParsing.h"
-#include "SPH/ParticleSetBlueprint/BoxShellParticleSetBlueprint.h"
-#include "SPH/ParticleSetBlueprint/FilledBoxParticleSetBlueprint.h"
+#include "SPH/ParticleSetBlueprints/BoxShellParticleSetBlueprint.h"
+#include "SPH/ParticleSetBlueprints/FilledBoxParticleSetBlueprint.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>

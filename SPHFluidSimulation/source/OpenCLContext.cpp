@@ -1,13 +1,8 @@
 #include "pch.h"
 #include "OpenCLContext.h"
-#include "OpenCLDebug.h"
-#include "CL/opencl.hpp"
 #include "CL/cl_gl.h"
-
-#include "GL/glew.h"
 #include "GL/wglew.h"
-
-#include "SPH/System/SystemGPU.h"
+#include "OpenCLDebug.h"
 
 #define CaseReturnString(x) case x: return #x;
 
@@ -87,11 +82,6 @@ static void PrintOpenCLWarning(cl_uint code)
     Debug::Logger::LogWarning("OpenCL", "OpenCL function returned \"" + opencl_errstr(code) + "\"");
 }
 
-#define CL_CALL(x) if ((ret = x) != CL_SUCCESS) { PrintOpenCLError(ret); return; }
-#define CL_CALL(x, r) if ((ret = x) != CL_SUCCESS) { PrintOpenCLError(ret); return r; }
-#define CL_CHECK() if (ret != CL_SUCCESS) { PrintOpenCLError(ret); return; }
-#define CL_CHECK(r) if (ret != CL_SUCCESS) { PrintOpenCLError(ret); return r; }
-
 OpenCLContext::OpenCLContext(Graphics::OpenGL::GraphicsContext_OpenGL& graphicsContext) :
     supportedCLGLInterop(true)
 {
@@ -134,8 +124,6 @@ cl_command_queue OpenCLContext::GetCommandQueue(bool profiling, bool outOfOrder)
 
 void OpenCLContext::PrintPlatformAndDeviceInfo()
 {
-    cl_int ret;
-
     std::vector<cl::Platform> platforms;
     CL_CALL(cl::Platform::get(&platforms));
 
@@ -213,9 +201,6 @@ bool OpenCLContext::SearchPlatformAndDeviceWithCLGLInterop(const Set<String>& re
 {
     cl_int ret;
 
-    HGLRC wglCurrentContext = wglGetCurrentContext();
-    HDC wglCurrentDC = wglGetCurrentDC();
-
     std::vector<cl::Platform> platforms;
     if ((ret = cl::Platform::get(&platforms)) != CL_SUCCESS)
         Debug::Logger::LogFatal("OpenCL", "clGetPlatformIDs failed and returned " + opencl_errstr(ret));
@@ -281,8 +266,6 @@ bool OpenCLContext::SearchPlatformAndDeviceWithCLGLInterop(const Set<String>& re
 
 bool OpenCLContext::SearchAnyPlatformAndDevice(const Set<String>& requiredExtensions)
 {
-    cl_int ret;
-
     std::vector<cl::Platform> platforms;
     CL_CALL(cl::Platform::get(&platforms), false);
 

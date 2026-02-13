@@ -1,7 +1,5 @@
 #include "pch.h"
-#include "SPH/ParticleBufferManager/RenderableGPUParticleBufferManager.h"
-#include "GL/glew.h"
-#include <CL/cl.h>
+#include "SPH/ParticleBufferManagers/RenderableGPUParticleBufferManager.h"
 #include "OpenCLDebug.h"
 
 namespace SPH

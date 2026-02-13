@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SPH/Core/SceneBlueprint.h"
-#include "SPH/System/SystemCPU.h"
+#include "SPH/SimulationEngines/SimulationEngineCPU.h"
 #include "SPH/kernels/SPHFunctions.h"
 
 #define DEBUG_BUFFERS_CPU
@@ -348,7 +348,7 @@ namespace SPH
 		}
 	}
 
-	CPUSimulationEngine::CPUSimulationEngine(uintMem threadCount) :
+	SimulationEngineCPU::SimulationEngineCPU(uintMem threadCount) :
 		dynamicParticlesBufferManager(nullptr),
 		staticParticlesBufferManager(nullptr),
 		reorderParticlesElapsedTime(0),
@@ -358,11 +358,11 @@ namespace SPH
 	{
 		threadManager.AllocateThreads(threadCount);
 	}
-	CPUSimulationEngine::~CPUSimulationEngine()
+	SimulationEngineCPU::~SimulationEngineCPU()
 	{
 		Clear();
 	}
-	void CPUSimulationEngine::Clear()
+	void SimulationEngineCPU::Clear()
 	{
 		if (dynamicParticlesBufferManager != nullptr)
 		{
@@ -393,7 +393,7 @@ namespace SPH
 
 		simulationTime = 0;
 	}
-	void CPUSimulationEngine::Initialize(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager)
+	void SimulationEngineCPU::Initialize(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager)
 	{
 		Clear();
 
@@ -417,7 +417,7 @@ namespace SPH
 
 		triangles = scene.GetMesh().CreateTriangleArray();
 	}
-	void CPUSimulationEngine::Update(float deltaTime, uint simulationSteps)
+	void SimulationEngineCPU::Update(float deltaTime, uint simulationSteps)
 	{
 		if (dynamicParticlesBufferManager == nullptr)
 		{
@@ -457,7 +457,7 @@ namespace SPH
 				reorderParticlesElapsedTime = 0;
 		}
 	}
-	void CPUSimulationEngine::InitializeStaticParticles(SceneBlueprint& scene, ParticleBufferManager& staticParticlesBufferManager)
+	void SimulationEngineCPU::InitializeStaticParticles(SceneBlueprint& scene, ParticleBufferManager& staticParticlesBufferManager)
 	{
 		Array<StaticParticle> staticParticles;
 		scene.GenerateLayerParticles("static", staticParticles);
@@ -475,7 +475,7 @@ namespace SPH
 		DebugHashAndParticleMap<std::atomic_uint32_t>(staticParticles, staticParticlesHashMap, particleBehaviourParameters.maxInteractionDistance);
 #endif
 	}
-	void CPUSimulationEngine::InitializeDynamicParticles(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager)
+	void SimulationEngineCPU::InitializeDynamicParticles(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager)
 	{
 		Array<DynamicParticle> dynamicParticles;
 		scene.GenerateLayerParticles("dynamic", dynamicParticles);

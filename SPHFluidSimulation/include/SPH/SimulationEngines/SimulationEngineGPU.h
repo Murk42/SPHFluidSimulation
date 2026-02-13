@@ -1,5 +1,5 @@
 #pragma once
-#include "SPH/Core/ParticleSimulationEngine.h"
+#include "SPH/Core/SimulationEngine.h"
 #include "SPH/Core/SceneBlueprint.h"
 
 namespace SPH
@@ -57,11 +57,11 @@ namespace SPH
 		void Load();
 	};
 
-	class GPUSimulationEngine : public SimulationEngine
+	class SimulationEngineGPU : public SimulationEngine
 	{
 	public:
-		GPUSimulationEngine(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue);
-		~GPUSimulationEngine();
+		SimulationEngineGPU(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue);
+		~SimulationEngineGPU();
 
 		void Clear() override;		
 		void Initialize(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager) override;

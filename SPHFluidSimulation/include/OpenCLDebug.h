@@ -12,7 +12,7 @@ bool CheckForExtensions(cl_device_id device, const Set<String>&requiredExtension
 void PrintDeviceInfo(cl_device_id device, WriteStream& stream);
 void PrintKernelInfo(cl_kernel kernel, cl_device_id device, WriteStream& stream);
 
-void GetDeviceVersion(cl_device_id device, uintMem& major, uintMem& minor);
+void GetDeviceVersion(cl_device_id device, uint & major, uint & minor);
 
 template<uintMem MaxEvents>
 struct EventWaitArray

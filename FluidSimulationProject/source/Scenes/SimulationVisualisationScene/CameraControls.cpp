@@ -31,9 +31,7 @@ void CameraMouseFocusNode::SelectedStateChanged(const SelectedStateChangedEvent&
 		if (auto inputSubSystem = GetInputSubSystem())
 			if (auto window = inputSubSystem->GetWindow())
 			{
-				Input::ShowCursor(false);
 				window->SetRelativeMouseModeFlag(true);
-				Input::ShowCursor(false);
 			}
 	}
 	else
@@ -45,7 +43,6 @@ void CameraMouseFocusNode::SelectedStateChanged(const SelectedStateChangedEvent&
 			{
 				Input::ShowCursor(true);
 				window->SetRelativeMouseModeFlag(false);
-				Input::ShowCursor(true);
 			}
 	}
 }

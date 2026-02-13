@@ -1,14 +1,14 @@
 #pragma once
 #include "SPH/Core/ParticleBufferManager.h"
-#include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
+#include "SPH/ParticleBufferManagers/CPUResourceLock.h"
 
 namespace SPH
 {
-	class OfflineGPUParticleBufferManager : public ParticleBufferManager
+	class OfflineCPUParticleBufferManager : public ParticleBufferManager
 	{
 	public:
-		OfflineGPUParticleBufferManager(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue);
-		~OfflineGPUParticleBufferManager();
+		OfflineCPUParticleBufferManager();
+		~OfflineCPUParticleBufferManager();
 
 		void Clear() override;
 		void Advance() override;
@@ -27,25 +27,22 @@ namespace SPH
 		struct ParticlesBuffer
 		{
 		public:
-			ParticlesBuffer(cl_command_queue clCommandQueue);
+			ParticlesBuffer();
+			ParticlesBuffer(ParticlesBuffer&&) noexcept = default;
 
-			void CreateBuffer(cl_mem parentBuffer, uintMem offset, uintMem size);
+			void SetPointer(void* ptr);
 
-			ResourceLockGuard LockRead(cl_event* signalEvent);
-			ResourceLockGuard LockWrite(cl_event* signalEvent);
+			ResourceLockGuard LockRead();
+			ResourceLockGuard LockWrite();
 		private:
-			OpenCLLock lock;
-			cl_mem buffer;
+			void* ptr;
+			CPULock lock;
 		};
-
-		cl_context clContext;
-		cl_device_id clDevice;
-		cl_command_queue clCommandQueue;
 
 		uintMem currentBuffer;
 
 		Array<ParticlesBuffer> buffers;
-		cl_mem bufferCL;
+		Buffer buffer;
 		uintMem particleSize;
 		uintMem particleCount;
 	};

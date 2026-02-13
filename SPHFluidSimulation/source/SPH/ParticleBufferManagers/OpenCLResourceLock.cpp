@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SPH/ParticleBufferManager/OpenCLResourceLock.h"
+#include "SPH/ParticleBufferManagers/OpenCLResourceLock.h"
 #include "OpenCLDebug.h"
 #include "CL/cl.h"
 

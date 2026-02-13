@@ -3,7 +3,7 @@
 
 #define CaseReturnString(x) case x: return #x;
 
-StringView opencl_errstr(cl_int err)
+static StringView opencl_errstr(cl_int err)
 {
     switch (err)
     {
@@ -133,8 +133,8 @@ static void Write(WriteStream& stream, StringView string)
 
 String ByteCountToString(uintMem bytes)
 {
-	uintMem exponent = std::floor(std::log(bytes) / std::log(1024.0));
-	float decimal = (float)bytes / std::pow(1024.0, exponent);
+	uintMem exponent = static_cast<uintMem>(std::floor(std::log(bytes) / std::log(1024.0f)));
+	float decimal = (float)bytes / std::pow(1024.0f, static_cast<float>(exponent));
 	if (exponent == 0)
 		return Format("{} bytes", (uintMem)decimal);
 	else if ((float)(uintMem)decimal == decimal)
@@ -275,7 +275,7 @@ void PrintKernelInfo(cl_kernel kernel, cl_device_id device, WriteStream& stream)
 	};
 
 	Array<Argument> arguments;
-	for (uintMem i = 0; i < argCount; ++i)
+	for (uint i = 0; i < argCount; ++i)
 	{
 		CL_CALL(clGetKernelArgInfo(kernel, i, CL_KERNEL_ARG_TYPE_NAME, 0, nullptr, &paramRetSize));
 		String argumentType{ paramRetSize - 1 };
@@ -323,7 +323,7 @@ void PrintKernelInfo(cl_kernel kernel, cl_device_id device, WriteStream& stream)
 	Write(stream, "\n");
 }
 
-void GetDeviceVersion(cl_device_id device, uintMem& major, uintMem& minor)
+void GetDeviceVersion(cl_device_id device, uint& major, uint& minor)
 {
 	major = 0;
 	minor = 0;

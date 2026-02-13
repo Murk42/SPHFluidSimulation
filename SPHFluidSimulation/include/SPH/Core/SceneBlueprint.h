@@ -1,7 +1,7 @@
 #pragma once
 #include "BlazeEngine/Graphics/Common/BasicIndexedMesh.h"
 #include "SPH/Core/ParticleSetBlueprint.h"
-#include "SPH/Core/ParticleSimulationEngine.h"
+#include "SPH/Core/SimulationEngine.h"
 #include "SPH/Core/ParticleBufferManager.h"
 
 namespace SPH

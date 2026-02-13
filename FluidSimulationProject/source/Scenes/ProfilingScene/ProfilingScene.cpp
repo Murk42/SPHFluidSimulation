@@ -2,8 +2,8 @@
 #include "Scenes/ProfilingScene/ProfilingScene.h"
 #include "JSONParsing.h"
 
-#include "SPH/System/SystemCPU.h"
-#include "SPH/System/SystemGPU.h"
+#include "SPH/SimulationEngines/SimulationEngineCPU.h"
+#include "SPH/SimulationEngines/SimulationEngineGPU.h"
 
 ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl_command_queue clQueue, Graphics::OpenGL::RenderWindow_OpenGL& window) :
 	clContext(clContext), graphicsContext(window.GetGraphicsContext()), window(window),
@@ -19,7 +19,7 @@ ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl_command_queue clQueu
 
 	SPHSystems.AddBack(SimulationData{ SPHSystemGPU, GPUDynamicParticlesBufferManager, GPUStaticParticlesBufferManager });
 	SPHSystems.AddBack(SimulationData{ SPHSystemCPU, CPUDynamicParticlesBufferManager, CPUStaticParticlesBufferManager });	
-}
+} 
 ProfilingScene::~ProfilingScene()
 {
 }

@@ -6,8 +6,8 @@
 #include "BlazeEngine/Graphics/Core/OpenGL/GraphicsContext_OpenGL.h"
 using namespace Blaze;
 
-#include "SPH/Core/ParticleSimulationEngine.h"
-#include "SPH/ParticleBufferManager/ParticleBufferManagerGL.h"
+#include "SPH/Core/SimulationEngine.h"
+#include "SPH/ParticleBufferManagers/ParticleBufferManagerGL.h"
 
 namespace SPH
 {

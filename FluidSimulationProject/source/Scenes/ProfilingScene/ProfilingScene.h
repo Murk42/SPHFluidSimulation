@@ -3,10 +3,10 @@
 #include "OpenCLContext.h"
 #include "ProfilingUI.h"
 
-#include "SPH/ParticleBufferManager/OfflineCPUParticleBufferManager.h"
-#include "SPH/ParticleBufferManager/OfflineGPUParticleBufferManager.h"
-#include "SPH/System/SystemCPU.h"
-#include "SPH/System/SystemGPU.h"
+#include "SPH/ParticleBufferManagers/OfflineCPUParticleBufferManager.h"
+#include "SPH/ParticleBufferManagers/OfflineGPUParticleBufferManager.h"
+#include "SPH/SimulationEngines/SimulationEngineCPU.h"
+#include "SPH/SimulationEngines/SimulationEngineGPU.h"
 
 class ProfilingScene : public SceneBlueprint
 {
@@ -47,10 +47,10 @@ private:
 
 	SPH::OfflineGPUParticleBufferManager GPUDynamicParticlesBufferManager;
 	SPH::OfflineGPUParticleBufferManager GPUStaticParticlesBufferManager;
-	SPH::GPUSimulationEngine SPHSystemGPU;
+	SPH::SimulationEngineGPU SPHSystemGPU;
 	SPH::OfflineCPUParticleBufferManager CPUDynamicParticlesBufferManager;
 	SPH::OfflineCPUParticleBufferManager CPUStaticParticlesBufferManager;
-	SPH::CPUSimulationEngine SPHSystemCPU;
+	SPH::SimulationEngineCPU SPHSystemCPU;
 
 	Array<SimulationData> SPHSystems;
 

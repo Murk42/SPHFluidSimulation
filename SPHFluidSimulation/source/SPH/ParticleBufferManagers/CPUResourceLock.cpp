@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "SPH/ParticleBufferManager/CPUResourceLock.h"
+#include "SPH/ParticleBufferManagers/CPUResourceLock.h"
 
 namespace SPH
 {

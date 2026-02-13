@@ -1,5 +1,5 @@
 #pragma once
-#include "SPH/Core/ParticleSimulationEngine.h"
+#include "SPH/Core/SimulationEngine.h"
 #include "SPH/Core/ParticleBufferManager.h"
 #include "SPH/ThreadParallelTaskManager.h"
 #include "SPH/Core/SceneBlueprint.h"
@@ -7,11 +7,11 @@ using namespace Blaze;
 
 namespace SPH
 {
-	class CPUSimulationEngine : public SimulationEngine
+	class SimulationEngineCPU : public SimulationEngine
 	{
 	public:
-		CPUSimulationEngine(uintMem threadCount);
-		~CPUSimulationEngine();
+		SimulationEngineCPU(uintMem threadCount);
+		~SimulationEngineCPU();
 
 		void Clear() override;
 		void Initialize(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager) override;

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "SPH/Core/SceneBlueprint.h"
 #include "SPH/Core/ParticleBufferManager.h"
-#include "SPH/System/SystemGPU.h"
+#include "SPH/SimulationEngines/SimulationEngineGPU.h"
 #include "SPH/Kernels/Kernels.h"
 #include "OpenCLDebug.h"
 
@@ -112,9 +112,17 @@ namespace SPH
 	SystemGPUKernels::SystemGPUKernels(cl_context clContext, cl_device_id clDevice)
 		: clContext(clContext), clDevice(clDevice)
 	{
-		uint nonUniformWorkGroupSupport;
-		CL_CALL(clGetDeviceInfo(clDevice, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, sizeof(nonUniformWorkGroupSupport), &nonUniformWorkGroupSupport, nullptr));
-		supportsNonUniformWorkGroups = static_cast<bool>(nonUniformWorkGroupSupport);
+		uint minorVersion, majorVersion;
+		GetDeviceVersion(clDevice, majorVersion, minorVersion);
+
+		if (majorVersion == 3)
+		{
+			uint nonUniformWorkGroupSupport;
+			CL_CALL(clGetDeviceInfo(clDevice, CL_DEVICE_NON_UNIFORM_WORK_GROUP_SUPPORT, sizeof(nonUniformWorkGroupSupport), &nonUniformWorkGroupSupport, nullptr));
+			supportsNonUniformWorkGroups = static_cast<bool>(nonUniformWorkGroupSupport);
+		}
+		else
+			supportsNonUniformWorkGroups = true;
 
 		Load();
 	}
@@ -402,10 +410,10 @@ namespace SPH
 		return out;
 	}
 
-	GPUSimulationEngine::GPUSimulationEngine(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue) :
+	SimulationEngineGPU::SimulationEngineGPU(cl_context clContext, cl_device_id clDevice, cl_command_queue clCommandQueue) :
 		clContext(clContext), clDevice(clDevice), clCommandQueue(clCommandQueue), kernels(clContext, clDevice)
 	{
-		uintMem deviceMajorVersion, deviceMinorVersion;
+		uint deviceMajorVersion, deviceMinorVersion;
 		GetDeviceVersion(clDevice, deviceMajorVersion, deviceMinorVersion);
 
 		if (deviceMajorVersion < 2)
@@ -445,11 +453,11 @@ namespace SPH
 		if (!bool(commandQueueProperties | CL_QUEUE_PROFILING_ENABLE))
 			Debug::Logger::LogFatal("Library SPH", "A command queue suplied to a GPU system must have the property CL_QUEUE_PROFILING_ENABLE set");
 	}
-	GPUSimulationEngine::~GPUSimulationEngine()
+	SimulationEngineGPU::~SimulationEngineGPU()
 	{
 		Clear();
 	}
-	void GPUSimulationEngine::Clear()
+	void SimulationEngineGPU::Clear()
 	{
 		if (dynamicParticlesBufferManager != nullptr)
 		{
@@ -504,7 +512,7 @@ namespace SPH
 
 		initialized = false;
 	}
-	void GPUSimulationEngine::Initialize(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager)
+	void SimulationEngineGPU::Initialize(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager, ParticleBufferManager& staticParticlesBufferManager)
 	{
 		Clear();
 
@@ -532,7 +540,7 @@ namespace SPH
 		triangleCount = _triangles.Count();
 		initialized = true;
 	}
-	void GPUSimulationEngine::Update(float deltaTime, uint simulationStepCount)
+	void SimulationEngineGPU::Update(float deltaTime, uint simulationStepCount)
 	{
 		if (!initialized)
 		{
@@ -664,7 +672,7 @@ namespace SPH
 
 		simulationTime += deltaTime * simulationStepCount;		
 	}
-	void GPUSimulationEngine::InitializeStaticParticles(SceneBlueprint& scene, ParticleBufferManager& staticParticlesBufferManager)
+	void SimulationEngineGPU::InitializeStaticParticles(SceneBlueprint& scene, ParticleBufferManager& staticParticlesBufferManager)
 	{
 		uintMem staticParticlesCount = 0;
 		cl::Buffer tempStaticParticles;
@@ -726,7 +734,7 @@ namespace SPH
 		//We have to wait so that 'staticParticles' memory doesn't get freed
 		reorderFinishedEvent.wait();
 	}
-	void GPUSimulationEngine::InitializeDynamicParticles(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager)
+	void SimulationEngineGPU::InitializeDynamicParticles(SceneBlueprint& scene, ParticleBufferManager& dynamicParticlesBufferManager)
 	{
 		uintMem dynamicParticlesCount = 0;
 
@@ -791,7 +799,7 @@ namespace SPH
 		initialDynamicParticlesLockGuard.Unlock({ (void**)&reorderFinishedEvent(), 1 });
 		finalDynamicParticlesLockGuard.Unlock({ (void**)&reorderFinishedEvent(), 1 });
 	}
-	void GPUSimulationEngine::InspectStaticBuffers(cl_mem particles)
+	void SimulationEngineGPU::InspectStaticBuffers(cl_mem particles)
 	{
 		debugStaticParticlesArray.Resize(staticParticlesBufferManager->GetParticleCount());
 		debugStaticHashMapArray.Resize(staticParticlesHashMapSize + 1);
@@ -803,21 +811,21 @@ namespace SPH
 		__debugbreak();
 	}
 #ifdef DEBUG_BUFFERS_GPU
-	void GPUSimulationEngine::DebugStaticParticles(cl_command_queue clCommandQueue, Array<StaticParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
+	void SimulationEngineGPU::DebugStaticParticles(cl_command_queue clCommandQueue, Array<StaticParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
 	{
 		CL_CALL(clFinish(clCommandQueue));
 		CL_CALL(clEnqueueReadBuffer(clCommandQueue, particles, CL_TRUE, 0, tempBuffer.Count() * sizeof(StaticParticle), tempBuffer.Ptr(), 0, nullptr, nullptr))
 
 		SimulationEngine::DebugParticles<StaticParticle>(tempBuffer, maxInteractionDistance, hashMapSize);
 	}
-	void GPUSimulationEngine::DebugDynamicParticles(cl_command_queue clCommandQueue, Array<DynamicParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
+	void SimulationEngineGPU::DebugDynamicParticles(cl_command_queue clCommandQueue, Array<DynamicParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
 	{
 		CL_CALL(clFinish(clCommandQueue));
 		CL_CALL(clEnqueueReadBuffer(clCommandQueue, particles, CL_TRUE, 0, tempBuffer.Count() * sizeof(DynamicParticle), tempBuffer.Ptr(), 0, nullptr, nullptr))
 
 		SimulationEngine::DebugParticles<DynamicParticle>(tempBuffer, maxInteractionDistance, hashMapSize);
 	}
-	void GPUSimulationEngine::DebugStaticParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<StaticParticle>& tempParticles, Array<uint32>& tempHashMap, cl_mem particles, cl_mem hashMap, float maxInteractionDistance)
+	void SimulationEngineGPU::DebugStaticParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<StaticParticle>& tempParticles, Array<uint32>& tempHashMap, cl_mem particles, cl_mem hashMap, float maxInteractionDistance)
 	{
 		CL_CALL(clFinish(clCommandQueue));
 		CL_CALL(clEnqueueReadBuffer(clCommandQueue, hashMap, CL_FALSE, 0, sizeof(uint32) * tempHashMap.Count(), tempHashMap.Ptr(), 0, nullptr, nullptr));
@@ -826,7 +834,7 @@ namespace SPH
 
 		SimulationEngine::DebugHashAndParticleMap<uint32>(tempParticles, tempHashMap, maxInteractionDistance);
 	}
-	void GPUSimulationEngine::DebugDynamicParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<DynamicParticle>& tempParticles, Array<uint32>& tempHashMap, Array<uint32>& tempParticleMap, cl_mem particles, cl_mem hashMap, cl_mem particleMap)
+	void SimulationEngineGPU::DebugDynamicParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<DynamicParticle>& tempParticles, Array<uint32>& tempHashMap, Array<uint32>& tempParticleMap, cl_mem particles, cl_mem hashMap, cl_mem particleMap)
 	{
 		CL_CALL(clFinish(clCommandQueue));
 		CL_CALL(clEnqueueReadBuffer(clCommandQueue, hashMap, CL_FALSE, 0, sizeof(uint32) * tempHashMap.Count(), tempHashMap.Ptr(), 0, nullptr, nullptr));
@@ -837,16 +845,16 @@ namespace SPH
 		SimulationEngine::DebugHashAndParticleMap<uint32>(tempParticles, tempHashMap, tempParticleMap);
 	}
 #else
-	void GPUSimulationEngine::DebugStaticParticles(cl_command_queue clCommandQueue, Array<StaticParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
+	void SimulationEngineGPU::DebugStaticParticles(cl_command_queue clCommandQueue, Array<StaticParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
 	{
 	}
-	void GPUSimulationEngine::DebugDynamicParticles(cl_command_queue clCommandQueue, Array<DynamicParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
+	void SimulationEngineGPU::DebugDynamicParticles(cl_command_queue clCommandQueue, Array<DynamicParticle>& tempBuffer, cl_mem particles, uintMem hashMapSize, float maxInteractionDistance)
 	{
 	}
-	void GPUSimulationEngine::DebugStaticParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<StaticParticle> tempParticles, Array<uint32> tempHashMap, cl_mem particles, cl_mem hashMap, float maxInteractionDistance)
+	void SimulationEngineGPU::DebugStaticParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<StaticParticle> tempParticles, Array<uint32> tempHashMap, cl_mem particles, cl_mem hashMap, float maxInteractionDistance)
 	{
 	}
-	void GPUSimulationEngine::DebugDynamicParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<DynamicParticle> tempParticles, Array<uint32> tempHashMap, Array<uint32> tempParticleMap, cl_mem particles, cl_mem hashMap, cl_mem particleMap)
+	void SimulationEngineGPU::DebugDynamicParticleHashAndParticleMap(cl_command_queue clCommandQueue, Array<DynamicParticle> tempParticles, Array<uint32> tempHashMap, Array<uint32> tempParticleMap, cl_mem particles, cl_mem hashMap, cl_mem particleMap)
 	{
 	}
 #endif

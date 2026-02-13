@@ -67,7 +67,11 @@ namespace SPH::Details
 #ifdef CL_COMPILER
 		return as_uint3(convert_int3_rtn(value));
 #else
-		return Vec3u(Vec3i(std::floorf(value.x), std::floorf(value.y), std::floorf(value.z)));
+		return Vec3u(
+			static_cast<uint>(std::floorf(value.x)), 
+			static_cast<uint>(std::floorf(value.y)), 
+			static_cast<uint>(std::floorf(value.z))
+		);
 #endif
 	}
 
@@ -330,13 +334,13 @@ namespace SPH::Details
 		STOP_EXTENSIVE_WORK_ITEMS(particleCount)
 		INITIALIZE_THREAD_ID();
 
-		size_t oldIndex = threadID; size_t;
+		size_t oldIndex = threadID;
 
 		uint32 particleHash = as_uint(inParticles[oldIndex].velocityAndHash.w);
 		
 		size_t newIndex = (size_t)(atomic_dec(hashMap + particleHash) - 1);
 		
-		particleMap[threadID] = threadID;
+		particleMap[threadID] = (uint32)threadID;
 		outParticles[newIndex] = inParticles[oldIndex];
 	}
 	void KERNEL FillDynamicParticleMapAndFinishHashMap(uint64 threadID, GLOBAL uint32* particleMap, volatile GLOBAL HASH_TYPE* hashMap, CONSTANT STRUCT DynamicParticle* inParticles, uint64 particleCount)
@@ -348,7 +352,7 @@ namespace SPH::Details
 
 		uint32 index = atomic_dec(hashMap + particleHash) - 1;
 		
-		particleMap[index] = threadID;
+		particleMap[index] = (uint32)threadID;
 	}
 
 	void KERNEL UpdateParticlePressure(
@@ -571,7 +575,7 @@ namespace SPH::Details
 
 						if (distSqr == 0 || dist == 0)
 						{
-							dir = RandomDirection(threadID);
+							dir = RandomDirection((float)threadID);
 							printf("Two dynamic particles have the same position. Simulation wont be deterministic. First position: % 3.3v3f; second position: % 3.3v3f; i1: %u; i2: %u", particlePosition, otherParticlePosition, inParticleIndex, index);
 						}
 						else
@@ -605,7 +609,7 @@ namespace SPH::Details
 
 						if (distSqr == 0 || dist == 0)
 						{
-							dir = RandomDirection(threadID);
+							dir = RandomDirection((float)threadID);
 							printf("A dynamic particle and a static particle have the same position. Simulation wont be deterministic. First position: % 3.3v3f; second position: % 3.3v3f", particlePosition, otherParticle.positionAndPressure.xyz());
 						}
 						else

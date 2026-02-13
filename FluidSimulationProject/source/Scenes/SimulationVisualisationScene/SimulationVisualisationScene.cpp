@@ -1,16 +1,16 @@
 #include "pch.h"
 #include "Scenes/SimulationVisualisationScene/SimulationVisualisationScene.h"
-#include "SPH/ParticleBufferManager/RenderableCPUParticleBufferManager.h"
-#include "SPH/ParticleBufferManager/RenderableGPUParticleBufferManager.h"
-#include "SPH/System/SystemCPU.h"
-#include "SPH/System/SystemGPU.h"
+#include "SPH/ParticleBufferManagers/RenderableCPUParticleBufferManager.h"
+#include "SPH/ParticleBufferManagers/RenderableGPUParticleBufferManager.h"
+#include "SPH/SimulationEngines/SimulationEngineCPU.h"
+#include "SPH/SimulationEngines/SimulationEngineGPU.h"
 
 class CPUSimulation : public Simulation
 {
 public:
 	SPH::RenderableCPUParticleBufferManager dynamicParticleBufferManager;
 	SPH::RenderableCPUParticleBufferManager staticParticleBufferManager;
-	SPH::CPUSimulationEngine engine;
+	SPH::SimulationEngineCPU engine;
 
 	SPH::ParticleBufferManagerRenderCache dynamicParticlesRenderCache;
 	SPH::ParticleBufferManagerRenderCache staticParticlesRenderCache;
@@ -68,7 +68,7 @@ class GPUSimulation : public Simulation
 public:
 	SPH::RenderableGPUParticleBufferManagerWithoutCLGLInterop dynamicParticleBufferManager;
 	SPH::RenderableGPUParticleBufferManagerWithoutCLGLInterop staticParticleBufferManager;
-	SPH::GPUSimulationEngine engine;
+	SPH::SimulationEngineGPU engine;
 
 	SPH::ParticleBufferManagerRenderCache dynamicParticlesRenderCache;
 	SPH::ParticleBufferManagerRenderCache staticParticlesRenderCache;

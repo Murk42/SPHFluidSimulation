@@ -1,7 +1,6 @@
 #include "pch.h"
-#include "SPH/ParticleBufferManager/OfflineCPUParticleBufferManager.h"
+#include "SPH/ParticleBufferManagers/OfflineCPUParticleBufferManager.h"
 
-#include "GL/glew.h"
 
 namespace SPH
 {
