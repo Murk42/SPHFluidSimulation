@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "OpenCLContext.h"
+#include "SPH/OpenCL/OpenCLContext.h"
+#include "SPH/OpenCL/OpenCLDebug.h"
 #include "CL/cl_gl.h"
 #include "GL/wglew.h"
-#include "OpenCLDebug.h"
 
 #define CaseReturnString(x) case x: return #x;
 

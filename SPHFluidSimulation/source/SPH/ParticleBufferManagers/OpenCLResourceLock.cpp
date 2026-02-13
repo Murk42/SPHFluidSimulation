@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SPH/ParticleBufferManagers/OpenCLResourceLock.h"
-#include "OpenCLDebug.h"
+#include "SPH/OpenCL/OpenCLDebug.h"
 #include "CL/cl.h"
 
 namespace SPH

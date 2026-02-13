@@ -41,7 +41,7 @@ void CameraMouseFocusNode::SelectedStateChanged(const SelectedStateChangedEvent&
 		if (auto inputSubSystem = GetInputSubSystem())
 			if (auto window = inputSubSystem->GetWindow())
 			{
-				Input::ShowCursor(true);
+				window->WarpMouseInWindow(Vec2f(window->GetSize()) / 2);
 				window->SetRelativeMouseModeFlag(false);
 			}
 	}

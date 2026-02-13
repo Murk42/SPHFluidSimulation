@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "SPH/Core/SimulationEngine.h"
-#include "SPH/Kernels/SPHFunctions.h"
 
 namespace SPH
 {

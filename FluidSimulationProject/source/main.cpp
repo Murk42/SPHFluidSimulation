@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "OpenCLContext.h"
+#include "SPH/OpenCL/OpenCLContext.h"
 
 #include "Scenes/Scene.h"
 #include "Scenes/SimulationVisualisationScene/SimulationVisualisationScene.h"

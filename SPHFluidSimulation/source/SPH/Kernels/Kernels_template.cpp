@@ -1,11 +1,10 @@
 #include "Kernels.h"
 
-const unsigned int compatibiliyHeaderOpenCLSize = $size "CompatibilityHeaderOpenCL.cl"$;
-const char compatibilityHeaderOpenCLBytes[]{
-	$bytes "CompatibilityHeaderOpenCL.cl"$
-}; 
+namespace SPH::Kernels
+{
+	static const char compatibilityHeader_str[] = { $bytes "CompatibilityHeaderOpenCL.cl"$, '\0' };
+	const Blaze::StringView compatibilityHeader = Blaze::StringView(compatibilityHeader_str);
 
-const unsigned int SPHKernelSourceSize = $size "SPHFunctions.cpp"$;
-const char SPHKernelSourceBytes[]{
-	$bytes "SPHFunctions.cpp"$
-}; 
+	static const char SPHKernelSource_str[] = { $bytes "SPHFunctions.cpp"$, '\0' };
+	const Blaze::StringView SPHKernelSource = Blaze::StringView(SPHKernelSource_str);
+}

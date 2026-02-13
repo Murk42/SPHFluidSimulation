@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SPH/ParticleBufferManagers/OfflineGPUParticleBufferManager.h"
-#include "OpenCLDebug.h"
+#include "SPH/OpenCL/OpenCLDebug.h"
 
 
 namespace SPH

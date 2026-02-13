@@ -267,8 +267,8 @@ call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)sour
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\OpenCLContext.cpp" />
-    <ClCompile Include="source\OpenCLDebug.cpp" />
+    <ClCompile Include="source\SPH\OpenCL\OpenCLContext.cpp" />
+    <ClCompile Include="source\SPH\OpenCL\OpenCLDebug.cpp" />
     <ClCompile Include="source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -307,11 +307,11 @@ call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)sour
     <ClCompile Include="source\SPH\Core\ParticleSimulationEngine.cpp" />
     <ClCompile Include="source\SPH\SimulationEngines\SimulationEngineCPU.cpp" />
     <ClCompile Include="source\SPH\SimulationEngines\SimulationEngineGPU.cpp" />
-    <ClCompile Include="source\SPH\ThreadParallelTaskManager.cpp" />
-    <ClCompile Include="source\SPH\ThreadPool.cpp" />
+    <ClCompile Include="source\SPH\SimulationEngines\SimulationEngineGPUKernels.cpp" />
+    <ClCompile Include="source\SPH\Concurrency\ThreadParallelTaskManager.cpp" />
+    <ClCompile Include="source\SPH\Concurrency\ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\OpenCLTemplatedKernel.h" />
     <ClInclude Include="include\SPH\Graphics\ParticleRenderer.h" />
     <ClInclude Include="include\SPH\ParticleBufferManagers\CPUResourceLock.h" />
     <ClInclude Include="include\SPH\ParticleBufferManagers\OfflineCPUParticleBufferManager.h" />
@@ -326,7 +326,8 @@ call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)sour
     <ClInclude Include="include\SPH\ParticleSetBlueprints\FilledBoxParticleSetBlueprint.h" />
     <ClInclude Include="include\SPH\Core\ParticleSetBlueprint.h" />
     <ClInclude Include="include\SPH\Core\Particles.h" />
-    <ClInclude Include="include\OpenCLContext.h" />
+    <ClInclude Include="include\SPH\OpenCL\OpenCLContext.h" />
+    <ClInclude Include="include\SPH\SimulationEngines\SimulationEngineGPUKernels.h" />
     <ClInclude Include="source\SPH\Graphics\Shaders\Shaders.h" />
     <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderC++.h" />
     <ClInclude Include="source\SPH\Kernels\CompatibilityHeaderOpenCL.cl" />
@@ -335,13 +336,15 @@ call "$(BlazeDir)scripts\ResourceToCPP.exe" resourceToCPP src="$(ProjectDir)sour
     <ClInclude Include="include\SPH\Core\SimulationEngine.h" />
     <ClInclude Include="include\SPH\SimulationEngines\SimulationEngineCPU.h" />
     <ClInclude Include="include\SPH\SimulationEngines\SimulationEngineGPU.h" />
-    <ClInclude Include="include\SPH\ThreadParallelTaskManager.h" />
-    <ClInclude Include="source\json.hpp" />
-    <ClInclude Include="source\JSONParsing.h" />
-    <ClInclude Include="include\OpenCLDebug.h" />
+    <ClInclude Include="include\SPH\Concurrency\ThreadParallelTaskManager.h" />
+    <ClInclude Include="source\external\json.hpp" />
+    <ClInclude Include="source\SPH\OpenCL\EventWaitArray.h" />
+    <ClInclude Include="source\SPH\OpenCL\PerformanceProfile.h" />
+    <ClInclude Include="source\SPH\Utility\JSONParsing.h" />
+    <ClInclude Include="source\SPH\OpenCL\OpenCLDebug.h" />
     <ClInclude Include="source\pch.h" />
     <ClInclude Include="source\SPH\Kernels\Kernels.h" />
-    <ClInclude Include="include\SPH\ThreadPool.h" />
+    <ClInclude Include="include\SPH\Concurrency\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BlazeEngineProjectPropertySheet.props" />

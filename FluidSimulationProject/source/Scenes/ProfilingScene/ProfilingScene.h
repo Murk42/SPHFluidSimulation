@@ -1,6 +1,6 @@
 #pragma once
 #include "Scenes/Scene.h"
-#include "OpenCLContext.h"
+#include "SPH/OpenCL/OpenCLContext.h"
 #include "ProfilingUI.h"
 
 #include "SPH/ParticleBufferManagers/OfflineCPUParticleBufferManager.h"

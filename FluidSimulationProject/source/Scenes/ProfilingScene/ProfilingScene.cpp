@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "Scenes/ProfilingScene/ProfilingScene.h"
-#include "JSONParsing.h"
 
-#include "SPH/SimulationEngines/SimulationEngineCPU.h"
-#include "SPH/SimulationEngines/SimulationEngineGPU.h"
 
 ProfilingScene::ProfilingScene(OpenCLContext& clContext, cl_command_queue clQueue, Graphics::OpenGL::RenderWindow_OpenGL& window) :
 	clContext(clContext), graphicsContext(window.GetGraphicsContext()), window(window),

@@ -6,5 +6,8 @@
 [<color=WHITE> INFO  <color/>] () Client: GL_ARB_cl_event extension supported. The application implementation could be made better to use this extension. This is just informative
 [<color=yellow>WARNING<color/>] () Blaze Engine: UI Render Pipeline couldn't find unnamed renderer
 [<color=yellow>WARNING<color/>] () SPH Library: Lock destroyed but there are write lock events that haven't been waited on.
+[<color=yellow>WARNING<color/>] () SPH Library: Lock destroyed but there are read lock events that haven't been waited on.
+[<color=yellow>WARNING<color/>] () SPH Library: Lock destroyed but there are write lock events that haven't been waited on.
+[<color=yellow>WARNING<color/>] () SPH Library: Lock destroyed but there are read lock events that haven't been waited on.
 [<color=yellow>WARNING<color/>] () SPH Library: Lock destroyed but there are write lock events that haven't been waited on.
 [<color=yellow>WARNING<color/>] () SPH Library: Lock destroyed but there are read lock events that haven't been waited on.

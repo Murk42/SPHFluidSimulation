@@ -1,7 +1,7 @@
 #pragma once
 #include "SPH/Core/SimulationEngine.h"
 #include "SPH/Core/ParticleBufferManager.h"
-#include "SPH/ThreadParallelTaskManager.h"
+#include "SPH/Concurrency/ThreadParallelTaskManager.h"
 #include "SPH/Core/SceneBlueprint.h"
 using namespace Blaze;
 

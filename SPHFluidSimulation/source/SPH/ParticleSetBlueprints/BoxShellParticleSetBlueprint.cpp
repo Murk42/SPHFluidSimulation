@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "SPH/ParticleSetBlueprints/BoxShellParticleSetBlueprint.h"
-#include "JSONParsing.h"
+#include "SPH/Utility/JSONParsing.h"
 
 namespace SPH
 {

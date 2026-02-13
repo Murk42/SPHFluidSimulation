@@ -2,7 +2,7 @@
 #include "Scenes/Scene.h"
 #include "Scenes/SimulationVisualisationScene/SimVisUI.h"
 #include "CameraControls.h"
-#include "OpenCLContext.h"
+#include "SPH/OpenCL/OpenCLContext.h"
 #include "SPH/Graphics/ParticleRenderer.h"
 #include "SPH/Core/SceneBlueprint.h"
 

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SPH/ParticleBufferManagers/RenderableGPUParticleBufferManager.h"
-#include "OpenCLDebug.h"
+#include "SPH/OpenCL/OpenCLDebug.h"
+#include "SPH/OpenCL/EventWaitArray.h"
 
 namespace SPH
 {

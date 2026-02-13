@@ -1,12 +1,9 @@
 #include "pch.h"
 #include "SPH/Core/SceneBlueprint.h"
-#include "JSONParsing.h"
+#include "SPH/Utility/JSONParsing.h"
 #include "SPH/ParticleSetBlueprints/BoxShellParticleSetBlueprint.h"
 #include "SPH/ParticleSetBlueprints/FilledBoxParticleSetBlueprint.h"
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 namespace SPH
 {
