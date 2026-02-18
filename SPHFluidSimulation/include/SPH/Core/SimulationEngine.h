@@ -42,6 +42,8 @@ namespace SPH
 		virtual void Update(float dt, uint simulationStepCount) = 0;
 
 		virtual StringView SystemImplementationName() = 0;			
+		virtual ParticleBufferManager* GetDynamicParticlesBufferManager() = 0;
+		virtual ParticleBufferManager* GetStaticParticlesBufferManager() = 0;
 
 		virtual float GetSimulationTime() = 0;		
 

@@ -123,7 +123,7 @@ public:
 	}
 };
 
-SimulationVisualisationScene::SimulationVisualisationScene(OpenCLContext& clContext, cl_command_queue clCommandQueue, Graphics::OpenGL::RenderWindow_OpenGL& window) :
+SimulationVisualizationScene::SimulationVisualizationScene(OpenCLContext& clContext, cl_command_queue clCommandQueue, Graphics::OpenGL::RenderWindow_OpenGL& window) :
 	clContext(clContext), clCommandQueue(clCommandQueue), graphicsContext(window.GetGraphicsContext()), window(window), currentSimulationIndex(0)
 {
 	fontManager->AddFontFace("default", resourceManager.LoadResource<UI::FontFace>("default", "assets/fonts/Hack-Regular.ttf", 0));
@@ -142,23 +142,30 @@ SimulationVisualisationScene::SimulationVisualisationScene(OpenCLContext& clCont
 	InitializeSystemAndSetAsCurrent(1);
 }
 
-void SimulationVisualisationScene::LoadScene()
+void SimulationVisualizationScene::LoadScene()
 {
 	simulationSceneBlueprint.LoadScene("assets/simulationScenes/triangleTestScene.json");
 }
 
-SimulationVisualisationScene::~SimulationVisualisationScene()
+SimulationVisualizationScene::~SimulationVisualizationScene()
 {
 }
 
-void SimulationVisualisationScene::Update()
+void SimulationVisualizationScene::Update()
 {
 	float dt = frameStopwatch.Reset();
+	float simulationDeltaTime = 0.01f;
+	uintMem simulationStepsPerUpdate = 1;
+	float simulationExecutionTime = 0;
 
 	if (runSimulation || stepSimulation)
 	{
 		if (currentSimulation != nullptr)
-			currentSimulation->Update(0.01f, 10);
+		{
+			Stopwatch simulationStopwatch;
+			currentSimulation->Update(simulationDeltaTime, simulationStepsPerUpdate);
+			simulationExecutionTime = static_cast<float>(simulationStopwatch.GetTime());
+		}
 
 		stepSimulation = false;
 	}
@@ -166,18 +173,19 @@ void SimulationVisualisationScene::Update()
 	++FPSCount;
 	if (FPSStopwatch.GetTime() > 1.0f)
 	{
-		static_cast<SimVisUI*>(UISystem.GetScreen())->SetFPS(FPSCount);
+		FPS = FPSCount;
 		FPSStopwatch.Reset();
 		FPSCount = 0;
 	}
 
+	static_cast<SimVisUI*>(UISystem.GetScreen())->UpdateSimulationExecutionInfo(simulationStepsPerUpdate, simulationDeltaTime, simulationExecutionTime, FPS);
+
 	cameraControls.Update();
 
 	(UISystem.GetScreen())->Update();
-	static_cast<SimVisUI*>(UISystem.GetScreen())->Update();
 }
 
-void SimulationVisualisationScene::Render(const Graphics::RenderContext& renderContext)
+void SimulationVisualizationScene::Render(const Graphics::RenderContext& renderContext)
 {
 	window.ClearRenderBuffers();
 
@@ -201,7 +209,7 @@ void SimulationVisualisationScene::Render(const Graphics::RenderContext& renderC
 	window.Present();
 }
 
-void SimulationVisualisationScene::OnEvent(const Input::GenericInputEvent& event)
+void SimulationVisualizationScene::OnEvent(const Input::GenericInputEvent& event)
 {
 	if (event.TryProcess([&](const Input::KeyDownEvent& event)
 		{
@@ -213,14 +221,9 @@ void SimulationVisualisationScene::OnEvent(const Input::GenericInputEvent& event
 			case X:
 			{
 				if (bool(event.modifier & Input::KeyModifier::SHIFT))
-					runSimulation = false;
+					stepSimulation = true;
 				else
-					runSimulation = true;
-				break;
-			}
-			case RIGHT:
-			{
-				stepSimulation = true;
+					runSimulation = !runSimulation;
 				break;
 			}
 			case T:
@@ -271,18 +274,17 @@ void SimulationVisualisationScene::OnEvent(const Input::GenericInputEvent& event
 	
 }
 
-void SimulationVisualisationScene::WindowResized(const Window::ResizedEvent& event)
+void SimulationVisualizationScene::WindowResized(const Window::ResizedEvent& event)
 {
 	particleRenderer.SetProjectionMatrix(Mat4f::PerspectiveMatrix(120 * Math::PI / 180, (float)window.GetSize().x / window.GetSize().y, 0.1, 1000));
 	basicMeshRenderer.SetProjectionMatrix(Mat4f::PerspectiveMatrix(120 * Math::PI / 180, (float)window.GetSize().x / window.GetSize().y, 0.1, 1000));
 }
 
-void SimulationVisualisationScene::InitializeSystemAndSetAsCurrent(uintMem index)
+void SimulationVisualizationScene::InitializeSystemAndSetAsCurrent(uintMem index)
 {
 	currentSimulationIndex = index;
 
 	currentSimulation = simulations[index]();
 
-	static_cast<SimVisUI*>(UISystem.GetScreen())->SetImplenetationName(currentSimulation->GetSimulationEngine().SystemImplementationName());
-	static_cast<SimVisUI*>(UISystem.GetScreen())->SetParticleCount(currentSimulation->GetDynamicParticlesBufferManager().GetParticleCount());
+	static_cast<SimVisUI*>(UISystem.GetScreen())->UpdateSimulationEngineInfo(currentSimulation != nullptr ? &currentSimulation->GetSimulationEngine() : nullptr);
 }

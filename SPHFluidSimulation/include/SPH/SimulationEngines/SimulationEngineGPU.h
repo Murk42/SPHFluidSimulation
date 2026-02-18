@@ -20,9 +20,14 @@ namespace SPH
 		void Update(float dt, uint simulationStepCount) override;
 
 		StringView SystemImplementationName() override { return "GPU"; };		
+		ParticleBufferManager* GetDynamicParticlesBufferManager() override { return dynamicParticlesBufferManager; }
+		ParticleBufferManager* GetStaticParticlesBufferManager() override { return staticParticlesBufferManager; }
 
 		float GetSimulationTime() override { return simulationTime; }
 	private:
+		ParticleBufferManager* dynamicParticlesBufferManager = nullptr;
+		ParticleBufferManager* staticParticlesBufferManager = nullptr;
+
 		cl_device_id clDevice = nullptr;
 		cl_context clContext = nullptr;
 		cl_command_queue clCommandQueue = nullptr;				
@@ -37,9 +42,6 @@ namespace SPH
 		cl_mem particleBehaviourParametersBuffer = nullptr;
 
 		ParticleBehaviourParameters particleBehaviourParameters;
-
-		ParticleBufferManager* dynamicParticlesBufferManager = nullptr;
-		ParticleBufferManager* staticParticlesBufferManager = nullptr;
 
 		cl_mem triangles = nullptr;
 		uintMem triangleCount = 0;

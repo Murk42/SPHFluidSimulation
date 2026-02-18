@@ -19,7 +19,7 @@ public:
 	virtual void Render(const Graphics::RendererRegistry& registry, const Graphics::RenderContext& renderContext, const Mat4f& modelMatrix) = 0;
 };
 
-class SimulationVisualisationScene :
+class SimulationVisualizationScene :
 	public SceneBlueprint
 {
 public:
@@ -65,12 +65,12 @@ public:
 
 	Stopwatch frameStopwatch;
 	Stopwatch FPSStopwatch;
-	Stopwatch simulationStopwatch;
-	uintMem FPSCount = 0;
+	uint FPSCount = 0;
+	uint FPS;
 	bool imagingMode = false;
 
-	SimulationVisualisationScene(OpenCLContext& clContext, cl_command_queue clCommandQueue, Graphics::OpenGL::RenderWindow_OpenGL& window);
-	~SimulationVisualisationScene();
+	SimulationVisualizationScene(OpenCLContext& clContext, cl_command_queue clCommandQueue, Graphics::OpenGL::RenderWindow_OpenGL& window);
+	~SimulationVisualizationScene();
 
 	void LoadScene();
 
@@ -79,7 +79,7 @@ public:
 	void OnEvent(const Input::GenericInputEvent& event) override;
 
 	void WindowResized(const Window::ResizedEvent& event);
-	EVENT_MEMBER_FUNCTION(SimulationVisualisationScene, WindowResized, window.resizedEventDispatcher);
+	EVENT_MEMBER_FUNCTION(SimulationVisualizationScene, WindowResized, window.resizedEventDispatcher);
 
 	void InitializeSystemAndSetAsCurrent(uintMem index);
 };

@@ -1,7 +1,8 @@
 #pragma once
 #include "CameraControls.h"
+#include "SPH/Core/SimulationEngine.h"
 
-class SimulationVisualisationScene;
+class SimulationVisualizationScene;
 
 class SimVisUI :
 	public UI::Screen
@@ -10,28 +11,15 @@ public:
 	CameraMouseFocusNode cameraMouseFocusNode;
 
 	UI::Nodes::Label titleText;
-	UI::Nodes::Label infoText;
+	UI::Nodes::Label controlsInfoText;
+	UI::Nodes::Label simulationInfoText;
+	UI::Nodes::Label runtimeInfoText;
 
-	//uintMem hashCounter;
-	UI::Nodes::Label hashCounterText;
-
-	SimVisUI(ResourceManager& resourceManager, SimulationVisualisationScene& scene);
+	SimVisUI(ResourceManager& resourceManager, SimulationVisualizationScene& scene);
 	~SimVisUI();
 
-	void Update();
-
-	void SetFPS(uintMem FPS);
-	void SetParticleCount(uintMem particleCount);
-	void SetInfo(u8String text);
-	void SetImplenetationName(u8String implementationName) { this->implementationName = implementationName; ReconstructInfoText(); }
+	void UpdateSimulationExecutionInfo(uintMem stepsPerUpdate, float deltaTime, float executionTime, uint FPS);
+	void UpdateSimulationEngineInfo(SPH::SimulationEngine* simulationEngine);
 private:
-	SimulationVisualisationScene& scene;
-
-	uint FPS;
-	uint particleCount;
-	u8String info;
-	u8String implementationName;
-
-	void ReconstructInfoText();
-	void Event_PostInputUpdate(const Input::InputPostUpdateEvent&);
+	SimulationVisualizationScene& scene;
 };

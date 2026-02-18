@@ -18,13 +18,15 @@ namespace SPH
 		void Update(float dt, uint simulationSteps) override;
 
 		StringView SystemImplementationName() override { return "CPU"; };
+		ParticleBufferManager* GetDynamicParticlesBufferManager() override { return dynamicParticlesBufferManager; }
+		ParticleBufferManager* GetStaticParticlesBufferManager() override { return staticParticlesBufferManager; }
 
 		float GetSimulationTime() override { return simulationTime; }
 	private:
-		ThreadParallelTaskManager threadManager;
-
 		ParticleBufferManager* dynamicParticlesBufferManager;
 		ParticleBufferManager* staticParticlesBufferManager;
+
+		ThreadParallelTaskManager threadManager;
 
 		bool parallelPartialSum;
 		Array<std::atomic_uint32_t> hashMapGroupSums;

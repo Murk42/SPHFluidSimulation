@@ -29,7 +29,7 @@ CLIENT_API void Setup()
 	window.closeEventDispatcher.AddHandler(windowCloseEventHandler);
 
 	std::function<SceneBlueprint* ()> sceneCreators[]{
-		[&]() { return new SimulationVisualisationScene(clContext, clQueue, window); },
+		[&]() { return new SimulationVisualizationScene(clContext, clQueue, window); },
 		[&]() { return new ProfilingScene(clContext, clQueue, window); },
 	};
 	uintMem currentSceneIndex = 0;
