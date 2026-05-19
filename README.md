@@ -3,6 +3,8 @@ The fluid simulation is based on the Smoothed Particle Dynamics method.
 It uses my personal project "Blaze Engine" as the base for the application.
 Some images of the simulation:
 
+<img width="1761" height="778" alt="ezgif-34e760fcc15465e8" src="https://github.com/user-attachments/assets/e8b60d91-a9fc-4894-a3e8-0ea65a7ff99e" />
+
 <img width="1761" height="778" alt="Capture2" src="https://github.com/user-attachments/assets/896a1fbe-d127-49e4-bbe7-a760146ad4dd" />
 
 <img width="1761" height="778" alt="Capture4" src="https://github.com/user-attachments/assets/ddd24027-0a2a-41b3-aaad-f65aa55befa2" />
